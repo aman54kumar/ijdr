@@ -1,0 +1,186 @@
+<div class="home-page">
+  <!-- Header -->
+
+  <!-- Hero Section -->
+  <section class="hero-section py-5 bg-light">
+    <div class="container py-5">
+      <div class="row align-items-center">
+        <div class="col-lg-6">
+          <h1 class="display-4 fw-bold mb-4">
+            Welcome to <span class="text-primary">Journal Explorer</span>
+          </h1>
+          <p class="lead mb-4">
+            Discover, explore, and access academic journals and research
+            articles from the Indian Journal of Development Research.
+          </p>
+          <div class="d-flex gap-3">
+            <a routerLink="/journals" class="btn btn-primary btn-lg px-4"
+              >Browse Journals</a
+            >
+            <a href="#latest-issues" class="btn btn-outline-primary btn-lg px-4"
+              >Latest Issues</a
+            >
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <img
+            src="https://via.placeholder.com/600x400"
+            alt="Academic Research"
+            class="img-fluid rounded shadow"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About IJDR -->
+  <section class="about-section py-5 bg-white">
+    <div class="container py-5">
+      <div class="row">
+        <div class="col-lg-6">
+          <h2 class="fw-bold mb-4">
+            About <span class="text-primary">IJDR</span>
+          </h2>
+          <p class="mb-4">
+            The
+            <strong>Indian Journal of Development Research (IJDR)</strong> is a
+            peer-reviewed, refereed, interdisciplinary bi-annual journal
+            published by the Institute of Development Studies, Varanasi.
+          </p>
+          <p>
+            The journal aims to provide a platform for researchers,
+            academicians, and practitioners to share their findings and insights
+            on various aspects of development research.
+          </p>
+          <a href="#" class="btn btn-outline-primary mt-3"
+            >Learn More About IJDR</a
+          >
+        </div>
+        <div class="col-lg-6">
+          <div class="card border-0 shadow">
+            <div class="card-body p-4">
+              <h3 class="card-title fw-bold mb-3">Journal Highlights</h3>
+              <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex align-items-center">
+                  <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                  Peer-reviewed and refereed journal
+                </li>
+                <li class="list-group-item d-flex align-items-center">
+                  <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                  Interdisciplinary research focus
+                </li>
+                <li class="list-group-item d-flex align-items-center">
+                  <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                  Bi-annual publication
+                </li>
+                <li class="list-group-item d-flex align-items-center">
+                  <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                  Open access to selected articles
+                </li>
+                <li class="list-group-item d-flex align-items-center">
+                  <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                  Indexed in major academic databases
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Latest Issues -->
+  <section id="latest-issues" class="issues-section py-5 bg-light">
+    <div class="container py-5">
+      <h2 class="text-center fw-bold mb-5">
+        Latest <span class="text-primary">Issues</span>
+      </h2>
+      <div class="row g-4">
+        <div class="col-md-4" *ngFor="let issue of latestIssues">
+          <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title">{{ issue.edition }}</h5>
+              <p class="card-text">
+                Volume {{ issue.volume }} No. {{ issue.number }}
+              </p>
+              <a
+                [routerLink]="['/journal', issue.id]"
+                class="btn btn-sm btn-outline-primary"
+                >View Issue</a
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="text-center mt-5">
+        <a routerLink="/journals" class="btn btn-primary px-4"
+          >View All Issues</a
+        >
+      </div>
+    </div>
+  </section>
+
+  <!-- Editorial Board -->
+  <section id="editorial-board" class="team-section py-5 bg-white">
+    <div class="container py-5">
+      <h2 class="text-center fw-bold mb-5">
+        Our <span class="text-primary">Editorial Team</span>
+      </h2>
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center p-4">
+              <img
+                src="https://via.placeholder.com/150"
+                class="rounded-circle mb-3"
+                alt="Editor"
+              />
+              <h5 class="card-title">Dr. Rajesh Kumar</h5>
+              <p class="card-text text-muted">Editor-in-Chief</p>
+              <p class="card-text">
+                Professor of Development Studies, IDS Varanasi
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center p-4">
+              <img
+                src="https://via.placeholder.com/150"
+                class="rounded-circle mb-3"
+                alt="Editor"
+              />
+              <h5 class="card-title">Dr. Priya Sharma</h5>
+              <p class="card-text text-muted">Associate Editor</p>
+              <p class="card-text">
+                Professor of Economics, University of Delhi
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center p-4">
+              <img
+                src="https://via.placeholder.com/150"
+                class="rounded-circle mb-3"
+                alt="Editor"
+              />
+              <h5 class="card-title">Dr. Amit Patel</h5>
+              <p class="card-text text-muted">Managing Editor</p>
+              <p class="card-text">Research Director, IDS Varanasi</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="text-center mt-5">
+        <a href="#" class="btn btn-outline-primary px-4"
+          >View Full Editorial Board</a
+        >
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+</div>

@@ -1,0 +1,82 @@
+<div class="journals-section py-5 bg-light">
+  <div class="container py-4">
+    <div class="text-center mb-5">
+      <h2 class="fw-bold mb-3">Available Journals</h2>
+      <p class="lead text-muted">
+        Browse through our collection of published journals
+      </p>
+    </div>
+
+    <div class="row justify-content-center mb-5">
+      <div class="col-lg-6 col-md-8">
+        <div class="input-group">
+          <span class="input-group-text bg-white border-end-0">
+            <i class="bi bi-search"></i>
+          </span>
+          <input
+            type="text"
+            class="form-control border-start-0"
+            placeholder="Search by Volume, Number or Year..."
+            [(ngModel)]="searchText"
+            (input)="onSearch()"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <ng-container *ngIf="loading; else journalsList">
+        <div class="col-12 text-center my-5">
+          <div
+            class="spinner-border text-primary"
+            style="width: 3rem; height: 3rem"
+            role="status"
+          >
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-3">Loading journals...</p>
+        </div>
+      </ng-container>
+
+      <ng-template #journalsList>
+        <div class="col-md-4" *ngFor="let journal of filteredJournalsList">
+          <div class="card h-100 border-0 shadow-sm transition-all">
+            <div class="card-header bg-white border-bottom-0">
+              <h5 class="card-title mb-0 text-primary fw-bold">
+                {{ journal.edition }}
+              </h5>
+            </div>
+            <div class="card-body d-flex flex-column">
+              <div class="mb-3">
+                <p class="text-muted mb-1">
+                  <i class="bi bi-calendar me-2"></i>
+                  Volume {{ journal.volume }}, Number {{ journal.number }}
+                </p>
+                <p class="text-muted mb-0">
+                  <i class="bi bi-file-text me-2"></i>
+                  {{ journal.articles.length }} Articles
+                </p>
+              </div>
+              <a
+                [routerLink]="['/journal', journal.id]"
+                class="btn btn-outline-primary mt-auto align-self-start"
+              >
+                View Articles <i class="bi bi-arrow-right ms-2"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="col-12"
+          *ngIf="filteredJournalsList.length === 0 && !loading"
+        >
+          <div class="alert alert-info text-center py-4">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            No journals found matching your search criteria
+          </div>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

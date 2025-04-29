@@ -1,0 +1,11 @@
+# journal-portal Dockerfile
+FROM nginx:alpine
+
+# Remove default nginx page
+RUN rm -rf /usr/share/nginx/html/*
+
+# Copy Angular build output
+COPY journal-portal/dist/journal-portal/browser /usr/share/nginx/html
+
+# Copy nginx config
+COPY nginx/default.conf /etc/nginx/conf.d/default.conf

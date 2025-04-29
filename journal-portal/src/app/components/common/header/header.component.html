@@ -1,0 +1,86 @@
+<header class="header">
+  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <div class="container">
+      <a class="navbar-brand" routerLink="/">
+        <img
+          src="https://via.placeholder.com/50x70"
+          alt="IJDR Logo"
+          class="d-inline-block align-top me-2"
+        />
+        <div class="d-inline-block">
+          <span class="fw-bold d-block">INDIAN JOURNAL</span>
+          <span class="d-block">OF DEVELOPMENT RESEARCH</span>
+          <small class="text-muted d-block"
+            >Peer Reviewed Bi-annual Journal</small
+          >
+        </div>
+      </a>
+
+      <button
+        class="navbar-toggler"
+        type="button"
+        (click)="isNavbarCollapsed = !isNavbarCollapsed"
+        aria-controls="navbarNav"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div
+        [ngClass]="{ collapse: isNavbarCollapsed, 'navbar-collapse': true }"
+        id="navbarNav"
+      >
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              routerLink="/"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+            >
+              Home
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" routerLink="/journals" routerLinkActive="active"
+              >Journals</a
+            >
+          </li>
+          <li
+            class="nav-item dropdown"
+            [class.show]="isDropdownOpen"
+            (mouseenter)="isDropdownOpen = true"
+            (mouseleave)="isDropdownOpen = false"
+          >
+            <a
+              class="nav-link dropdown-toggle"
+              href="#"
+              (click)="$event.preventDefault()"
+              [attr.aria-expanded]="isDropdownOpen"
+            >
+              About
+            </a>
+            <ul class="dropdown-menu" [class.show]="isDropdownOpen">
+              <li><a class="dropdown-item" href="#">About IJDR</a></li>
+              <li>
+                <a class="dropdown-item" href="#editorial-board"
+                  >Editorial Board</a
+                >
+              </li>
+              <li><a class="dropdown-item" href="#">Advisory Board</a></li>
+              <li><hr class="dropdown-divider" /></li>
+              <li><a class="dropdown-item" href="#">Publisher</a></li>
+            </ul>
+          </li>
+          <!-- <li class="nav-item">
+            <a class="nav-link" href="#submission">Submission</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#contact">Contact</a>
+          </li> -->
+        </ul>
+      </div>
+    </div>
+  </nav>
+</header>
