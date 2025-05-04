@@ -6,7 +6,8 @@ class Journal(models.Model):
     volume = models.IntegerField()
     number = models.IntegerField()
     ssn = models.CharField(max_length=20, blank=True, null=True)
-
+    pdf_file = models.FileField(upload_to='journals/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):
         return f"Vol. {self.volume} No. {self.number}"
 
