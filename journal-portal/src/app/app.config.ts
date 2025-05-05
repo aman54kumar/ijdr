@@ -11,13 +11,20 @@ import { InMemoryCache, ApolloClientOptions } from '@apollo/client/core';
 
 import { routes } from './app.routes';
 import { environment } from '../environments/environment.development';
+import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
+import { provideStorage, getStorage } from '@angular/fire/storage';
+import { provideAuth, getAuth } from '@angular/fire/auth';
+import { firebaseConfig } from '../environments/firebase-config';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
     provideHttpClient(),
-    provideApollo(apolloFactory), // 👈 This way
+    provideApollo(apolloFactory),
+    provideFirebaseApp(() => initializeApp(firebaseConfig)),
+    provideAuth(() => getAuth()),
+    provideStorage(() => getStorage()),
   ],
 };
 
