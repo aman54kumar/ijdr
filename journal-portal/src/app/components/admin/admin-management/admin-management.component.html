@@ -1,0 +1,316 @@
+<div class="admin-management">
+  <div class="admin-management-header">
+    <h3 class="title">
+      <i class="bi bi-people-fill me-2"></i>
+      Admin Management
+    </h3>
+    <p class="subtitle text-muted">
+      Manage administrator accounts and permissions
+    </p>
+  </div>
+
+  <!-- Success Message -->
+  <div *ngIf="successMessage" class="alert alert-success" role="alert">
+    <i class="bi bi-check-circle me-2"></i>
+    {{ successMessage }}
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    {{ errorMessage }}
+  </div>
+
+  <!-- Admin Management Actions -->
+  <div class="admin-actions mb-4">
+    <button
+      class="btn btn-primary me-2"
+      (click)="toggleCreateForm()"
+      [disabled]="isLoading"
+    >
+      <i class="bi bi-person-plus me-2"></i>
+      {{ showCreateForm ? "Cancel" : "Add New Admin" }}
+    </button>
+
+    <button
+      class="btn btn-warning me-2"
+      (click)="toggleChangePasswordForm()"
+      [disabled]="isLoading"
+    >
+      <i class="bi bi-key me-2"></i>
+      {{ showChangePasswordForm ? "Cancel" : "Change My Password" }}
+    </button>
+
+    <button
+      class="btn btn-info"
+      (click)="sendPasswordReset()"
+      [disabled]="isLoading"
+      title="Send password reset email to admin@ijdrpub.in"
+    >
+      <i class="bi bi-envelope me-2"></i>
+      Reset via Email
+    </button>
+  </div>
+
+  <!-- Create Admin Form -->
+  <div *ngIf="showCreateForm" class="create-admin-section">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-person-plus me-2 text-primary"></i>
+          Create New Admin Account
+        </h5>
+      </div>
+      <div class="card-body">
+        <form [formGroup]="createAdminForm" (ngSubmit)="onCreateAdmin()">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label for="displayName" class="form-label">
+                  <i class="bi bi-person me-2"></i>Full Name
+                </label>
+                <input
+                  type="text"
+                  id="displayName"
+                  class="form-control"
+                  [class.is-invalid]="hasFieldError('displayName')"
+                  formControlName="displayName"
+                  placeholder="Enter full name"
+                />
+                <div class="invalid-feedback">
+                  {{ getFieldError("displayName") }}
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label for="email" class="form-label">
+                  <i class="bi bi-envelope me-2"></i>Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  class="form-control"
+                  [class.is-invalid]="hasFieldError('email')"
+                  formControlName="email"
+                  placeholder="admin&#64;ijdrpub.in"
+                />
+                <div class="invalid-feedback">
+                  {{ getFieldError("email") }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label for="password" class="form-label">
+                  <i class="bi bi-lock me-2"></i>Password
+                </label>
+                <div class="password-input-group">
+                  <input
+                    [type]="showPassword ? 'text' : 'password'"
+                    id="password"
+                    class="form-control"
+                    [class.is-invalid]="hasFieldError('password')"
+                    formControlName="password"
+                    placeholder="Create a strong password"
+                  />
+                  <button
+                    type="button"
+                    class="password-toggle"
+                    (click)="togglePasswordVisibility()"
+                    tabindex="-1"
+                  >
+                    <i
+                      [class]="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"
+                    ></i>
+                  </button>
+                </div>
+                <div class="invalid-feedback">
+                  {{ getFieldError("password") }}
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label for="confirmPassword" class="form-label">
+                  <i class="bi bi-lock-fill me-2"></i>Confirm Password
+                </label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  class="form-control"
+                  [class.is-invalid]="hasFieldError('confirmPassword')"
+                  formControlName="confirmPassword"
+                  placeholder="Confirm password"
+                />
+                <div class="invalid-feedback">
+                  {{ getFieldError("confirmPassword") }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions d-flex gap-2">
+            <button
+              type="submit"
+              class="btn btn-success"
+              [disabled]="isLoading || createAdminForm.invalid"
+            >
+              <span
+                *ngIf="isLoading"
+                class="spinner-border spinner-border-sm me-2"
+                role="status"
+              >
+                <span class="visually-hidden">Loading...</span>
+              </span>
+              <i *ngIf="!isLoading" class="bi bi-person-check me-2"></i>
+              {{ isLoading ? "Creating..." : "Create Admin Account" }}
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="toggleCreateForm()"
+              [disabled]="isLoading"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Form -->
+  <div *ngIf="showChangePasswordForm" class="change-password-section">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-key me-2 text-warning"></i>
+          Change Password
+        </h5>
+      </div>
+      <div class="card-body">
+        <form [formGroup]="changePasswordForm" (ngSubmit)="onChangePassword()">
+          <div class="row">
+            <div class="col-md-12">
+              <div class="form-group mb-3">
+                <label for="currentPassword" class="form-label">
+                  <i class="bi bi-lock me-2"></i>Current Password
+                </label>
+                <div class="password-input-group">
+                  <input
+                    [type]="showCurrentPassword ? 'text' : 'password'"
+                    id="currentPassword"
+                    class="form-control"
+                    [class.is-invalid]="hasFieldError('currentPassword')"
+                    formControlName="currentPassword"
+                    placeholder="Enter your current password"
+                  />
+                  <button
+                    type="button"
+                    class="password-toggle"
+                    (click)="toggleCurrentPasswordVisibility()"
+                    tabindex="-1"
+                  >
+                    <i
+                      [class]="
+                        showCurrentPassword ? 'bi bi-eye-slash' : 'bi bi-eye'
+                      "
+                    ></i>
+                  </button>
+                </div>
+                <div class="invalid-feedback">
+                  {{ getFieldError("currentPassword") }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label for="newPassword" class="form-label">
+                  <i class="bi bi-shield-lock me-2"></i>New Password
+                </label>
+                <div class="password-input-group">
+                  <input
+                    [type]="showNewPassword ? 'text' : 'password'"
+                    id="newPassword"
+                    class="form-control"
+                    [class.is-invalid]="hasFieldError('newPassword')"
+                    formControlName="newPassword"
+                    placeholder="Enter new password"
+                  />
+                  <button
+                    type="button"
+                    class="password-toggle"
+                    (click)="toggleNewPasswordVisibility()"
+                    tabindex="-1"
+                  >
+                    <i
+                      [class]="
+                        showNewPassword ? 'bi bi-eye-slash' : 'bi bi-eye'
+                      "
+                    ></i>
+                  </button>
+                </div>
+                <div class="invalid-feedback">
+                  {{ getFieldError("newPassword") }}
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label for="confirmNewPassword" class="form-label">
+                  <i class="bi bi-shield-check me-2"></i>Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  id="confirmNewPassword"
+                  class="form-control"
+                  [class.is-invalid]="hasFieldError('confirmNewPassword')"
+                  formControlName="confirmNewPassword"
+                  placeholder="Confirm new password"
+                />
+                <div class="invalid-feedback">
+                  {{ getFieldError("confirmNewPassword") }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions d-flex gap-2">
+            <button
+              type="submit"
+              class="btn btn-success"
+              [disabled]="isLoading || changePasswordForm.invalid"
+            >
+              <span
+                *ngIf="isLoading"
+                class="spinner-border spinner-border-sm me-2"
+                role="status"
+              >
+                <span class="visually-hidden">Loading...</span>
+              </span>
+              <i *ngIf="!isLoading" class="bi bi-check-circle me-2"></i>
+              {{ isLoading ? "Changing..." : "Change Password" }}
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="toggleChangePasswordForm()"
+              [disabled]="isLoading"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

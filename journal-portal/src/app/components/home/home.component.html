@@ -1,186 +1,209 @@
-<div class="home-page">
-  <!-- Header -->
+<div class="modern-home-fixed">
+  <!-- Hero Section - Simple and Reliable -->
+  <section class="hero-section-fixed">
+    <div class="container">
+      <div class="row align-items-center">
+        <!-- Left Content -->
+        <div class="col-lg-7">
+          <div class="hero-content">
+            <!-- Badge -->
+            <div class="badge-modern">
+              <i class="bi bi-award-fill me-2"></i>
+              Peer-Reviewed Excellence
+            </div>
 
-  <!-- Hero Section -->
-  <section class="hero-section py-5 bg-light">
-    <div class="container py-5">
+            <!-- Main Heading -->
+            <h1 class="hero-title">
+              <span class="title-primary">Indian Journal of</span>
+              <span class="title-highlight">Development Research</span>
+            </h1>
+
+            <!-- Description -->
+            <p class="hero-description">
+              A prestigious bi-annual academic journal publishing cutting-edge
+              research in development studies, policy analysis, and sustainable
+              growth initiatives.
+            </p>
+
+            <!-- CTA Buttons -->
+            <div class="hero-buttons">
+              <button class="btn btn-primary-custom" routerLink="/journals">
+                <i class="bi bi-journal-bookmark me-2"></i>
+                Explore Issues
+              </button>
+              <button
+                class="btn btn-outline-custom"
+                routerLink="/editorial-board"
+              >
+                <i class="bi bi-people me-2"></i>
+                Editorial Board
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Visual -->
+        <div class="col-lg-5">
+          <div class="hero-visual" *ngIf="latestIssues.length > 0">
+            <div class="latest-issue-card">
+              <div class="card-badge">Latest Issue</div>
+              <h3 class="issue-title">{{ latestIssues[0].title }}</h3>
+              <div class="issue-meta">
+                <span
+                  ><i class="bi bi-book me-1"></i>Vol
+                  {{ latestIssues[0].volume }}, Issue
+                  {{ latestIssues[0].number }}</span
+                >
+                <span
+                  ><i class="bi bi-calendar me-1"></i
+                  >{{ latestIssues[0].year }}</span
+                >
+              </div>
+              <button
+                class="btn btn-read-now"
+                (click)="openJournalPDF(latestIssues[0])"
+              >
+                <i class="bi bi-file-earmark-pdf me-2"></i>
+                Read Now
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Recent Publications Section -->
+  <section class="publications-section">
+    <div class="container">
+      <!-- Section Header -->
+      <div class="section-header text-center mb-5">
+        <h2 class="section-title">
+          Recent <span class="text-primary">Publications</span>
+        </h2>
+        <p class="section-subtitle">
+          Discover our most recent contributions to development research and
+          policy studies
+        </p>
+      </div>
+
+      <!-- Publications Grid -->
+      <div class="row g-4">
+        <div
+          class="col-lg-4 col-md-6"
+          *ngFor="let issue of latestIssues; let i = index"
+        >
+          <div class="publication-card">
+            <div class="card-body">
+              <h4 class="card-title">{{ issue.title }}</h4>
+
+              <div class="card-meta">
+                <div class="meta-item">
+                  <i class="bi bi-journal-bookmark text-primary"></i>
+                  <span>Vol {{ issue.volume }}, Issue {{ issue.number }}</span>
+                </div>
+                <div class="meta-item">
+                  <i class="bi bi-file-earmark-pdf text-danger"></i>
+                  <span>PDF Available</span>
+                </div>
+              </div>
+
+              <p class="card-description" *ngIf="issue.description">
+                {{ issue.description | slice : 0 : 120
+                }}{{ issue.description.length > 120 ? "..." : "" }}
+              </p>
+
+              <button
+                class="btn btn-primary w-100"
+                (click)="openJournalPDF(issue)"
+              >
+                <i class="bi bi-book-open me-2"></i>
+                Read Article
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- View All Button -->
+      <div class="text-center mt-5">
+        <button class="btn btn-outline-primary btn-lg" routerLink="/journals">
+          <i class="bi bi-collection me-2"></i>
+          View All Issues
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section class="about-section bg-light">
+    <div class="container">
       <div class="row align-items-center">
         <div class="col-lg-6">
-          <h1 class="display-4 fw-bold mb-4">
-            Welcome to <span class="text-primary">Journal Explorer</span>
-          </h1>
-          <p class="lead mb-4">
-            Discover, explore, and access academic journals and research
-            articles from the Indian Journal of Development Research.
-          </p>
-          <div class="d-flex gap-3">
-            <a routerLink="/journals" class="btn btn-primary btn-lg px-4"
-              >Browse Journals</a
-            >
-            <a href="#latest-issues" class="btn btn-outline-primary btn-lg px-4"
-              >Latest Issues</a
-            >
+          <div class="about-content">
+            <h2 class="about-title">
+              Driving <span class="text-primary">Innovation</span> in
+              Development Research
+            </h2>
+            <p class="about-text">
+              The Indian Journal of Development Research (IJDR) stands as a
+              beacon of academic excellence, publishing groundbreaking research
+              that shapes policy and drives sustainable development initiatives
+              across the globe.
+            </p>
+
+            <div class="features-list">
+              <div class="feature-item">
+                <div class="feature-icon">
+                  <i class="bi bi-mortarboard"></i>
+                </div>
+                <div class="feature-content">
+                  <h5>Academic Excellence</h5>
+                  <p>
+                    Rigorous peer-review process ensuring highest quality
+                    research
+                  </p>
+                </div>
+              </div>
+
+              <div class="feature-item">
+                <div class="feature-icon">
+                  <i class="bi bi-graph-up"></i>
+                </div>
+                <div class="feature-content">
+                  <h5>Impact-Driven</h5>
+                  <p>
+                    Research that influences policy and creates real-world
+                    change
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn btn-primary" routerLink="/editorial-board">
+              Learn More About Us
+              <i class="bi bi-arrow-right ms-2"></i>
+            </button>
           </div>
         </div>
+
         <div class="col-lg-6">
-          <img
-            src="https://via.placeholder.com/600x400"
-            alt="Academic Research"
-            class="img-fluid rounded shadow"
-          />
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- About IJDR -->
-  <section class="about-section py-5 bg-white">
-    <div class="container py-5">
-      <div class="row">
-        <div class="col-lg-6">
-          <h2 class="fw-bold mb-4">
-            About <span class="text-primary">IJDR</span>
-          </h2>
-          <p class="mb-4">
-            The
-            <strong>Indian Journal of Development Research (IJDR)</strong> is a
-            peer-reviewed, refereed, interdisciplinary bi-annual journal
-            published by the Institute of Development Studies, Varanasi.
-          </p>
-          <p>
-            The journal aims to provide a platform for researchers,
-            academicians, and practitioners to share their findings and insights
-            on various aspects of development research.
-          </p>
-          <a href="#" class="btn btn-outline-primary mt-3"
-            >Learn More About IJDR</a
-          >
-        </div>
-        <div class="col-lg-6">
-          <div class="card border-0 shadow">
-            <div class="card-body p-4">
-              <h3 class="card-title fw-bold mb-3">Journal Highlights</h3>
-              <ul class="list-group list-group-flush">
-                <li class="list-group-item d-flex align-items-center">
-                  <i class="bi bi-check-circle-fill text-primary me-2"></i>
-                  Peer-reviewed and refereed journal
-                </li>
-                <li class="list-group-item d-flex align-items-center">
-                  <i class="bi bi-check-circle-fill text-primary me-2"></i>
-                  Interdisciplinary research focus
-                </li>
-                <li class="list-group-item d-flex align-items-center">
-                  <i class="bi bi-check-circle-fill text-primary me-2"></i>
-                  Bi-annual publication
-                </li>
-                <li class="list-group-item d-flex align-items-center">
-                  <i class="bi bi-check-circle-fill text-primary me-2"></i>
-                  Open access to selected articles
-                </li>
-                <li class="list-group-item d-flex align-items-center">
-                  <i class="bi bi-check-circle-fill text-primary me-2"></i>
-                  Indexed in major academic databases
-                </li>
-              </ul>
+          <div class="stats-showcase">
+            <div class="stat-item">
+              <div class="stat-value">15+</div>
+              <div class="stat-desc">Years of Publishing</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">100+</div>
+              <div class="stat-desc">Research Papers</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">Global</div>
+              <div class="stat-desc">Reach & Impact</div>
             </div>
           </div>
         </div>
       </div>
     </div>
   </section>
-
-  <!-- Latest Issues -->
-  <section id="latest-issues" class="issues-section py-5 bg-light">
-    <div class="container py-5">
-      <h2 class="text-center fw-bold mb-5">
-        Latest <span class="text-primary">Issues</span>
-      </h2>
-      <div class="row g-4">
-        <div class="col-md-4" *ngFor="let issue of latestIssues">
-          <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body">
-              <h5 class="card-title">{{ issue.edition }}</h5>
-              <p class="card-text">
-                Volume {{ issue.volume }} No. {{ issue.number }}
-              </p>
-              <a
-                [routerLink]="['/journal', issue.id]"
-                class="btn btn-sm btn-outline-primary"
-                >View Issue</a
-              >
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="text-center mt-5">
-        <a routerLink="/journals" class="btn btn-primary px-4"
-          >View All Issues</a
-        >
-      </div>
-    </div>
-  </section>
-
-  <!-- Editorial Board -->
-  <section id="editorial-board" class="team-section py-5 bg-white">
-    <div class="container py-5">
-      <h2 class="text-center fw-bold mb-5">
-        Our <span class="text-primary">Editorial Team</span>
-      </h2>
-      <div class="row g-4">
-        <div class="col-md-4">
-          <div class="card border-0 shadow-sm h-100">
-            <div class="card-body text-center p-4">
-              <img
-                src="https://via.placeholder.com/150"
-                class="rounded-circle mb-3"
-                alt="Editor"
-              />
-              <h5 class="card-title">Dr. Rajesh Kumar</h5>
-              <p class="card-text text-muted">Editor-in-Chief</p>
-              <p class="card-text">
-                Professor of Development Studies, IDS Varanasi
-              </p>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="card border-0 shadow-sm h-100">
-            <div class="card-body text-center p-4">
-              <img
-                src="https://via.placeholder.com/150"
-                class="rounded-circle mb-3"
-                alt="Editor"
-              />
-              <h5 class="card-title">Dr. Priya Sharma</h5>
-              <p class="card-text text-muted">Associate Editor</p>
-              <p class="card-text">
-                Professor of Economics, University of Delhi
-              </p>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="card border-0 shadow-sm h-100">
-            <div class="card-body text-center p-4">
-              <img
-                src="https://via.placeholder.com/150"
-                class="rounded-circle mb-3"
-                alt="Editor"
-              />
-              <h5 class="card-title">Dr. Amit Patel</h5>
-              <p class="card-text text-muted">Managing Editor</p>
-              <p class="card-text">Research Director, IDS Varanasi</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="text-center mt-5">
-        <a href="#" class="btn btn-outline-primary px-4"
-          >View Full Editorial Board</a
-        >
-      </div>
-    </div>
-  </section>
-
-  <!-- Footer -->
 </div>

@@ -1,81 +1,399 @@
-.home-page {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    .hero-section {
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      position: relative;
-      overflow: hidden;
-      
-      &::before {
-        content: '';
-        position: absolute;
-        top: -50px;
-        right: -50px;
-        width: 200px;
-        height: 200px;
-        background-color: rgba(13, 110, 253, 0.1);
-        border-radius: 50%;
-      }
-      
-      &::after {
-        content: '';
-        position: absolute;
-        bottom: -100px;
-        left: -100px;
-        width: 300px;
-        height: 300px;
-        background-color: rgba(13, 110, 253, 0.05);
-        border-radius: 50%;
-      }
+// Modern Home Page - Balanced and Professional
+.modern-home-fixed {
+  
+  // Hero Section - Compact but Professional
+  .hero-section-fixed {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    position: relative;
+    padding: 30px 0; // Much more compact - reduced from 60px
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.1);
     }
     
-    .about-section {
+    .container {
       position: relative;
-      
-      .card {
-        transition: transform 0.3s ease;
+      z-index: 2;
+    }
+    
+    .hero-content {
+      .badge-modern {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 0.4rem 1rem; // Smaller padding
+        border-radius: 20px; // Smaller radius
+        font-size: 0.85rem; // Smaller font
+        font-weight: 600;
+        margin-bottom: 1rem; // Reduced margin
         
-        &:hover {
-          transform: translateY(-5px);
+        i {
+          color: #ffd700;
+        }
+      }
+      
+      .hero-title {
+        font-size: clamp(1.8rem, 4vw, 2.8rem); // Significantly smaller
+        font-weight: 800;
+        line-height: 1.1; // Tighter
+        margin-bottom: 0.8rem; // Reduced margin
+        
+        .title-primary {
+          display: block;
+          font-size: 0.55em; // Smaller
+          font-weight: 600;
+          opacity: 0.9;
+        }
+        
+        .title-highlight {
+          display: block;
+          background: linear-gradient(135deg, #ffd700, #ffed4e);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          position: relative;
+        }
+      }
+      
+      .hero-description {
+        font-size: 1rem; // Smaller
+        line-height: 1.5; // Tighter
+        opacity: 0.9;
+        margin-bottom: 2.4rem; // Increased margin to compensate for removed stats
+        max-width: 450px; // Smaller max width
+      }
+      
+
+      
+      .hero-buttons {
+        display: flex;
+        gap: 0.8rem; // Reduced gap
+        flex-wrap: wrap;
+        
+        .btn-primary-custom {
+          background: linear-gradient(135deg, #ffd700, #ffed4e);
+          border: none;
+          color: #1a1a1a;
+          padding: 0.6rem 1.4rem; // Smaller padding
+          font-weight: 600;
+          font-size: 0.9rem; // Smaller font
+          border-radius: 20px; // Smaller radius
+          transition: all 0.3s ease;
+          
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+            color: #1a1a1a;
+          }
+        }
+        
+        .btn-outline-custom {
+          background: transparent;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          color: white;
+          padding: 0.6rem 1.4rem; // Smaller padding
+          font-weight: 600;
+          font-size: 0.9rem; // Smaller font
+          border-radius: 20px; // Smaller radius
+          transition: all 0.3s ease;
+          
+          &:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.5);
+            color: white;
+            transform: translateY(-2px);
+          }
         }
       }
     }
     
-    .issues-section {
-      .card {
-        transition: all 0.3s ease;
+    .hero-visual {
+      .latest-issue-card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 15px; // Smaller radius
+        padding: 1.2rem; // Much smaller padding
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1); // Reduced shadow
         
-        &:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+        .card-badge {
+          background: linear-gradient(135deg, #ffd700, #ffed4e);
+          color: #1a1a1a;
+          padding: 0.3rem 0.8rem; // Smaller
+          border-radius: 12px; // Smaller
+          font-size: 0.75rem; // Smaller
+          font-weight: 600;
+          display: inline-block;
+          margin-bottom: 0.8rem; // Reduced
         }
-      }
-    }
-    
-    .team-section {
-      .card {
-        transition: all 0.3s ease;
         
-        &:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+        .issue-title {
+          font-size: 1.1rem; // Smaller
+          font-weight: 700;
+          margin-bottom: 0.8rem; // Reduced
+          line-height: 1.3;
         }
-      }
-    }
-    
-    .cta-section {
-      background: linear-gradient(135deg, #0d6efd 0%, #084298 100%);
-      position: relative;
-      overflow: hidden;
-      
-      &::before {
-        content: '';
-        position: absolute;
-        top: -100px;
-        right: -100px;
-        width: 300px;
-        height: 300px;
-        background-color: rgba(255, 255, 255, 0.1);
-        border-radius: 50%;
+        
+        .issue-meta {
+          display: flex;
+          flex-direction: column;
+          gap: 0.4rem; // Reduced gap
+          margin-bottom: 1rem; // Reduced
+          font-size: 0.85rem; // Smaller
+          opacity: 0.9;
+          
+          span {
+            display: flex;
+            align-items: center;
+          }
+        }
+        
+        .btn-read-now {
+          background: rgba(255, 255, 255, 0.2);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          color: white;
+          padding: 0.6rem 1.2rem; // Smaller padding
+          border-radius: 12px; // Smaller radius
+          font-weight: 600;
+          font-size: 0.9rem; // Smaller font
+          width: 100%;
+          transition: all 0.3s ease;
+          
+          &:hover {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            transform: translateY(-2px);
+          }
+        }
       }
     }
   }
+
+  // Publications Section - Balanced
+  .publications-section {
+    padding: 4rem 0; // Balanced padding
+    background: #f8fafc;
+    
+    .section-header {
+      margin-bottom: 3rem; // Good separation
+      
+      .section-title {
+        font-size: 2.2rem; // Readable but not huge
+        font-weight: 800;
+        color: #1e293b;
+        margin-bottom: 1rem;
+      }
+      
+      .section-subtitle {
+        font-size: 1.1rem; // Readable
+        color: #64748b;
+        max-width: 580px;
+        margin: 0 auto;
+      }
+    }
+    
+    .publication-card {
+      background: white;
+      border-radius: 15px; // Nice rounded corners
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      height: 100%;
+      
+      &:hover {
+        transform: translateY(-4px); // Nice hover effect
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+      }
+      
+      .card-body {
+        padding: 1.8rem; // Good internal spacing
+        
+        .card-title {
+          font-size: 1.2rem; // Readable
+          font-weight: 700;
+          color: #1e293b;
+          margin-bottom: 1rem;
+          line-height: 1.4;
+        }
+        
+        .card-meta {
+          margin-bottom: 1rem;
+          
+          .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem; // Readable
+            color: #64748b;
+            margin-bottom: 0.5rem;
+          }
+        }
+        
+        .card-description {
+          color: #64748b;
+          line-height: 1.6; // Comfortable reading
+          margin-bottom: 1.5rem;
+          font-size: 1rem; // Standard readable size
+        }
+        
+        .btn {
+          border-radius: 10px;
+          font-weight: 600;
+          padding: 0.75rem 1.5rem; // Good button size
+          font-size: 1rem; // Standard size
+        }
+      }
+    }
+  }
+
+  // About Section - Balanced
+  .about-section {
+    padding: 4rem 0; // Balanced padding
+    
+    .about-content {
+      .about-title {
+        font-size: 2.2rem; // Readable but not huge
+        font-weight: 800;
+        color: #1e293b;
+        margin-bottom: 1.2rem;
+        line-height: 1.2;
+      }
+      
+      .about-text {
+        font-size: 1.1rem; // Readable
+        color: #64748b;
+        line-height: 1.7; // Comfortable reading
+        margin-bottom: 2.2rem;
+      }
+      
+      .features-list {
+        margin-bottom: 2.2rem;
+        
+        .feature-item {
+          display: flex;
+          gap: 1rem; // Good spacing
+          margin-bottom: 1.4rem;
+          
+          .feature-icon {
+            width: 45px; // Good size - not too big, not too small
+            height: 45px;
+            background: var(--bs-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            
+            i {
+              font-size: 1.3rem; // Good icon size
+              color: white;
+            }
+          }
+          
+          .feature-content {
+            h5 {
+              font-weight: 600;
+              color: #1e293b;
+              margin-bottom: 0.4rem;
+              font-size: 1.1rem; // Readable
+            }
+            
+            p {
+              color: #64748b;
+              margin: 0;
+              line-height: 1.5;
+              font-size: 1rem; // Standard readable size
+            }
+          }
+        }
+      }
+    }
+    
+    .stats-showcase {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.8rem; // Good spacing
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      padding: 2.5rem 2rem; // Good internal spacing
+      border-radius: 18px;
+      color: white;
+      
+      .stat-item {
+        text-align: center;
+        
+        .stat-value {
+          font-size: 2.2rem; // Good size - impactful but not overwhelming
+          font-weight: 800;
+          display: block;
+          margin-bottom: 0.4rem;
+        }
+        
+        .stat-desc {
+          opacity: 0.9;
+          font-weight: 500;
+          font-size: 1rem; // Readable
+        }
+      }
+    }
+  }
+
+  // Responsive Design
+  @media (max-width: 992px) {
+    .hero-section-fixed {
+      padding: 25px 0; // Even more compact on tablet
+      text-align: center;
+      
+      .hero-visual {
+        margin-top: 1.5rem; // Reduced
+      }
+    }
+    
+    .publications-section,
+    .about-section {
+      padding: 3rem 0; // Good mobile padding
+    }
+    
+    .about-section {
+      .row {
+        flex-direction: column-reverse;
+        
+        .col-lg-6:first-child {
+          margin-top: 2rem;
+        }
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    .hero-section-fixed {
+      padding: 20px 0; // Very compact on mobile
+      
+      .hero-buttons {
+        justify-content: center;
+        
+        .btn-primary-custom,
+        .btn-outline-custom {
+          width: 100%;
+          margin-bottom: 0.4rem; // Reduced
+        }
+      }
+    }
+    
+    .stats-showcase {
+      padding: 2rem 1.5rem !important;
+      gap: 1.5rem !important;
+    }
+    
+    .publication-card .card-body {
+      padding: 1.5rem !important;
+    }
+  }
+}

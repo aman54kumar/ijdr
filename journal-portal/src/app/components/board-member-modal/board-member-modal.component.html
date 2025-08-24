@@ -1,0 +1,142 @@
+<!-- Modal Backdrop -->
+<div
+  *ngIf="isModalOpen && selectedMember"
+  class="modal-backdrop"
+  (click)="onBackdropClick($event)"
+  (keydown)="onKeyDown($event)"
+  tabindex="-1"
+>
+  <!-- Modal Container -->
+  <div class="modal-container">
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <div class="member-header-info">
+        <!-- Avatar -->
+        <div class="member-avatar-large">
+          <div
+            *ngIf="!selectedMember.imageUrl"
+            class="avatar-placeholder-large"
+          >
+            <i
+              class="bi"
+              [class.bi-award]="selectedMember.position === 'Patron'"
+              [class.bi-person-fill]="selectedMember.position !== 'Patron'"
+            ></i>
+          </div>
+          <img
+            *ngIf="selectedMember.imageUrl"
+            [src]="selectedMember.imageUrl"
+            [alt]="selectedMember.name"
+            class="member-image-large"
+          />
+        </div>
+
+        <!-- Basic Info -->
+        <div class="member-basic-info">
+          <h2 class="member-name-large">{{ selectedMember.name }}</h2>
+          <h3 class="member-position-large">{{ selectedMember.position }}</h3>
+          <p
+            class="member-affiliation-large"
+            *ngIf="selectedMember.affiliation"
+          >
+            {{ selectedMember.affiliation }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Close Button -->
+      <button class="close-btn" (click)="closeModal()" aria-label="Close modal">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="modal-body">
+      <!-- Bio Section -->
+      <div *ngIf="selectedMember.bio" class="bio-section">
+        <h4 class="section-title">
+          <i class="bi bi-person-lines-fill me-2"></i>
+          Professional Summary
+        </h4>
+        <div class="section-content">
+          <div
+            *ngIf="
+              selectedMember.bioContentType === 'text' ||
+              !selectedMember.bioContentType
+            "
+            class="bio-text"
+          >
+            {{ getContentAsString(selectedMember.bio) }}
+          </div>
+          <ul *ngIf="selectedMember.bioContentType === 'list'" class="bio-list">
+            <li *ngFor="let item of getContentAsArray(selectedMember.bio)">
+              {{ item }}
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Dynamic Sections -->
+      <div
+        *ngFor="let section of selectedMember.dynamicSections"
+        class="dynamic-section"
+      >
+        <h4 class="section-title">
+          <i class="bi bi-list-ul me-2"></i>
+          {{ section.heading }}
+        </h4>
+        <div class="section-content">
+          <div *ngIf="section.contentType === 'text'" class="section-text">
+            {{ section.content }}
+          </div>
+          <ul *ngIf="section.contentType === 'list'" class="section-list">
+            <li *ngFor="let item of getContentAsArray(section.content)">
+              {{ item }}
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Contact Information -->
+      <div
+        *ngIf="selectedMember.email || selectedMember.phone"
+        class="contact-section"
+      >
+        <h4 class="section-title">
+          <i class="bi bi-envelope-at me-2"></i>
+          Contact Information
+        </h4>
+        <div class="section-content">
+          <div class="contact-info">
+            <div *ngIf="selectedMember.email" class="contact-item">
+              <i class="bi bi-envelope-fill"></i>
+              <a [href]="'mailto:' + selectedMember.email" class="contact-link">
+                {{ selectedMember.email }}
+              </a>
+            </div>
+            <div *ngIf="selectedMember.phone" class="contact-item">
+              <i class="bi bi-telephone-fill"></i>
+              <a [href]="'tel:' + selectedMember.phone" class="contact-link">
+                {{ selectedMember.phone }}
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Footer (Admin Controls) -->
+    <div *ngIf="isAdmin()" class="modal-footer">
+      <div class="admin-actions">
+        <button
+          class="btn btn-primary"
+          (click)="editBoardMember()"
+          title="Edit Member"
+        >
+          <i class="bi bi-pencil me-2"></i>
+          Edit Member
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

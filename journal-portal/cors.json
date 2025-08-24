@@ -1,0 +1,13 @@
+[
+  {
+    "origin": [
+      "http://localhost:4200",
+      "http://localhost:3000",
+      "https://ijdr-e41d4.web.app",
+      "https://ijdr-e41d4.firebaseapp.com"
+    ],
+    "method": ["GET", "HEAD"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": ["Content-Type", "Content-Length", "Content-Range"]
+  }
+]

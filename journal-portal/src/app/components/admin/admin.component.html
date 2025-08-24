@@ -1,0 +1,1200 @@
+<div class="admin-panel">
+  <div class="container-fluid">
+    <!-- Header -->
+    <div class="admin-header p-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <h1 class="admin-title">IJDR Admin Panel</h1>
+
+        <nav class="admin-nav">
+          <button
+            class="btn btn-outline-primary me-2"
+            [class.active]="currentView === 'journals'"
+            (click)="setView('journals')"
+          >
+            <i class="bi bi-journal-text me-1"></i>
+            Journals
+          </button>
+          <button
+            class="btn btn-outline-warning me-2"
+            [class.active]="currentView === 'admin-management'"
+            (click)="setView('admin-management')"
+          >
+            <i class="bi bi-people-fill me-1"></i>
+            Admin Management
+          </button>
+          <button
+            class="btn btn-outline-info me-2"
+            [class.active]="currentView === 'board-management'"
+            (click)="setView('board-management')"
+          >
+            <i class="bi bi-person-badge me-1"></i>
+            Editorial Board
+          </button>
+          <a routerLink="/" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-house me-1"></i>
+            View Site
+          </a>
+
+          <!-- User Info and Logout -->
+          <div class="user-menu dropdown">
+            <button
+              class="btn btn-outline-light dropdown-toggle"
+              type="button"
+              id="userMenuButton"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <i class="bi bi-person-circle me-1"></i>
+              {{ getUserDisplayName() }}
+            </button>
+            <ul
+              class="dropdown-menu dropdown-menu-end"
+              aria-labelledby="userMenuButton"
+            >
+              <li>
+                <span class="dropdown-item-text">
+                  <small class="text-muted">Signed in as</small><br />
+                  <strong>{{ currentUser?.email }}</strong>
+                </span>
+              </li>
+              <li><hr class="dropdown-divider" /></li>
+              <li>
+                <button class="dropdown-item text-danger" (click)="logout()">
+                  <i class="bi bi-box-arrow-right me-2"></i>
+                  Sign Out
+                </button>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="admin-content p-4">
+      <!-- Journals View -->
+      <div *ngIf="currentView === 'journals'" class="journals-view">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2>Manage Journals</h2>
+          <button class="btn btn-primary" (click)="setView('create-journal')">
+            <i class="bi bi-plus-circle me-2"></i>
+            Add New Journal
+          </button>
+        </div>
+
+        <!-- Loading State -->
+        <div *ngIf="loading" class="text-center p-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2">Loading journals...</p>
+        </div>
+
+        <!-- No Journals -->
+        <div
+          *ngIf="!loading && journals.length === 0"
+          class="empty-organized-state text-center p-4"
+        >
+          <div class="empty-icon">
+            <i class="bi bi-journal-plus display-1 text-muted mb-3"></i>
+          </div>
+          <h4 class="mb-3">No Journals Yet</h4>
+          <p class="text-muted mb-4">
+            Start building your journal collection. Journals will be organized
+            by year with up to 2 editions (January-June and July-December) per
+            year.
+          </p>
+          <button class="btn btn-primary" (click)="setView('create-journal')">
+            <i class="bi bi-plus-circle me-2"></i>
+            Create First Journal
+          </button>
+        </div>
+
+        <!-- Journals List -->
+        <div *ngIf="!loading && journals.length > 0" class="journals-organized">
+          <div class="year-journals-grid">
+            <div *ngFor="let journal of journals" class="journal-card-compact">
+              <!-- Edition Type Badge -->
+              <div
+                class="edition-type"
+                [class.jan-jun]="journal.edition === 'January-June'"
+                [class.jul-dec]="journal.edition === 'July-December'"
+              >
+                {{
+                  journal.edition === "July-December" ? "Jul-Dec" : "Jan-Jun"
+                }}
+              </div>
+
+              <!-- Journal Info -->
+              <div class="journal-info">
+                <h5 class="journal-title-compact">{{ journal.title }}</h5>
+
+                <div class="journal-details">
+                  <span class="volume-badge">
+                    <i class="bi bi-book"></i>
+                    Vol {{ journal.volume }}, #{{ journal.number }}
+                  </span>
+
+                  <span class="file-info" *ngIf="journal.pdfFileName">
+                    <i class="bi bi-file-earmark-pdf text-danger"></i>
+                    {{ journal.pdfFileName | slice : 0 : 20
+                    }}{{
+                      journal.pdfFileName && journal.pdfFileName.length > 20
+                        ? "..."
+                        : ""
+                    }}
+                    <small *ngIf="journal.fileSize">
+                      ({{ formatFileSize(journal.fileSize) }})
+                    </small>
+                  </span>
+                </div>
+
+                <p class="journal-desc" *ngIf="journal.description">
+                  {{ journal.description | slice : 0 : 80
+                  }}{{ journal.description.length > 80 ? "..." : "" }}
+                </p>
+              </div>
+
+              <!-- Actions -->
+              <div class="journal-actions-compact">
+                <button
+                  class="btn btn-sm btn-primary"
+                  (click)="openPDFInNewTab(journal)"
+                  title="View PDF"
+                >
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-secondary"
+                  (click)="editJournal(journal)"
+                  title="Edit"
+                >
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-danger"
+                  (click)="deleteJournal(journal)"
+                  title="Delete"
+                >
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create/Edit Journal View -->
+      <div *ngIf="currentView === 'create-journal'" class="create-journal-view">
+        <div class="d-flex align-items-center mb-4">
+          <button
+            class="btn btn-outline-secondary me-3"
+            (click)="setView('journals')"
+          >
+            <i class="bi bi-arrow-left"></i>
+          </button>
+          <h2>{{ selectedJournal ? "Edit" : "Create New" }} Journal</h2>
+        </div>
+
+        <div class="row">
+          <div class="col-lg-8">
+            <div class="card">
+              <div class="card-body">
+                <form [formGroup]="journalForm" (ngSubmit)="saveJournal()">
+                  <!-- Edition Selection -->
+                  <div class="mb-3">
+                    <label class="form-label">Edition *</label>
+                    <div class="form-check-group">
+                      <div class="form-check form-check-inline">
+                        <input
+                          class="form-check-input"
+                          type="radio"
+                          id="edition-jan-jun"
+                          formControlName="edition"
+                          value="January-June"
+                        />
+                        <label class="form-check-label" for="edition-jan-jun">
+                          January-June
+                        </label>
+                      </div>
+                      <div class="form-check form-check-inline">
+                        <input
+                          class="form-check-input"
+                          type="radio"
+                          id="edition-jul-dec"
+                          formControlName="edition"
+                          value="July-December"
+                        />
+                        <label class="form-check-label" for="edition-jul-dec">
+                          July-December
+                        </label>
+                      </div>
+                    </div>
+                    <div
+                      *ngIf="
+                        journalForm.get('edition')?.invalid &&
+                        journalForm.get('edition')?.touched
+                      "
+                      class="text-danger small mt-1"
+                    >
+                      Edition is required
+                    </div>
+                  </div>
+
+                  <!-- Auto-Generated Title Preview -->
+                  <div class="mb-3" *ngIf="getGeneratedTitle()">
+                    <label class="form-label">Generated Title</label>
+                    <div class="form-control-plaintext bg-light p-2 rounded">
+                      <strong>{{ getGeneratedTitle() }}</strong>
+                    </div>
+                    <small class="text-muted">
+                      This title is automatically generated from Edition and
+                      Year
+                    </small>
+                  </div>
+
+                  <div class="row">
+                    <!-- Volume -->
+                    <div class="col-md-4 mb-3">
+                      <label for="volume" class="form-label">Volume *</label>
+                      <input
+                        type="number"
+                        class="form-control"
+                        id="volume"
+                        formControlName="volume"
+                        placeholder="e.g., 15"
+                        min="1"
+                      />
+                      <div
+                        *ngIf="
+                          journalForm.get('volume')?.invalid &&
+                          journalForm.get('volume')?.touched
+                        "
+                        class="text-danger small mt-1"
+                      >
+                        Volume is required
+                      </div>
+                    </div>
+
+                    <!-- Issue Number -->
+                    <div class="col-md-4 mb-3">
+                      <label for="number" class="form-label"
+                        >Issue Number *</label
+                      >
+                      <input
+                        type="number"
+                        class="form-control"
+                        id="number"
+                        formControlName="number"
+                        placeholder="e.g., 2"
+                        min="1"
+                      />
+                      <div
+                        *ngIf="
+                          journalForm.get('number')?.invalid &&
+                          journalForm.get('number')?.touched
+                        "
+                        class="text-danger small mt-1"
+                      >
+                        Issue number is required
+                      </div>
+                    </div>
+
+                    <!-- Year -->
+                    <div class="col-md-4 mb-3">
+                      <label for="year" class="form-label">Year *</label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="year"
+                        formControlName="year"
+                        placeholder="e.g., 2024"
+                        maxlength="4"
+                      />
+                      <div
+                        *ngIf="
+                          journalForm.get('year')?.invalid &&
+                          journalForm.get('year')?.touched
+                        "
+                        class="text-danger small mt-1"
+                      >
+                        Valid year is required (YYYY)
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- ISSN -->
+                  <div class="mb-3">
+                    <label for="ssn" class="form-label">ISSN</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="ssn"
+                      formControlName="ssn"
+                      placeholder="2249-104X"
+                      pattern="[0-9]{4}-[0-9]{3}[0-9XxA-Za-z]"
+                    />
+                    <div class="form-text">
+                      Default: 2249-104X. Format: NNNN-NNNC (where C can be
+                      digit or X)
+                    </div>
+                    <div
+                      *ngIf="
+                        journalForm.get('ssn')?.invalid &&
+                        journalForm.get('ssn')?.touched
+                      "
+                      class="text-danger small mt-1"
+                    >
+                      Please enter a valid ISSN format (e.g., 2249-104X)
+                    </div>
+                  </div>
+
+                  <!-- Description -->
+                  <div class="mb-3">
+                    <label for="description" class="form-label"
+                      >Description</label
+                    >
+                    <textarea
+                      class="form-control"
+                      id="description"
+                      rows="3"
+                      formControlName="description"
+                      placeholder="Brief description of this journal issue..."
+                    ></textarea>
+                    <div class="form-text">
+                      Optional description or notes about this journal
+                    </div>
+                  </div>
+
+                  <!-- PDF Upload -->
+                  <div class="mb-4">
+                    <label for="pdfFile" class="form-label">
+                      Journal PDF
+                      {{
+                        selectedJournal
+                          ? "(Leave empty to keep current file)"
+                          : "*"
+                      }}
+                    </label>
+                    <input
+                      type="file"
+                      class="form-control"
+                      id="pdfFile"
+                      accept=".pdf"
+                      (change)="onPDFSelect($event)"
+                    />
+                    <div class="form-text">
+                      Select the complete journal PDF file
+                    </div>
+
+                    <!-- Selected File Info -->
+                    <div *ngIf="selectedPDFFile" class="mt-2">
+                      <div class="alert alert-info">
+                        <i class="bi bi-file-earmark-pdf me-2"></i>
+                        <strong>{{ selectedPDFFile.name }}</strong>
+                        <small class="ms-2"
+                          >({{ formatFileSize(selectedPDFFile.size) }})</small
+                        >
+                      </div>
+                    </div>
+
+                    <!-- Current File Info (for editing) -->
+                    <div
+                      *ngIf="selectedJournal && !selectedPDFFile"
+                      class="mt-2"
+                    >
+                      <div class="alert alert-secondary">
+                        <i class="bi bi-file-earmark-pdf me-2"></i>
+                        Current:
+                        <strong>{{ selectedJournal.pdfFileName }}</strong>
+                        <small class="ms-2" *ngIf="selectedJournal.fileSize">
+                          ({{ formatFileSize(selectedJournal.fileSize) }})
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Submit Buttons -->
+                  <div class="d-flex gap-2">
+                    <button
+                      type="submit"
+                      class="btn btn-success"
+                      [disabled]="
+                        uploading ||
+                        journalForm.invalid ||
+                        (!selectedJournal && !selectedPDFFile)
+                      "
+                    >
+                      <span
+                        *ngIf="uploading"
+                        class="spinner-border spinner-border-sm me-2"
+                      ></span>
+                      <i *ngIf="!uploading" class="bi bi-save me-2"></i>
+                      {{
+                        uploading
+                          ? "Saving..."
+                          : selectedJournal
+                          ? "Update"
+                          : "Create"
+                      }}
+                      Journal
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-secondary"
+                      (click)="setView('journals')"
+                      [disabled]="uploading"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+
+                  <!-- Validation Messages -->
+                  <div
+                    class="mt-2"
+                    *ngIf="
+                      !selectedJournal && !selectedPDFFile && journalForm.valid
+                    "
+                  >
+                    <div class="alert alert-warning">
+                      <i class="bi bi-exclamation-triangle me-2"></i>
+                      Please select a PDF file to create the journal.
+                    </div>
+                  </div>
+
+                  <div
+                    class="mt-2"
+                    *ngIf="journalForm.invalid && journalForm.touched"
+                  >
+                    <div class="alert alert-danger">
+                      <i class="bi bi-exclamation-circle me-2"></i>
+                      Please fill in all required fields correctly.
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Help/Info Panel -->
+          <div class="col-lg-4">
+            <div class="card">
+              <div class="card-header">
+                <i class="bi bi-info-circle me-2"></i>
+                Journal Information
+              </div>
+              <div class="card-body">
+                <h6>Required Fields:</h6>
+                <ul class="small">
+                  <li><strong>Title:</strong> Main journal title</li>
+                  <li><strong>Edition:</strong> Specific edition name</li>
+                  <li>
+                    <strong>Volume & Issue:</strong> Numerical identifiers
+                  </li>
+                  <li><strong>Year:</strong> Publication year</li>
+                  <li><strong>PDF File:</strong> Complete journal document</li>
+                </ul>
+
+                <h6 class="mt-3">Optional Fields:</h6>
+                <ul class="small">
+                  <li>
+                    <strong>ISSN:</strong> International Standard Serial Number
+                  </li>
+                  <li>
+                    <strong>Description:</strong> Additional notes or summary
+                  </li>
+                </ul>
+
+                <div class="alert alert-warning mt-3">
+                  <small>
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Users will be able to view the complete PDF directly in
+                    their browser.
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Management View -->
+      <div *ngIf="currentView === 'admin-management'">
+        <app-admin-management></app-admin-management>
+      </div>
+
+      <!-- Board Management Section -->
+      <div *ngIf="currentView === 'board-management'">
+        <div class="content-section">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Editorial Board Management</h2>
+            <button
+              class="btn btn-success"
+              (click)="resetBoardMemberForm(); setView('create-board-member')"
+            >
+              <i class="bi bi-person-plus me-2"></i>
+              Add Board Member
+            </button>
+          </div>
+
+          <!-- Loading State -->
+          <div *ngIf="loading" class="text-center p-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading board members...</span>
+            </div>
+          </div>
+
+          <!-- Board Members by Position -->
+          <div *ngIf="!loading" class="board-positions">
+            <div
+              *ngFor="let position of availablePositions"
+              class="position-section mb-4"
+            >
+              <ng-container
+                *ngIf="getBoardMembersByPosition(position).length > 0"
+              >
+                <h4 class="position-title">
+                  <i class="bi bi-chevron-right me-2"></i>
+                  {{ position }}
+                  <span class="badge bg-secondary ms-2">
+                    {{ getBoardMembersByPosition(position).length }}
+                  </span>
+                  <small class="text-muted ms-3">
+                    <i class="bi bi-arrows-move me-1"></i>
+                    Drag to reorder
+                  </small>
+                </h4>
+
+                <!-- Drag & Drop Container -->
+                <div
+                  cdkDropList
+                  [cdkDropListData]="getBoardMembersByPositionSorted(position)"
+                  (cdkDropListDropped)="onBoardMemberDrop($event, position)"
+                  class="drag-drop-list row g-3"
+                >
+                  <div
+                    *ngFor="
+                      let member of getBoardMembersByPositionSorted(position);
+                      trackBy: trackByMemberId
+                    "
+                    cdkDrag
+                    class="col-lg-6 col-12 drag-item"
+                  >
+                    <!-- Drag Preview -->
+                    <div *cdkDragPreview class="drag-preview">
+                      <div class="card shadow-lg">
+                        <div class="card-body p-3">
+                          <h6 class="mb-0">{{ member.name }}</h6>
+                          <small class="text-muted">{{
+                            member.affiliation
+                          }}</small>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Drag Placeholder -->
+                    <div *cdkDragPlaceholder class="drag-placeholder">
+                      <div class="card border-dashed">
+                        <div class="card-body p-4 text-center text-muted">
+                          <i class="bi bi-arrow-down-up"></i>
+                          Drop here
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Actual Member Card -->
+                    <div class="card board-member-card compact">
+                      <div class="card-body p-3">
+                        <div
+                          class="d-flex align-items-center justify-content-between mb-2"
+                        >
+                          <!-- Drag Handle -->
+                          <div
+                            class="drag-handle me-2"
+                            cdkDragHandle
+                            title="Drag to reorder"
+                          >
+                            <i class="bi bi-grip-vertical text-muted"></i>
+                          </div>
+
+                          <div class="member-info flex-grow-1">
+                            <div
+                              class="d-flex justify-content-between align-items-start"
+                            >
+                              <div>
+                                <h6 class="card-title mb-1 fw-bold">
+                                  {{ member.name }}
+                                  <span
+                                    class="badge bg-light text-dark ms-1 small"
+                                    >#{{ member.order }}</span
+                                  >
+                                </h6>
+                                <p
+                                  class="text-muted mb-1 small"
+                                  *ngIf="member.affiliation"
+                                >
+                                  {{ member.affiliation }}
+                                </p>
+                              </div>
+
+                              <div class="member-actions">
+                                <div class="btn-group">
+                                  <button
+                                    class="btn btn-outline-primary btn-sm"
+                                    (click)="editBoardMember(member)"
+                                    title="Edit Member"
+                                  >
+                                    <i class="bi bi-pencil"></i>
+                                  </button>
+                                  <button
+                                    class="btn btn-outline-danger btn-sm"
+                                    (click)="deleteBoardMember(member)"
+                                    title="Delete Member"
+                                  >
+                                    <i class="bi bi-trash"></i>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Compact Bio Display (truncated) -->
+                        <div *ngIf="member.bio" class="mb-2">
+                          <small class="text-secondary">
+                            <span
+                              *ngIf="
+                                member.bioContentType === 'text' ||
+                                !member.bioContentType
+                              "
+                            >
+                              {{
+                                getContentAsString(member.bio).length > 100
+                                  ? (getContentAsString(member.bio)
+                                      | slice : 0 : 100) + "..."
+                                  : getContentAsString(member.bio)
+                              }}
+                            </span>
+                            <span *ngIf="member.bioContentType === 'list'">
+                              <span
+                                *ngFor="
+                                  let item of getContentAsArray(member.bio);
+                                  let i = index
+                                "
+                              >
+                                •
+                                {{
+                                  item.length > 30
+                                    ? (item | slice : 0 : 30) + "..."
+                                    : item
+                                }}{{
+                                  i < getContentAsArray(member.bio).length - 1
+                                    ? ", "
+                                    : ""
+                                }}
+                              </span>
+                            </span>
+                          </small>
+                        </div>
+
+                        <!-- Dynamic Sections (compact) -->
+                        <div
+                          *ngIf="member.dynamicSections.length > 0"
+                          class="mb-2"
+                        >
+                          <small class="text-muted d-block mb-1">
+                            <i class="bi bi-list-ul me-1"></i>
+                            {{ member.dynamicSections.length }} additional
+                            section{{
+                              member.dynamicSections.length > 1 ? "s" : ""
+                            }}:
+                          </small>
+                          <div
+                            *ngFor="let section of member.dynamicSections"
+                            class="mb-1"
+                          >
+                            <small class="fw-bold text-secondary"
+                              >{{ section.heading }}:</small
+                            >
+                            <small class="text-muted d-block ps-2">
+                              <span *ngIf="section.contentType === 'text'">
+                                {{
+                                  getContentAsString(section.content).length >
+                                  60
+                                    ? (getContentAsString(section.content)
+                                        | slice : 0 : 60) + "..."
+                                    : getContentAsString(section.content)
+                                }}
+                              </span>
+                              <span *ngIf="section.contentType === 'list'">
+                                <span
+                                  *ngFor="
+                                    let item of getContentAsArray(
+                                      section.content
+                                    );
+                                    let i = index
+                                  "
+                                >
+                                  •
+                                  {{
+                                    item.length > 30
+                                      ? (item | slice : 0 : 30) + "..."
+                                      : item
+                                  }}{{
+                                    i <
+                                    getContentAsArray(section.content).length -
+                                      1
+                                      ? ", "
+                                      : ""
+                                  }}
+                                </span>
+                              </span>
+                            </small>
+                          </div>
+                        </div>
+
+                        <!-- Contact Info (compact) -->
+                        <div
+                          class="member-contact d-flex justify-content-between"
+                          *ngIf="member.email || member.phone"
+                        >
+                          <small class="text-muted">
+                            <span *ngIf="member.email">
+                              <i class="bi bi-envelope me-1"></i>
+                            </span>
+                            <span *ngIf="member.phone">
+                              <i class="bi bi-phone me-1"></i>
+                            </span>
+                          </small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div
+            *ngIf="!loading && boardMembers.length === 0"
+            class="empty-state text-center p-5"
+          >
+            <i class="bi bi-people display-4 text-muted mb-3"></i>
+            <h4>No Board Members</h4>
+            <p class="text-muted">Start by adding your first board member.</p>
+            <button
+              class="btn btn-primary"
+              (click)="resetBoardMemberForm(); setView('create-board-member')"
+            >
+              <i class="bi bi-person-plus me-2"></i>
+              Add First Member
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create/Edit Board Member Section -->
+      <div *ngIf="currentView === 'create-board-member'">
+        <div class="content-section create-board-member-form">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+              <i
+                class="bi bi-arrow-left me-2 cursor-pointer"
+                (click)="setView('board-management')"
+              ></i>
+              {{ editingBoardMember ? "Edit" : "Add" }} Board Member
+            </h2>
+            <button
+              class="btn btn-outline-secondary"
+              (click)="resetBoardMemberForm(); setView('board-management')"
+            >
+              <i class="bi bi-x-circle me-1"></i>
+              Cancel
+            </button>
+          </div>
+
+          <form
+            [formGroup]="boardMemberForm"
+            (ngSubmit)="
+              editingBoardMember ? updateBoardMember() : createBoardMember()
+            "
+          >
+            <div class="row">
+              <!-- Basic Information -->
+              <div class="col-lg-8">
+                <div class="card">
+                  <div class="card-header">
+                    <h5 class="mb-0">
+                      <i class="bi bi-person me-2"></i>
+                      Basic Information
+                    </h5>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          <label class="form-label">
+                            Name <span class="text-danger">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            class="form-control"
+                            formControlName="name"
+                            placeholder="Dr. John Doe"
+                          />
+                        </div>
+                      </div>
+
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          <label class="form-label">
+                            Position <span class="text-danger">*</span>
+                          </label>
+                          <select
+                            class="form-select"
+                            formControlName="position"
+                          >
+                            <option
+                              *ngFor="let position of availablePositions"
+                              [value]="position"
+                            >
+                              {{ position }}
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="mb-3">
+                      <label class="form-label">Affiliation</label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        formControlName="affiliation"
+                        placeholder="University/Institution Name"
+                      />
+                    </div>
+
+                    <div class="mb-3">
+                      <div class="row">
+                        <div class="col-md-8">
+                          <label class="form-label">Bio</label>
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label">Bio Format</label>
+                          <select
+                            class="form-select"
+                            formControlName="bioContentType"
+                            (change)="
+                              onBioContentTypeChange($any($event.target).value)
+                            "
+                          >
+                            <option value="text">Single Text</option>
+                            <option value="list">Bullet Points</option>
+                          </select>
+                        </div>
+                      </div>
+                      <textarea
+                        class="form-control"
+                        formControlName="bio"
+                        rows="4"
+                        [placeholder]="
+                          boardMemberForm.get('bioContentType')?.value ===
+                          'list'
+                            ? 'Enter each point on a new line...'
+                            : 'Brief professional summary...'
+                        "
+                      ></textarea>
+                      <div
+                        class="form-text"
+                        *ngIf="
+                          boardMemberForm.get('bioContentType')?.value ===
+                          'list'
+                        "
+                      >
+                        Enter each bio point on a separate line for bullet
+                        formatting
+                      </div>
+                    </div>
+
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          <label class="form-label">Email</label>
+                          <input
+                            type="email"
+                            class="form-control"
+                            formControlName="email"
+                            placeholder="email@example.com"
+                          />
+                        </div>
+                      </div>
+
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          <label class="form-label">Phone</label>
+                          <input
+                            type="tel"
+                            class="form-control"
+                            formControlName="phone"
+                            placeholder="+1 234 567 8900"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          <label class="form-label">
+                            Display Order <span class="text-danger">*</span>
+                          </label>
+                          <input
+                            type="number"
+                            class="form-control"
+                            formControlName="order"
+                            min="1"
+                            placeholder="1"
+                          />
+                          <div class="form-text">
+                            Lower numbers appear first within the position group
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          <div class="form-check mt-4">
+                            <input
+                              class="form-check-input"
+                              type="checkbox"
+                              formControlName="isActive"
+                              id="isActive"
+                            />
+                            <label class="form-check-label" for="isActive">
+                              Active (visible on website)
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Dynamic Sections -->
+                <div class="card mt-4">
+                  <div class="card-header">
+                    <div
+                      class="d-flex justify-content-between align-items-center"
+                    >
+                      <h5 class="mb-0">
+                        <i class="bi bi-list-ul me-2"></i>
+                        Dynamic Sections
+                      </h5>
+                      <button
+                        type="button"
+                        class="btn btn-outline-success btn-sm"
+                        (click)="addDynamicSection()"
+                      >
+                        <i class="bi bi-plus-circle me-1"></i>
+                        Add Section
+                      </button>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <div class="form-text mb-3">
+                      Add custom sections like "Previous Appointments",
+                      "Education", "Awards", etc.
+                    </div>
+
+                    <div
+                      *ngFor="
+                        let section of dynamicSectionsArray.controls;
+                        let i = index
+                      "
+                      class="section-item border rounded p-3 mb-3"
+                    >
+                      <div
+                        class="d-flex justify-content-between align-items-start mb-3"
+                      >
+                        <h6 class="mb-0">Section {{ i + 1 }}</h6>
+                        <button
+                          type="button"
+                          class="btn btn-outline-danger btn-sm"
+                          (click)="removeDynamicSection(i)"
+                        >
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+
+                      <div [formGroup]="$any(section)">
+                        <div class="row">
+                          <div class="col-md-8">
+                            <div class="mb-3">
+                              <label class="form-label">Section Heading</label>
+                              <input
+                                type="text"
+                                class="form-control"
+                                formControlName="heading"
+                                placeholder="Previous Appointments"
+                              />
+                            </div>
+                          </div>
+
+                          <div class="col-md-4">
+                            <div class="mb-3">
+                              <label class="form-label">Content Type</label>
+                              <select
+                                class="form-select"
+                                formControlName="contentType"
+                                (change)="
+                                  onContentTypeChange(
+                                    i,
+                                    $any($event.target).value
+                                  )
+                                "
+                              >
+                                <option value="text">Single Text</option>
+                                <option value="list">Bullet Points</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="mb-3">
+                          <label class="form-label">Content</label>
+                          <textarea
+                            class="form-control"
+                            formControlName="content"
+                            rows="4"
+                            [placeholder]="
+                              section.get('contentType')?.value === 'list'
+                                ? 'Enter each point on a new line...'
+                                : 'Enter content...'
+                            "
+                          ></textarea>
+                          <div
+                            class="form-text"
+                            *ngIf="section.get('contentType')?.value === 'list'"
+                          >
+                            Enter each bullet point on a separate line
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      *ngIf="dynamicSectionsArray.length === 0"
+                      class="text-center text-muted py-4"
+                    >
+                      <i class="bi bi-inbox display-6 mb-2"></i>
+                      <p>No dynamic sections added yet.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Image Upload & Actions -->
+              <div class="col-lg-4">
+                <div class="card">
+                  <div class="card-header">
+                    <h5 class="mb-0">
+                      <i class="bi bi-image me-2"></i>
+                      Photo
+                    </h5>
+                  </div>
+                  <div class="card-body">
+                    <div class="mb-3">
+                      <label class="form-label">Profile Image</label>
+                      <input
+                        type="file"
+                        class="form-control"
+                        accept="image/*"
+                        (change)="onBoardMemberImageSelect($event)"
+                      />
+                      <div class="form-text">
+                        Optional. Recommended: Square image, 300x300px
+                      </div>
+                    </div>
+
+                    <div
+                      *ngIf="selectedBoardMemberImage"
+                      class="alert alert-info"
+                    >
+                      <i class="bi bi-info-circle me-2"></i>
+                      <strong>Selected:</strong>
+                      {{ selectedBoardMemberImage.name }}
+                    </div>
+
+                    <div
+                      *ngIf="
+                        editingBoardMember && selectedBoardMember?.imageUrl
+                      "
+                      class="mb-3"
+                    >
+                      <label class="form-label">Current Image:</label>
+                      <img
+                        [src]="selectedBoardMember?.imageUrl || ''"
+                        alt="Current profile"
+                        class="img-thumbnail d-block"
+                        style="max-width: 150px; max-height: 150px"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="card mt-3">
+                  <div class="card-body">
+                    <div class="d-grid gap-2">
+                      <button
+                        type="submit"
+                        class="btn btn-success"
+                        [disabled]="uploading || boardMemberForm.invalid"
+                      >
+                        <span
+                          *ngIf="uploading"
+                          class="spinner-border spinner-border-sm me-2"
+                        ></span>
+                        <i
+                          *ngIf="!uploading"
+                          class="bi bi-check-circle me-2"
+                        ></i>
+                        {{
+                          uploading
+                            ? "Saving..."
+                            : editingBoardMember
+                            ? "Update Member"
+                            : "Create Member"
+                        }}
+                      </button>
+
+                      <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        (click)="
+                          resetBoardMemberForm(); setView('board-management')
+                        "
+                      >
+                        <i class="bi bi-x-circle me-2"></i>
+                        Cancel
+                      </button>
+                    </div>
+
+                    <div class="mt-3">
+                      <div class="form-text">
+                        <strong>Note:</strong> Changes will be reflected
+                        immediately on the Editorial Board page.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,231 @@
+<div class="advisory-board-page">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-background">
+      <div class="hero-bg-placeholder">
+        <div class="bg-pattern"></div>
+      </div>
+      <div class="hero-overlay"></div>
+    </div>
+    <div class="container">
+      <div class="hero-content text-center">
+        <h1 class="hero-title font-display">Advisory Board</h1>
+        <p class="hero-subtitle">
+          Distinguished scholars and thought leaders providing strategic
+          guidance to IJDR
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Loading State -->
+  <section *ngIf="loading" class="loading-section py-5">
+    <div class="container">
+      <div class="text-center">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading advisory board...</span>
+        </div>
+        <p class="mt-3 text-muted">Loading Advisory Board Members...</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Admin Controls -->
+  <section
+    *ngIf="!loading && isAdmin()"
+    class="admin-controls py-3 bg-light border-bottom"
+  >
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-shield-check text-primary me-2"></i>
+            <span class="fw-bold text-primary">Admin Mode</span>
+            <span class="badge bg-primary ms-2">Editing Enabled</span>
+          </div>
+          <small class="text-muted">
+            Click on any advisory board member to edit, or use the quick action
+            buttons.
+          </small>
+        </div>
+        <div class="col-md-4 text-md-end">
+          <button
+            class="btn btn-success btn-sm me-2"
+            (click)="addBoardMember()"
+          >
+            <i class="bi bi-person-plus me-1"></i>
+            Add Member
+          </button>
+          <a class="btn btn-primary btn-sm" routerLink="/admin">
+            <i class="bi bi-gear me-1"></i>
+            Admin Panel
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <div *ngIf="!loading">
+    <!-- Advisory Board Section -->
+    <section class="advisory-board-section">
+      <div class="container">
+        <div class="section-header text-center">
+          <h2 class="section-title">
+            Advisory <span class="gradient-text">Board</span>
+          </h2>
+          <p class="section-subtitle">
+            Esteemed academic leaders guiding our research direction and
+            strategic vision
+          </p>
+        </div>
+
+        <!-- Advisory Board Members -->
+        <div
+          *ngIf="
+            hasAnyMembersInPosition('Advisory Board Member');
+            else noMembers
+          "
+        >
+          <div class="row g-4">
+            <div
+              *ngFor="
+                let member of getBoardMembersByPosition(
+                  'Advisory Board Member'
+                );
+                let i = index
+              "
+              class="col-lg-6"
+            >
+              <div class="advisory-member-card modern-card compact">
+                <div class="member-avatar">
+                  <div *ngIf="!member.imageUrl" class="avatar-placeholder">
+                    <i class="bi bi-person-fill"></i>
+                  </div>
+                  <img
+                    *ngIf="member.imageUrl"
+                    [src]="member.imageUrl"
+                    [alt]="member.name"
+                    class="member-image"
+                  />
+                </div>
+                <div class="member-info">
+                  <div class="member-header">
+                    <h4 class="member-name">{{ member.name }}</h4>
+                    <p class="member-affiliation" *ngIf="member.affiliation">
+                      {{ member.affiliation }}
+                    </p>
+                  </div>
+
+                  <!-- Bio Preview -->
+                  <div *ngIf="member.bio" class="bio-preview">
+                    <p class="bio-text">{{ getTruncatedBio(member) }}</p>
+                  </div>
+
+                  <!-- Action Buttons -->
+                  <div class="card-actions">
+                    <button
+                      class="btn btn-primary btn-sm view-profile-btn"
+                      (click)="openMemberProfile(member)"
+                      *ngIf="hasAdditionalContent(member)"
+                    >
+                      <i class="bi bi-person-lines-fill me-1"></i>
+                      View Profile
+                    </button>
+                  </div>
+
+                  <!-- Admin Edit Controls -->
+                  <div *ngIf="isAdmin()" class="admin-edit-controls">
+                    <div class="d-flex gap-2">
+                      <button
+                        class="btn btn-outline-primary btn-sm"
+                        (click)="editBoardMember(member)"
+                        title="Edit Member"
+                      >
+                        <i class="bi bi-pencil me-1"></i>
+                        Edit
+                      </button>
+                      <button
+                        class="btn btn-outline-warning btn-sm"
+                        (click)="toggleMemberStatus(member)"
+                        title="Toggle Active Status"
+                      >
+                        <i
+                          class="bi bi-eye-slash me-1"
+                          *ngIf="member.isActive"
+                        ></i>
+                        <i class="bi bi-eye me-1" *ngIf="!member.isActive"></i>
+                        {{ member.isActive ? "Deactivate" : "Activate" }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- No Members State -->
+        <ng-template #noMembers>
+          <div class="no-members-state text-center py-5">
+            <div class="no-members-icon mb-4">
+              <i class="bi bi-people display-1 text-muted"></i>
+            </div>
+            <h3 class="mb-3 text-muted">Advisory Board Coming Soon</h3>
+            <p class="mb-4 text-muted">
+              We are in the process of assembling our distinguished Advisory
+              Board. Please check back soon for updates.
+            </p>
+            <div class="cta-buttons">
+              <a
+                routerLink="/editorial-board"
+                class="btn btn-outline-primary me-3"
+              >
+                <i class="bi bi-people me-2"></i>
+                View Editorial Board
+              </a>
+              <a routerLink="/about" class="btn btn-outline-secondary">
+                <i class="bi bi-info-circle me-2"></i>
+                Learn About IJDR
+              </a>
+            </div>
+          </div>
+        </ng-template>
+      </div>
+    </section>
+
+    <!-- Call to Action Section -->
+    <section
+      *ngIf="hasAnyMembersInPosition('Advisory Board Member')"
+      class="cta-section"
+    >
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 mx-auto text-center">
+            <h3 class="cta-title">Join Our Research Community</h3>
+            <p class="cta-subtitle">
+              Discover cutting-edge research and contribute to the advancement
+              of development studies
+            </p>
+            <div class="cta-buttons">
+              <a routerLink="/journals" class="btn btn-primary btn-lg me-3">
+                <i class="bi bi-journal-bookmark me-2"></i>
+                Browse Publications
+              </a>
+              <a
+                routerLink="/contribute"
+                class="btn btn-outline-primary btn-lg"
+              >
+                <i class="bi bi-file-earmark-plus me-2"></i>
+                Submit Research
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Board Member Modal -->
+  <app-board-member-modal></app-board-member-modal>
+</div>

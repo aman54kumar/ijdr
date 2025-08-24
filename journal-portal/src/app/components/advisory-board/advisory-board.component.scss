@@ -1,0 +1,352 @@
+.advisory-board-page {
+  // Hero Section - Modern gradient background
+  .hero-section {
+    position: relative;
+    height: 40vh;
+    min-height: 250px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    
+    .hero-background {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      
+      .hero-bg-placeholder {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+        position: relative;
+        
+        .bg-pattern {
+          position: absolute;
+          inset: 0;
+          background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="rgba(255,255,255,0.1)"><path d="m0 .5 32 32M32 .5 0 32"/></svg>');
+          background-size: 40px 40px;
+        }
+      }
+      
+      .hero-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.75);
+        z-index: 2;
+      }
+    }
+    
+    .hero-content {
+      color: white !important;
+      z-index: 10;
+      position: relative;
+      
+      .hero-title {
+        font-size: clamp(1.75rem, 5vw, 2.5rem);
+        font-weight: 800;
+        margin-bottom: var(--space-3);
+        color: white !important;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      }
+      
+      .hero-subtitle {
+        font-size: var(--text-lg);
+        margin-bottom: var(--space-4);
+        color: rgba(255, 255, 255, 0.95) !important;
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+        font-weight: 500;
+        line-height: 1.6;
+      }
+    }
+  }
+
+  // Loading Section
+  .loading-section {
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    .spinner-border {
+      width: 3rem;
+      height: 3rem;
+    }
+  }
+
+  // Admin Controls
+  .admin-controls {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+    border-bottom: 2px solid var(--primary-200) !important;
+    
+    .badge {
+      background: var(--primary-600) !important;
+    }
+  }
+
+  // Advisory Board Section
+  .advisory-board-section {
+    padding: var(--space-16) 0;
+    background: var(--secondary-50);
+    
+    .section-header {
+      text-align: center;
+      margin-bottom: var(--space-12);
+      
+      .section-title {
+        font-size: clamp(1.75rem, 4vw, 2.25rem);
+        font-weight: 800;
+        margin-bottom: var(--space-4);
+        color: var(--secondary-900);
+        
+        .gradient-text {
+          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+      }
+      
+      .section-subtitle {
+        font-size: var(--text-lg);
+        color: var(--secondary-600);
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.6;
+      }
+    }
+
+    // Advisory Member Cards
+    .advisory-member-card {
+      background: white;
+      border-radius: var(--radius-2xl);
+      border: 1px solid var(--secondary-200);
+      padding: var(--space-6);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        border-color: var(--primary-200);
+      }
+      
+      .member-avatar {
+        text-align: center;
+        margin-bottom: var(--space-4);
+        
+        .avatar-placeholder {
+          width: 80px;
+          height: 80px;
+          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto;
+          
+          i {
+            font-size: 2rem;
+            color: white;
+          }
+        }
+        
+        .member-image {
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 3px solid var(--primary-100);
+        }
+      }
+      
+      .member-info {
+        flex: 1;
+        text-align: center;
+        
+        .member-header {
+          margin-bottom: var(--space-4);
+          
+          .member-name {
+            font-size: var(--text-lg);
+            font-weight: 700;
+            color: var(--secondary-900);
+            margin-bottom: var(--space-1);
+          }
+          
+          .member-affiliation {
+            font-size: var(--text-sm);
+            color: var(--secondary-600);
+            margin: 0;
+            font-style: italic;
+          }
+        }
+        
+        .bio-preview {
+          margin-bottom: var(--space-4);
+          
+          .bio-text {
+            font-size: var(--text-sm);
+            color: var(--secondary-700);
+            line-height: 1.5;
+            margin: 0;
+          }
+        }
+        
+        .card-actions {
+          margin-bottom: var(--space-3);
+          
+          .view-profile-btn {
+            border-radius: var(--radius-lg);
+            font-weight: 600;
+            transition: all 0.2s ease;
+            
+            &:hover {
+              transform: translateY(-1px);
+              box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+            }
+          }
+        }
+        
+        .admin-edit-controls {
+          border-top: 1px solid var(--secondary-200);
+          padding-top: var(--space-3);
+          
+          .btn {
+            border-radius: var(--radius-md);
+            font-weight: 600;
+          }
+        }
+      }
+    }
+  }
+
+  // No Members State
+  .no-members-state {
+    padding: var(--space-16) 0;
+    
+    .no-members-icon {
+      opacity: 0.6;
+    }
+    
+    .cta-buttons {
+      .btn {
+        border-radius: var(--radius-lg);
+        font-weight: 600;
+        padding: var(--space-3) var(--space-6);
+      }
+    }
+  }
+
+  // Call to Action Section
+  .cta-section {
+    padding: var(--space-16) 0;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    
+    .cta-title {
+      font-size: clamp(1.5rem, 3vw, 1.75rem);
+      font-weight: 800;
+      color: var(--secondary-900);
+      margin-bottom: var(--space-3);
+    }
+    
+    .cta-subtitle {
+      font-size: var(--text-lg);
+      color: var(--secondary-600);
+      margin-bottom: var(--space-6);
+      line-height: 1.6;
+    }
+    
+    .cta-buttons {
+      .btn {
+        border-radius: var(--radius-lg);
+        font-weight: 600;
+        padding: var(--space-4) var(--space-8);
+        
+        &.btn-primary {
+          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+          border: none;
+          
+          &:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);
+          }
+        }
+        
+        &.btn-outline-primary {
+          border-color: var(--primary-500);
+          color: var(--primary-600);
+          
+          &:hover {
+            background: var(--primary-500);
+            border-color: var(--primary-500);
+            transform: translateY(-1px);
+          }
+        }
+      }
+    }
+  }
+
+  // Responsive Design
+  @media (max-width: 768px) {
+    .hero-section {
+      height: 30vh;
+      min-height: 200px;
+      
+      .hero-content {
+        .hero-title {
+          font-size: 1.75rem;
+        }
+        
+        .hero-subtitle {
+          font-size: var(--text-base);
+        }
+      }
+    }
+    
+    .advisory-board-section {
+      padding: var(--space-8) 0;
+      
+      .section-header {
+        margin-bottom: var(--space-8);
+        
+        .section-title {
+          font-size: 1.75rem;
+        }
+        
+        .section-subtitle {
+          font-size: var(--text-base);
+        }
+      }
+      
+      .advisory-member-card {
+        padding: var(--space-4);
+      }
+    }
+    
+    .cta-section {
+      padding: var(--space-8) 0;
+      
+      .cta-buttons {
+        .btn {
+          display: block;
+          width: 100%;
+          margin-bottom: var(--space-3);
+          
+          &:last-child {
+            margin-bottom: 0;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Global font display for better rendering
+.font-display {
+  font-display: swap;
+}
