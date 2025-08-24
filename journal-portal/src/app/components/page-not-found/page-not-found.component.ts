@@ -1,17 +1,27 @@
 import { Component } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 @Component({
-  standalone: true,
   selector: 'app-page-not-found',
-  imports: [CommonModule, RouterLink],
-  template: `
-    <div class="container text-center my-5">
-      <h1 class="display-1">404</h1>
-      <p class="lead">Page Not Found</p>
-      <a routerLink="/" class="btn btn-primary mt-3">Go Back Home</a>
-    </div>
-  `,
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterLink],
+  templateUrl: './page-not-found.component.html',
+  styleUrls: ['./page-not-found.component.scss'],
 })
-export class PageNotFoundComponent {}
+export class PageNotFoundComponent {
+  searchQuery: string = '';
+
+  constructor(private router: Router) {}
+
+  performSearch(): void {
+    if (this.searchQuery.trim()) {
+      // Navigate to journals page with search query
+      this.router.navigate(['/journals'], {
+        queryParams: { search: this.searchQuery.trim() },
+      });
+    }
+  }
+}

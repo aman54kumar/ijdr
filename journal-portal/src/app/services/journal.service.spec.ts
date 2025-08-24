@@ -1,13 +1,12 @@
 import { TestBed } from '@angular/core/testing';
+import { FirebaseJournalService } from './firebase-journal.service';
 
-import { JournalService } from './journal.service';
-
-describe('JournalService', () => {
-  let service: JournalService;
+describe('FirebaseJournalService', () => {
+  let service: FirebaseJournalService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(JournalService);
+    service = TestBed.inject(FirebaseJournalService);
   });
 
   it('should be created', () => {

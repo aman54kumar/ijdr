@@ -1,0 +1,112 @@
+<div class="pdf-viewer-container">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center py-5">
+    <div class="spinner-border text-primary mb-3" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <h5>Loading Journal...</h5>
+    <p class="text-muted">Please wait while we prepare your document.</p>
+  </div>
+
+  <!-- Error State -->
+  <div
+    *ngIf="error && !loading"
+    class="alert alert-danger mx-auto"
+    style="max-width: 600px"
+  >
+    <div class="d-flex align-items-center">
+      <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i>
+      <div>
+        <h6 class="alert-heading mb-1">Unable to Load PDF</h6>
+        <p class="mb-2">{{ error }}</p>
+        <button class="btn btn-outline-danger btn-sm" (click)="goBack()">
+          <i class="bi bi-arrow-left me-1"></i>
+          Go Back
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PDF Content -->
+  <div *ngIf="!loading && !error" class="pdf-content">
+    <!-- PDF.js Canvas Viewer (if loaded successfully) -->
+    <div *ngIf="pdfDocument && totalPages > 0" class="pdf-canvas-viewer">
+      <!-- Header -->
+      <div
+        class="pdf-header d-flex justify-content-between align-items-center mb-3"
+      >
+        <div>
+          <h4 class="mb-1">{{ journal?.title }}</h4>
+          <small class="text-muted"
+            >{{ journal?.edition }} - Volume {{ journal?.volume }}, Number
+            {{ journal?.number }} ({{ journal?.year }})</small
+          >
+        </div>
+        <button class="btn btn-secondary" (click)="goBack()">
+          <i class="bi bi-arrow-left me-2"></i>
+          Back to Journals
+        </button>
+      </div>
+
+      <!-- PDF Controls -->
+      <div
+        class="pdf-controls d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded"
+      >
+        <div class="btn-group">
+          <button
+            class="btn btn-outline-primary btn-sm"
+            (click)="previousPage()"
+            [disabled]="currentPage <= 1"
+          >
+            <i class="bi bi-chevron-left"></i>
+            Previous
+          </button>
+          <button
+            class="btn btn-outline-primary btn-sm"
+            (click)="nextPage()"
+            [disabled]="currentPage >= totalPages"
+          >
+            Next
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
+
+        <div class="page-info">
+          <span>Page {{ currentPage }} of {{ totalPages }}</span>
+        </div>
+
+        <div class="btn-group">
+          <button
+            class="btn btn-outline-secondary btn-sm"
+            (click)="zoomOut()"
+            [disabled]="scale <= 0.5"
+          >
+            <i class="bi bi-zoom-out"></i>
+          </button>
+          <span class="btn btn-outline-secondary btn-sm disabled"
+            >{{ Math.round(scale * 100) }}%</span
+          >
+          <button
+            class="btn btn-outline-secondary btn-sm"
+            (click)="zoomIn()"
+            [disabled]="scale >= 3"
+          >
+            <i class="bi bi-zoom-in"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- PDF Canvas -->
+      <div class="pdf-canvas-container text-center">
+        <canvas
+          #pdfCanvas
+          class="border border-secondary"
+          style="max-width: 100%; height: auto"
+        >
+        </canvas>
+      </div>
+    </div>
+
+    <!-- Iframe/Alternative content will be injected here if PDF.js fails -->
+  </div>
+</div>

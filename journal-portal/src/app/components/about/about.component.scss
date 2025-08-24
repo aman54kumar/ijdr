@@ -1,0 +1,925 @@
+// About Page - Modern, Beautiful Design
+.about-page {
+  // Beautiful gradient hero
+  .hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 4rem 0;
+    position: relative;
+    overflow: hidden;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" fill="none" stroke="rgba(255,255,255,0.1)"><circle cx="50" cy="50" r="40"/><path d="M20 50h60M50 20v60"/></svg>');
+      background-size: 80px 80px;
+      animation: float 25s ease-in-out infinite;
+      z-index: 1;
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.1);
+      z-index: 2;
+    }
+    
+    .container {
+      position: relative;
+      z-index: 3;
+    }
+    
+    .hero-content {
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto;
+      
+      .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 0.5rem 1.5rem;
+        border-radius: 25px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        color: white !important;
+        
+        i {
+          margin-right: 0.5rem;
+          color: #ffd700 !important;
+          font-size: 1rem;
+        }
+      }
+      
+      .hero-title {
+        font-size: clamp(2.5rem, 5vw, 4rem);
+        font-weight: 800;
+        margin-bottom: 1.5rem;
+        color: white !important;
+        text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        line-height: 1.1;
+      }
+      
+      .hero-subtitle {
+        font-size: 1.25rem;
+        color: rgba(255, 255, 255, 0.95) !important;
+        margin-bottom: 2rem;
+        font-weight: 500;
+        line-height: 1.6;
+      }
+      
+      .hero-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 2rem;
+        max-width: 600px;
+        margin: 0 auto;
+        
+        .stat-item {
+          .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #ffd700 !important;
+            display: block;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 0.5rem;
+          }
+          
+          .stat-label {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+        }
+      }
+    }
+  }
+
+  // Main content with beautiful styling
+  .container {
+    padding: 3rem 0;
+    
+    // Page header styling
+    .page-header {
+      text-align: center;
+      margin-bottom: 3rem;
+      
+      .page-title {
+        font-size: clamp(2rem, 4vw, 3rem);
+        font-weight: 800;
+        color: var(--secondary-900);
+        margin-bottom: 1rem;
+        position: relative;
+        display: inline-block;
+        
+        &::after {
+          content: '';
+          position: absolute;
+          bottom: -12px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 80px;
+          height: 4px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 2px;
+        }
+      }
+      
+      .page-subtitle {
+        font-size: 1.125rem;
+        color: var(--secondary-600);
+        font-weight: 500;
+      }
+    }
+    
+    // Institute section
+    .institute-section {
+      margin-bottom: 3rem;
+      
+      .section-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--secondary-900);
+        margin-bottom: 1.5rem;
+        position: relative;
+        
+        &::before {
+          content: '';
+          position: absolute;
+          left: -1rem;
+          top: 0;
+          bottom: 0;
+          width: 4px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 2px;
+        }
+      }
+      
+      .lead {
+        font-size: 1.125rem;
+        line-height: 1.7;
+        color: var(--secondary-700);
+        margin-bottom: 2rem;
+      }
+    }
+  }
+
+  // Content sections with enhanced styling
+  .content-section {
+    margin-bottom: 3rem;
+    
+    .section-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+      
+      .section-badge {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(102, 126, 234, 0.1);
+        color: #667eea;
+        padding: 0.5rem 1.25rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        border: 1px solid rgba(102, 126, 234, 0.2);
+        
+        i {
+          margin-right: 0.5rem;
+          color: #667eea;
+        }
+      }
+      
+      .section-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--secondary-900);
+        margin-bottom: 1rem;
+        position: relative;
+        
+        &::after {
+          content: '';
+          position: absolute;
+          bottom: -8px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 60px;
+          height: 3px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 2px;
+        }
+      }
+      
+      .section-subtitle {
+        font-size: 1rem;
+        color: var(--secondary-600);
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.6;
+      }
+    }
+  }
+
+  // Beautiful cards with modern design
+  .detail-card,
+  .type-card,
+  .activity-card,
+  .award-card {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    border: 1px solid rgba(102, 126, 234, 0.1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+    
+    &:hover {
+      border-color: rgba(102, 126, 234, 0.2);
+      box-shadow: 0 20px 25px -5px rgba(102, 126, 234, 0.15);
+      transform: translateY(-4px);
+      
+      &::before {
+        opacity: 1;
+      }
+      
+      .card-icon,
+      .detail-icon {
+        background: linear-gradient(135deg, #ffd700, #ffed4e);
+        transform: scale(1.1);
+        
+        i {
+          color: #1a1a1a;
+        }
+      }
+    }
+    
+    .card-icon,
+    .detail-icon {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+      transition: all 0.3s ease;
+      
+      i {
+        font-size: 1.5rem;
+        color: white;
+        transition: all 0.3s ease;
+      }
+    }
+    
+    .card-title,
+    .detail-content h4 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--secondary-900);
+      margin-bottom: 1rem;
+      transition: all 0.3s ease;
+    }
+    
+    .card-description,
+    .detail-content p {
+      color: var(--secondary-700);
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+    
+    .card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      
+      .meta-item {
+        background: rgba(102, 126, 234, 0.1);
+        color: #667eea;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: 1px solid rgba(102, 126, 234, 0.2);
+        transition: all 0.3s ease;
+        
+        &:hover {
+          background: linear-gradient(135deg, #ffd700, #ffed4e);
+          color: #1a1a1a;
+          border-color: rgba(255, 215, 0, 0.3);
+          transform: translateY(-1px);
+        }
+      }
+    }
+  }
+
+  // Journal information section
+  .journal-section {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    padding: 3rem;
+    border-radius: 20px;
+    margin: 3rem 0;
+    position: relative;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="60" height="60" fill="none" stroke="rgba(102,126,234,0.05)"><circle cx="30" cy="30" r="25"/><path d="M10 30h40M30 10v40"/></svg>');
+      background-size: 120px 120px;
+    }
+    
+    .container {
+      position: relative;
+      z-index: 2;
+    }
+    
+    .journal-info {
+      text-align: center;
+      
+      .journal-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--secondary-900);
+        margin-bottom: 1rem;
+      }
+      
+      .journal-description {
+        font-size: 1.125rem;
+        color: var(--secondary-700);
+        line-height: 1.6;
+        max-width: 600px;
+        margin: 0 auto 2rem;
+      }
+      
+      .journal-features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+        
+        .feature-item {
+          background: white;
+          padding: 1.5rem;
+          border-radius: 12px;
+          border: 1px solid rgba(102, 126, 234, 0.1);
+          
+          .feature-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            
+            i {
+              color: white;
+              font-size: 1.125rem;
+            }
+          }
+          
+          .feature-label {
+            font-weight: 600;
+            color: var(--secondary-900);
+            margin-bottom: 0.5rem;
+          }
+          
+          .feature-value {
+            color: var(--secondary-600);
+            font-size: 0.875rem;
+          }
+        }
+      }
+    }
+  }
+
+  // Yellow highlights and special elements
+  .highlight-text {
+    background: linear-gradient(135deg, #ffd700, #ffed4e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+  }
+
+  // CTA section with beautiful design
+  .cta-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 4rem 0;
+    position: relative;
+    margin: 3rem 0;
+    border-radius: 20px;
+    overflow: hidden;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.1);
+      z-index: 1;
+    }
+    
+    .container {
+      position: relative;
+      z-index: 2;
+    }
+    
+    .cta-content {
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto;
+      
+      .cta-title {
+        font-size: 2rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
+        color: white !important;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+      
+      .cta-description {
+        font-size: 1.125rem;
+        color: rgba(255, 255, 255, 0.95) !important;
+        margin-bottom: 2rem;
+        line-height: 1.6;
+      }
+      
+      .cta-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        
+        .btn {
+          padding: 0.875rem 2rem;
+          border-radius: 25px;
+          font-weight: 600;
+          text-decoration: none;
+          transition: all 0.3s ease;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 1rem;
+          
+          &.btn-yellow {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #1a1a1a;
+            border: none;
+            
+            &:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+            }
+          }
+          
+          &.btn-yellow-outline {
+            background: transparent;
+            color: #ffd700;
+            border: 2px solid #ffd700;
+            
+            &:hover {
+              background: linear-gradient(135deg, #ffd700, #ffed4e);
+              color: #1a1a1a;
+              border-color: #ffd700;
+              transform: translateY(-2px);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Institute showcase with modern styling
+  .institute-showcase {
+    .showcase-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      
+      .showcase-item {
+        text-align: center;
+        
+        .showcase-icon {
+          width: 80px;
+          height: 80px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 1.5rem;
+          transition: all 0.3s ease;
+          
+          i {
+            font-size: 2rem;
+            color: white;
+          }
+          
+          &:hover {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            transform: scale(1.1);
+            
+            i {
+              color: #1a1a1a;
+            }
+          }
+        }
+        
+        .showcase-title {
+          font-size: 1.25rem;
+          font-weight: 700;
+          color: var(--secondary-900);
+          margin-bottom: 1rem;
+        }
+        
+        .showcase-description {
+          color: var(--secondary-600);
+          line-height: 1.6;
+        }
+      }
+    }
+  }
+
+  // Enhanced Research Cards
+  .research-section {
+    .research-grid {
+      .research-card {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        border: 1px solid rgba(102, 126, 234, 0.1);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        height: 100%;
+        display: flex;
+        gap: 1.5rem;
+        
+        &::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          opacity: 0;
+          transition: all 0.3s ease;
+        }
+        
+        &:hover {
+          border-color: rgba(102, 126, 234, 0.2);
+          box-shadow: 0 20px 25px -5px rgba(102, 126, 234, 0.15);
+          transform: translateY(-4px);
+          
+          &::before {
+            opacity: 1;
+          }
+          
+          .research-icon {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            transform: scale(1.1);
+            
+            i {
+              color: #1a1a1a;
+            }
+          }
+        }
+        
+        .research-icon {
+          width: 60px;
+          height: 60px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          margin-top: 0.25rem;
+          transition: all 0.3s ease;
+          
+          i {
+            font-size: 1.5rem;
+            color: white;
+            transition: all 0.3s ease;
+          }
+        }
+        
+        .research-content {
+          flex: 1;
+          
+          .research-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--secondary-900);
+            margin-bottom: 0.5rem;
+            line-height: 1.3;
+          }
+          
+          .research-focus {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          
+          .research-description {
+            color: var(--secondary-700);
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            font-size: 0.875rem;
+          }
+          
+          .research-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            
+            .meta-item {
+              display: flex;
+              align-items: center;
+              gap: 0.25rem;
+              background: rgba(102, 126, 234, 0.1);
+              color: #667eea;
+              padding: 0.25rem 0.75rem;
+              border-radius: 12px;
+              font-size: 0.75rem;
+              font-weight: 600;
+              border: 1px solid rgba(102, 126, 234, 0.2);
+              transition: all 0.3s ease;
+              
+              i {
+                font-size: 0.75rem;
+              }
+              
+              &:hover {
+                background: linear-gradient(135deg, #ffd700, #ffed4e);
+                color: #1a1a1a;
+                border-color: rgba(255, 215, 0, 0.3);
+                transform: translateY(-1px);
+              }
+            }
+          }
+        }
+        
+        // Featured card (full width)
+        &.research-card-featured {
+          .research-icon {
+            width: 70px;
+            height: 70px;
+            
+            i {
+              font-size: 1.75rem;
+            }
+          }
+          
+          .research-content {
+            .research-title {
+              font-size: 1.25rem;
+            }
+            
+            .research-description {
+              font-size: 0.9rem;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Simplified Award Card
+  .awards-section {
+    .simple-award-card {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      border: 1px solid rgba(102, 126, 234, 0.1);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+      
+      &:hover {
+        box-shadow: 0 20px 25px -5px rgba(102, 126, 234, 0.15);
+        transform: translateY(-2px);
+        
+        .award-icon {
+          background: linear-gradient(135deg, #ffd700, #ffed4e);
+          transform: scale(1.1);
+          
+          i {
+            color: #1a1a1a;
+          }
+        }
+      }
+      
+      .award-content {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        
+        .award-icon {
+          width: 60px;
+          height: 60px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: all 0.3s ease;
+          
+          i {
+            font-size: 1.5rem;
+            color: white;
+            transition: all 0.3s ease;
+          }
+        }
+        
+        .award-text {
+          flex: 1;
+          
+          .award-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--secondary-900);
+            margin-bottom: 0.75rem;
+          }
+          
+          .award-description {
+            color: var(--secondary-700);
+            line-height: 1.6;
+            margin: 0;
+            font-size: 0.9rem;
+          }
+        }
+      }
+    }
+  }
+
+  // Responsive design
+  @media (max-width: 768px) {
+    .hero-section {
+      padding: 3rem 0;
+      
+      .hero-content {
+        .hero-title {
+          font-size: 2.5rem;
+        }
+        
+        .hero-subtitle {
+          font-size: 1rem;
+        }
+        
+        .hero-stats {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 1.5rem;
+          
+          .stat-item {
+            .stat-number {
+              font-size: 2rem;
+            }
+          }
+        }
+      }
+    }
+    
+    .container {
+      padding: 2rem 0;
+    }
+    
+    .detail-card,
+    .type-card,
+    .activity-card,
+    .award-card {
+      padding: 1.5rem;
+    }
+    
+    .journal-section {
+      padding: 2rem;
+      margin: 2rem 0;
+      
+      .journal-features {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+    }
+    
+    .cta-section {
+      padding: 3rem 0;
+      margin: 2rem 0;
+      
+      .cta-content {
+        .cta-title {
+          font-size: 1.5rem;
+        }
+        
+        .cta-buttons {
+          flex-direction: column;
+          align-items: center;
+        }
+      }
+    }
+    
+    .institute-showcase {
+      .showcase-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+    }
+
+    // Responsive design for research cards
+    @media (max-width: 768px) {
+      .research-section {
+        .research-grid {
+          .research-card {
+            flex-direction: column;
+            text-align: center;
+            gap: 1rem;
+            
+            .research-icon {
+              align-self: center;
+            }
+            
+            .research-content {
+              .research-meta {
+                justify-content: center;
+              }
+            }
+          }
+        }
+      }
+      
+      .awards-section {
+        .simple-award-card {
+          .award-content {
+            flex-direction: column;
+            text-align: center;
+            gap: 1rem;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Animations
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.1;
+  }
+  
+  50% {
+    transform: translateY(-15px) rotate(180deg);
+    opacity: 0.15;
+  }
+}
+

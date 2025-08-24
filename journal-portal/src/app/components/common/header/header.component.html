@@ -1,34 +1,45 @@
-<header class="header">
-  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+<header class="modern-header">
+  <nav class="navbar navbar-expand-lg">
     <div class="container">
+      <!-- Brand -->
       <a class="navbar-brand" routerLink="/">
-        <img
-          src="https://via.placeholder.com/50x70"
-          alt="IJDR Logo"
-          class="d-inline-block align-top me-2"
-        />
-        <div class="d-inline-block">
-          <span class="fw-bold d-block">INDIAN JOURNAL</span>
-          <span class="d-block">OF DEVELOPMENT RESEARCH</span>
-          <small class="text-muted d-block"
-            >Peer Reviewed Bi-annual Journal</small
-          >
+        <div class="brand-container">
+          <div class="logo-wrapper">
+            <!-- Academic logo with book/research theme -->
+            <div class="logo-container">
+              <div class="logo-placeholder">
+                <i class="bi bi-journal-bookmark-fill"></i>
+              </div>
+              <div class="logo-overlay">
+                <i class="bi bi-journal-bookmark-fill"></i>
+              </div>
+            </div>
+          </div>
+          <div class="brand-text">
+            <h1 class="brand-title font-display">IJDR</h1>
+            <p class="brand-subtitle">Development Research</p>
+          </div>
         </div>
       </a>
 
+      <!-- Mobile menu button -->
       <button
-        class="navbar-toggler"
+        class="navbar-toggler modern-toggler"
         type="button"
         (click)="isNavbarCollapsed = !isNavbarCollapsed"
         aria-controls="navbarNav"
         aria-expanded="false"
         aria-label="Toggle navigation"
       >
-        <span class="navbar-toggler-icon"></span>
+        <span class="toggler-line" [class.active]="!isNavbarCollapsed"></span>
+        <span class="toggler-line" [class.active]="!isNavbarCollapsed"></span>
+        <span class="toggler-line" [class.active]="!isNavbarCollapsed"></span>
       </button>
 
+      <!-- Navigation -->
       <div
-        [ngClass]="{ collapse: isNavbarCollapsed, 'navbar-collapse': true }"
+        [ngClass]="{ show: !isNavbarCollapsed }"
+        class="navbar-collapse collapse"
         id="navbarNav"
       >
         <ul class="navbar-nav ms-auto">
@@ -38,47 +49,106 @@
               routerLink="/"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
+              (click)="closeNavbar()"
             >
-              Home
+              <i class="bi bi-house-door"></i>
+              <span>Home</span>
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" routerLink="/journals" routerLinkActive="active"
-              >Journals</a
+            <a
+              class="nav-link"
+              routerLink="/journals"
+              routerLinkActive="active"
+              (click)="closeNavbar()"
             >
+              <i class="bi bi-journal-bookmark"></i>
+              <span>Journals</span>
+            </a>
           </li>
           <li
             class="nav-item dropdown"
             [class.show]="isDropdownOpen"
-            (mouseenter)="isDropdownOpen = true"
-            (mouseleave)="isDropdownOpen = false"
+            (mouseenter)="onDesktop() && (isDropdownOpen = true)"
+            (mouseleave)="onDesktop() && (isDropdownOpen = false)"
           >
             <a
               class="nav-link dropdown-toggle"
               href="#"
-              (click)="$event.preventDefault()"
+              (click)="$event.preventDefault(); toggleDropdown()"
               [attr.aria-expanded]="isDropdownOpen"
             >
-              About
+              <i class="bi bi-info-circle"></i>
+              <span>About</span>
             </a>
-            <ul class="dropdown-menu" [class.show]="isDropdownOpen">
-              <li><a class="dropdown-item" href="#">About IJDR</a></li>
+            <ul
+              class="dropdown-menu modern-dropdown"
+              [class.show]="isDropdownOpen"
+            >
               <li>
-                <a class="dropdown-item" href="#editorial-board"
-                  >Editorial Board</a
+                <a
+                  class="dropdown-item"
+                  routerLink="/about"
+                  (click)="closeNavbar()"
                 >
+                  <i class="bi bi-building"></i>
+                  About IJDR
+                </a>
               </li>
-              <li><a class="dropdown-item" href="#">Advisory Board</a></li>
+              <li>
+                <a
+                  class="dropdown-item"
+                  routerLink="/editorial-board"
+                  (click)="closeNavbar()"
+                >
+                  <i class="bi bi-people"></i>
+                  Editorial Board
+                </a>
+              </li>
+              <li>
+                <a
+                  class="dropdown-item"
+                  routerLink="/advisory-board"
+                  (click)="closeNavbar()"
+                >
+                  <i class="bi bi-shield-check"></i>
+                  Advisory Board
+                </a>
+              </li>
               <li><hr class="dropdown-divider" /></li>
-              <li><a class="dropdown-item" href="#">Publisher</a></li>
+              <li>
+                <a
+                  class="dropdown-item"
+                  routerLink="/publisher"
+                  (click)="closeNavbar()"
+                >
+                  <i class="bi bi-briefcase"></i>
+                  Publisher
+                </a>
+              </li>
             </ul>
           </li>
-          <!-- <li class="nav-item">
-            <a class="nav-link" href="#submission">Submission</a>
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              routerLink="/contribute"
+              (click)="closeNavbar()"
+            >
+              <i class="bi bi-file-earmark-plus"></i>
+              <span>Contribute</span>
+            </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#contact">Contact</a>
-          </li> -->
+            <a
+              class="nav-link"
+              routerLink="/contact"
+              routerLinkActive="active"
+              (click)="closeNavbar()"
+            >
+              <i class="bi bi-envelope"></i>
+              <span>Contact</span>
+            </a>
+          </li>
         </ul>
       </div>
     </div>

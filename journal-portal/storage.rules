@@ -1,0 +1,18 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow read access to all files for development
+    // TODO: Tighten these rules for production
+    match /{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Specific rules for board member images
+    match /boardMembers/{memberId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+} 

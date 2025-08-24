@@ -22,9 +22,22 @@ from graphene_django.views import GraphQLView
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import permissions
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
+from django.http import JsonResponse
+from django.db import connection
+
+def health_check(request):
+    """Health check endpoint for Docker health checks"""
+    try:
+        # Check database connection
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        return JsonResponse({'status': 'healthy', 'database': 'connected'})
+    except Exception as e:
+        return JsonResponse({'status': 'unhealthy', 'error': str(e)}, status=500)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/health/', health_check, name='health_check'),
     path('graphql/', GraphQLView.as_view(graphiql=True)),
     path('api/', include('journals.urls')),
     # Swagger + ReDoc

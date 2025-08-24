@@ -1,13 +1,89 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>JournalPortal</title>
-  <base href="/">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
-</head>
-<body>
-  <app-root></app-root>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <title>IJDR - Indian Journal of Development Research</title>
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+
+    <!-- SEO Meta Tags -->
+    <meta
+      name="description"
+      content="Indian Journal of Development Research (IJDR) - A premier bi-annual academic journal published by Institute of Development Studies, Varanasi. ISSN: 2249-104X"
+    />
+    <meta
+      name="keywords"
+      content="development research, academic journal, IJDR, Indian Journal of Development Research, peer-reviewed, academic publishing, research papers"
+    />
+    <meta name="author" content="Institute of Development Studies, Varanasi" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ijdrpub.in/" />
+    <meta
+      property="og:title"
+      content="IJDR - Indian Journal of Development Research"
+    />
+    <meta
+      property="og:description"
+      content="Premier bi-annual academic journal focusing on development research. Published by Institute of Development Studies, Varanasi. ISSN: 2249-104X"
+    />
+    <meta
+      property="og:image"
+      content="https://ijdrpub.in/assets/images/ijdr-social-preview.jpg"
+    />
+    <meta
+      property="og:site_name"
+      content="Indian Journal of Development Research"
+    />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://ijdrpub.in/" />
+    <meta
+      property="twitter:title"
+      content="IJDR - Indian Journal of Development Research"
+    />
+    <meta
+      property="twitter:description"
+      content="Premier bi-annual academic journal focusing on development research. Published by Institute of Development Studies, Varanasi. ISSN: 2249-104X"
+    />
+    <meta
+      property="twitter:image"
+      content="https://ijdrpub.in/assets/images/ijdr-social-preview.jpg"
+    />
+
+    <!-- Academic/Scholar Meta Tags -->
+    <meta
+      name="citation_journal_title"
+      content="Indian Journal of Development Research"
+    />
+    <meta name="citation_journal_abbrev" content="IJDR" />
+    <meta name="citation_issn" content="2249-104X" />
+    <meta
+      name="citation_publisher"
+      content="Institute of Development Studies, Varanasi"
+    />
+    <meta
+      name="DC.Publisher"
+      content="Institute of Development Studies, Varanasi"
+    />
+    <meta
+      name="DC.Rights"
+      content="Copyright Institute of Development Studies, Varanasi"
+    />
+
+    <!-- PDF.js -->
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script>
+      if (typeof pdfjsLib !== "undefined") {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+          "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+      }
+    </script>
+  </head>
+  <body>
+    <app-root></app-root>
+  </body>
 </html>

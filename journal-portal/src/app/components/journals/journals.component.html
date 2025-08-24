@@ -1,82 +1,156 @@
-<div class="journals-section py-5 bg-light">
-  <div class="container py-4">
-    <div class="text-center mb-5">
-      <h2 class="fw-bold mb-3">Available Journals</h2>
-      <p class="lead text-muted">
-        Browse through our collection of published journals
-      </p>
+<div class="modern-journals">
+  <!-- Page Header -->
+  <section class="page-header">
+    <div class="container">
+      <div class="header-content text-center">
+        <h1 class="page-title font-display">
+          Available <span class="gradient-text">Journals</span>
+        </h1>
+        <p class="page-subtitle">
+          Explore our comprehensive collection of peer-reviewed research
+          publications
+        </p>
+      </div>
     </div>
+  </section>
 
-    <div class="row justify-content-center mb-5">
-      <div class="col-lg-6 col-md-8">
-        <div class="input-group">
-          <span class="input-group-text bg-white border-end-0">
+  <!-- Search Section -->
+  <section class="search-section">
+    <div class="container">
+      <div class="search-wrapper">
+        <div class="search-box">
+          <div class="search-icon">
             <i class="bi bi-search"></i>
-          </span>
+          </div>
           <input
             type="text"
-            class="form-control border-start-0"
-            placeholder="Search by Volume, Number or Year..."
+            class="search-input"
+            placeholder="Search by volume, number, year, or keyword..."
             [(ngModel)]="searchText"
-            (input)="onSearch()"
+            (input)="searchJournals()"
           />
+          <button
+            class="search-clear"
+            *ngIf="searchText"
+            (click)="clearSearch()"
+          >
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="search-stats" *ngIf="!loading">
+          <p class="result-count">
+            <span class="count">{{ filteredJournalsList.length }}</span>
+            {{ filteredJournalsList.length === 1 ? "journal" : "journals" }}
+            found
+          </p>
         </div>
       </div>
     </div>
+  </section>
 
-    <div class="row g-4">
-      <ng-container *ngIf="loading; else journalsList">
-        <div class="col-12 text-center my-5">
-          <div
-            class="spinner-border text-primary"
-            style="width: 3rem; height: 3rem"
-            role="status"
-          >
-            <span class="visually-hidden">Loading...</span>
-          </div>
-          <p class="mt-3">Loading journals...</p>
+  <!-- Journals Grid -->
+  <section class="journals-grid">
+    <div class="container">
+      <!-- Loading State -->
+      <div *ngIf="loading" class="loading-state">
+        <div class="loading-spinner">
+          <div class="spinner"></div>
+          <p class="loading-text">Loading journals...</p>
         </div>
-      </ng-container>
-
-      <ng-template #journalsList>
-        <div class="col-md-4" *ngFor="let journal of filteredJournalsList">
-          <div class="card h-100 border-0 shadow-sm transition-all">
-            <div class="card-header bg-white border-bottom-0">
-              <h5 class="card-title mb-0 text-primary fw-bold">
-                {{ journal.edition }}
-              </h5>
+        <div class="skeleton-grid">
+          <div class="skeleton-card" *ngFor="let i of [1, 2, 3, 4, 5, 6]">
+            <div class="skeleton-header loading-shimmer"></div>
+            <div class="skeleton-body">
+              <div class="skeleton-line loading-shimmer"></div>
+              <div class="skeleton-line loading-shimmer"></div>
+              <div class="skeleton-button loading-shimmer"></div>
             </div>
-            <div class="card-body d-flex flex-column">
-              <div class="mb-3">
-                <p class="text-muted mb-1">
-                  <i class="bi bi-calendar me-2"></i>
-                  Volume {{ journal.volume }}, Number {{ journal.number }}
-                </p>
-                <p class="text-muted mb-0">
-                  <i class="bi bi-file-text me-2"></i>
-                  {{ journal.articles.length }} Articles
-                </p>
-              </div>
-              <a
-                [routerLink]="['/journal', journal.id]"
-                class="btn btn-outline-primary mt-auto align-self-start"
+          </div>
+        </div>
+      </div>
+
+      <!-- Journals List -->
+      <div *ngIf="!loading" class="journals-list">
+        <!-- Grouped by Year Display -->
+        <div *ngIf="yearKeys.length > 0" class="journals-by-year">
+          <div *ngFor="let year of yearKeys" class="year-group">
+            <!-- Year Header -->
+            <div class="year-header">
+              <h3 class="year-title">
+                <i class="bi bi-calendar-event me-2"></i>
+                {{ year }}
+              </h3>
+              <span class="year-count">
+                {{ groupedJournals[year].length }}
+                {{
+                  groupedJournals[year].length === 1 ? "Journal" : "Journals"
+                }}
+              </span>
+            </div>
+
+            <!-- Journals Grid for this Year -->
+            <div class="row g-4 mb-5">
+              <div
+                class="col-xl-6 col-lg-6"
+                *ngFor="
+                  let journal of groupedJournals[year];
+                  trackBy: trackByJournal
+                "
               >
-                View Articles <i class="bi bi-arrow-right ms-2"></i>
-              </a>
+                <app-card
+                  [title]="journal.title"
+                  [showImage]="false"
+                  [badge]="{ icon: 'bi bi-journal-bookmark' }"
+                  [meta]="getJournalMeta(journal)"
+                  [stats]="getJournalStats(journal)"
+                  [actions]="getJournalActions(journal)"
+                  cardClass="journal-card-grouped"
+                >
+                  <div class="journal-preview">
+                    <!-- Edition Badge -->
+                    <div class="edition-badge-container mb-2">
+                      <span
+                        class="edition-badge"
+                        [class.jan-jun]="journal.edition === 'January-June'"
+                        [class.jul-dec]="journal.edition === 'July-December'"
+                      >
+                        {{
+                          journal.edition === "July-December"
+                            ? "Jul-Dec"
+                            : "Jan-Jun"
+                        }}
+                      </span>
+                    </div>
+
+                    <p class="journal-description" *ngIf="journal.description">
+                      {{ journal.description | truncate : 120 }}
+                    </p>
+                    <!-- Clean description only - no redundant badges -->
+                  </div>
+                </app-card>
+              </div>
             </div>
           </div>
         </div>
 
-        <div
-          class="col-12"
-          *ngIf="filteredJournalsList.length === 0 && !loading"
-        >
-          <div class="alert alert-info text-center py-4">
-            <i class="bi bi-info-circle-fill me-2"></i>
-            No journals found matching your search criteria
+        <!-- Empty State -->
+        <div *ngIf="yearKeys.length === 0" class="empty-state">
+          <div class="empty-content">
+            <div class="empty-icon">
+              <i class="bi bi-search"></i>
+            </div>
+            <h3 class="empty-title">No journals found</h3>
+            <p class="empty-subtitle">
+              We couldn't find any journals matching your search criteria. Try
+              adjusting your search terms or browse all journals.
+            </p>
+            <button class="btn btn-outline-primary" (click)="clearSearch()">
+              <i class="bi bi-arrow-clockwise me-2"></i>
+              Clear Search
+            </button>
           </div>
         </div>
-      </ng-template>
+      </div>
     </div>
-  </div>
+  </section>
 </div>

@@ -1,59 +1,116 @@
-# JournalPortal
+# 🌟 IJDR Journal Portal
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.6.
+A modern, Firebase-powered journal publication portal built with Angular 18.
 
-## Development server
+## 🚀 Live Website
 
-To start a local development server, run:
+**Visit**: https://ijdrpub.in
+
+## 📋 Features
+
+- 🔐 **Secure Admin Panel** - Firebase Authentication
+- 📚 **Journal Management** - Create, edit, and manage journal publications
+- 📄 **Article Management** - Full article lifecycle management
+- 🔄 **PDF Processing** - Upload and extract journal metadata
+- 📱 **Responsive Design** - Works on all devices
+- 🌍 **Global CDN** - Fast loading worldwide via Firebase
+- 🔒 **SSL Secured** - Automatic HTTPS encryption
+
+## 🛠 Tech Stack
+
+- **Frontend**: Angular 18 with Bootstrap 5
+- **Backend**: Firebase (Firestore, Authentication, Storage)
+- **Hosting**: Firebase Hosting
+- **Build Tool**: Angular CLI
+- **Styling**: SCSS with Bootstrap
+
+## 📁 Project Structure
+
+```
+ijdr-journal-portal/
+├── src/                    # Angular application source
+│   ├── app/               # Main application components
+│   ├── assets/            # Static assets
+│   └── environments/      # Environment configurations
+├── public/                # Public assets
+├── scripts/               # Utility scripts
+├── firebase.json          # Firebase configuration
+├── firestore.rules        # Firestore security rules
+├── storage.rules          # Firebase Storage security rules
+└── package.json           # Dependencies and scripts
+```
+
+## 🔧 Development
+
+### Prerequisites
+
+- Node.js 18+
+- Angular CLI
+- Firebase CLI
+
+### Setup
 
 ```bash
+# Clone repository
+git clone https://github.com/aman54kumar/ijdr.git
+cd ijdr
+
+# Install dependencies
+npm install
+
+# Start development server
 ng serve
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+### Build
 
 ```bash
-ng generate component component-name
+# Build for production
+ng build --configuration production
+
+# Deploy to Firebase
+firebase deploy --only hosting
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## 🔐 Admin Access
+
+- **URL**: https://ijdrpub.in/login
+- **Features**: Journal creation, article management, PDF processing
+- **Security**: Firebase Authentication required
+
+## 🌐 Firebase Configuration
+
+The project uses Firebase for:
+
+- **Authentication**: Secure admin login
+- **Firestore**: Journal and article data storage
+- **Storage**: PDF file management
+- **Hosting**: Global CDN with automatic SSL
+
+## 📖 Usage
+
+1. **Public Access**: Browse journals and articles at https://ijdrpub.in
+2. **Admin Access**: Login at https://ijdrpub.in/login for management features
+3. **Content Management**: Upload journals, manage articles, process PDFs
+
+## 🔍 Debugging
 
 ```bash
-ng generate --help
+# Check Firebase configuration
+node scripts/check-firebase-config.js
+
+# View Firebase console
+https://console.firebase.google.com/project/ijdr-e41d4
 ```
 
-## Building
+## 📝 License
 
-To build the project run:
+This project is proprietary and confidential.
 
-```bash
-ng build
-```
+## 🤝 Contributing
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+This is a private project. For authorized contributors, please follow standard Git workflow.
 
-## Running unit tests
+---
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+**🌟 IJDR Journal Portal** - Empowering academic publishing with modern technology.

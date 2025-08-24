@@ -1,0 +1,131 @@
+<div class="page-not-found">
+  <div class="container">
+    <div class="error-content">
+      <!-- Error Illustration -->
+      <div class="error-illustration">
+        <div class="error-number">404</div>
+        <div class="error-icon">
+          <i class="bi bi-search"></i>
+        </div>
+        <div class="floating-elements">
+          <div class="floating-element" style="--delay: 0s">
+            <i class="bi bi-file-earmark-x"></i>
+          </div>
+          <div class="floating-element" style="--delay: 0.5s">
+            <i class="bi bi-question-circle"></i>
+          </div>
+          <div class="floating-element" style="--delay: 1s">
+            <i class="bi bi-compass"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div class="error-message">
+        <h1 class="error-title">Page Not Found</h1>
+        <p class="error-subtitle">
+          Oops! The page you're looking for seems to have wandered off into the
+          digital wilderness. Don't worry, even the best researchers sometimes
+          take a wrong turn.
+        </p>
+      </div>
+
+      <!-- Search Box -->
+      <div class="search-section">
+        <div class="search-wrapper">
+          <div class="search-box">
+            <i class="bi bi-search"></i>
+            <input
+              type="text"
+              placeholder="Search for journals, articles, or resources..."
+              class="search-input"
+              [(ngModel)]="searchQuery"
+              (keyup.enter)="performSearch()"
+            />
+            <button class="search-btn" (click)="performSearch()">
+              <i class="bi bi-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions">
+        <h3 class="actions-title">What would you like to do?</h3>
+        <div class="action-grid">
+          <a routerLink="/" class="action-card">
+            <div class="action-icon">
+              <i class="bi bi-house-door"></i>
+            </div>
+            <div class="action-content">
+              <h4>Go Home</h4>
+              <p>Return to the homepage and start fresh</p>
+            </div>
+          </a>
+
+          <a routerLink="/journals" class="action-card">
+            <div class="action-icon">
+              <i class="bi bi-journal-bookmark"></i>
+            </div>
+            <div class="action-content">
+              <h4>Browse Journals</h4>
+              <p>Explore our collection of research publications</p>
+            </div>
+          </a>
+
+          <a href="#" class="action-card">
+            <div class="action-icon">
+              <i class="bi bi-question-circle"></i>
+            </div>
+            <div class="action-content">
+              <h4>Get Help</h4>
+              <p>Visit our help center for assistance</p>
+            </div>
+          </a>
+
+          <a href="#" class="action-card">
+            <div class="action-icon">
+              <i class="bi bi-envelope"></i>
+            </div>
+            <div class="action-content">
+              <h4>Contact Us</h4>
+              <p>Reach out to our support team</p>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Popular Links -->
+      <div class="popular-links">
+        <h3 class="links-title">Popular Resources</h3>
+        <div class="links-grid">
+          <div class="link-category">
+            <h4>For Researchers</h4>
+            <ul>
+              <li><a href="#">Submission Guidelines</a></li>
+              <li><a href="#">Peer Review Process</a></li>
+              <li><a href="#">Publication Ethics</a></li>
+            </ul>
+          </div>
+          <div class="link-category">
+            <h4>For Readers</h4>
+            <ul>
+              <li><a href="#">Latest Issues</a></li>
+              <li><a href="#">Archive Search</a></li>
+              <li><a href="#">Citation Guide</a></li>
+            </ul>
+          </div>
+          <div class="link-category">
+            <h4>About IJDR</h4>
+            <ul>
+              <li><a href="#">Editorial Board</a></li>
+              <li><a href="#">Mission & Vision</a></li>
+              <li><a href="#">History</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

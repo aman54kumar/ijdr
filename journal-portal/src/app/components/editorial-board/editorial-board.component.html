@@ -1,0 +1,542 @@
+<div class="editorial-board-page">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-background">
+      <div class="hero-bg-placeholder">
+        <div class="bg-pattern"></div>
+      </div>
+      <div class="hero-overlay"></div>
+    </div>
+    <div class="container">
+      <div class="hero-content text-center">
+        <h1 class="hero-title font-display">Editorial Board</h1>
+        <p class="hero-subtitle">
+          Distinguished scholars and experts leading the Indian Journal of
+          Development Research
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Loading State -->
+  <section *ngIf="loading" class="loading-section py-5">
+    <div class="container">
+      <div class="text-center">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading board members...</span>
+        </div>
+        <p class="mt-3 text-muted">Loading Editorial Board...</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Admin Controls -->
+  <section
+    *ngIf="!loading && isAdmin()"
+    class="admin-controls py-3 bg-light border-bottom"
+  >
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-shield-check text-primary me-2"></i>
+            <span class="fw-bold text-primary">Admin Mode</span>
+            <span class="badge bg-primary ms-2">Editing Enabled</span>
+          </div>
+          <small class="text-muted"
+            >Click on any member to edit, or use the quick action
+            buttons.</small
+          >
+        </div>
+        <div class="col-md-4 text-md-end">
+          <button
+            class="btn btn-success btn-sm me-2"
+            (click)="addBoardMember()"
+          >
+            <i class="bi bi-person-plus me-1"></i>
+            Add Member
+          </button>
+          <a class="btn btn-primary btn-sm" routerLink="/admin">
+            <i class="bi bi-gear me-1"></i>
+            Admin Panel
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dynamic Board Sections -->
+  <div *ngIf="!loading">
+    <!-- Patron Section -->
+    <section *ngIf="hasAnyMembersInPosition('Patron')" class="patron-section">
+      <div class="container">
+        <div class="section-header text-center">
+          <h2 class="section-title font-display">
+            <span class="gradient-text">Patron</span>
+          </h2>
+        </div>
+        <div class="row justify-content-center">
+          <div
+            *ngFor="let patron of getBoardMembersByPosition('Patron')"
+            class="col-xl-8 col-lg-10 mb-4"
+          >
+            <div class="patron-card horizontal-layout">
+              <div class="member-avatar">
+                <div
+                  *ngIf="!patron.imageUrl"
+                  class="avatar-placeholder patron-icon"
+                >
+                  <i class="bi bi-star-fill"></i>
+                </div>
+                <img
+                  *ngIf="patron.imageUrl"
+                  [src]="patron.imageUrl"
+                  [alt]="patron.name"
+                  class="member-image"
+                />
+              </div>
+              <div class="member-info">
+                <div class="member-header center-aligned">
+                  <h3 class="member-name patron-name">{{ patron.name }}</h3>
+                  <p class="member-affiliation" *ngIf="patron.affiliation">
+                    {{ patron.affiliation }}
+                  </p>
+                </div>
+
+                <!-- Bio Section -->
+                <div *ngIf="patron.bio" class="member-bio">
+                  <div
+                    *ngIf="
+                      patron.bioContentType === 'text' || !patron.bioContentType
+                    "
+                  >
+                    {{ getContentAsString(patron.bio) }}
+                  </div>
+                  <ul *ngIf="patron.bioContentType === 'list'" class="bio-list">
+                    <li *ngFor="let item of getContentAsArray(patron.bio)">
+                      {{ item }}
+                    </li>
+                  </ul>
+                </div>
+
+                <!-- Dynamic Sections -->
+                <div
+                  *ngFor="let section of patron.dynamicSections"
+                  class="dynamic-section"
+                >
+                  <h6 class="section-heading">{{ section.heading }}</h6>
+                  <div
+                    *ngIf="section.contentType === 'text'"
+                    class="section-content"
+                  >
+                    {{ section.content }}
+                  </div>
+                  <ul
+                    *ngIf="section.contentType === 'list'"
+                    class="section-list"
+                  >
+                    <li *ngFor="let item of getContentAsArray(section.content)">
+                      {{ item }}
+                    </li>
+                  </ul>
+                </div>
+
+                <!-- Admin Edit Controls -->
+                <div *ngIf="isAdmin()" class="admin-edit-controls">
+                  <div class="d-flex gap-2">
+                    <button
+                      class="btn btn-outline-primary btn-sm"
+                      (click)="editBoardMember(patron)"
+                      title="Edit Member"
+                    >
+                      <i class="bi bi-pencil me-1"></i>
+                      Edit
+                    </button>
+                    <button
+                      class="btn btn-outline-warning btn-sm"
+                      (click)="toggleMemberStatus(patron)"
+                      title="Toggle Active Status"
+                    >
+                      <i
+                        class="bi bi-eye-slash me-1"
+                        *ngIf="patron.isActive"
+                      ></i>
+                      <i class="bi bi-eye me-1" *ngIf="!patron.isActive"></i>
+                      {{ patron.isActive ? "Deactivate" : "Activate" }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chief Editor Section -->
+    <section
+      *ngIf="hasAnyMembersInPosition('Chief Editor')"
+      class="chief-editor-section"
+    >
+      <div class="container">
+        <div class="section-header text-center">
+          <h2 class="section-title font-display">
+            <span class="gradient-text">Chief Editor</span>
+          </h2>
+        </div>
+        <div class="row justify-content-center">
+          <div
+            *ngFor="let editor of getBoardMembersByPosition('Chief Editor')"
+            class="col-xl-8 col-lg-10 mb-4"
+          >
+            <div class="editor-card featured horizontal-layout">
+              <div class="member-avatar">
+                <div *ngIf="!editor.imageUrl" class="avatar-placeholder">
+                  <i class="bi bi-person-fill"></i>
+                </div>
+                <img
+                  *ngIf="editor.imageUrl"
+                  [src]="editor.imageUrl"
+                  [alt]="editor.name"
+                  class="member-image"
+                />
+              </div>
+              <div class="member-info">
+                <div class="member-header center-aligned">
+                  <h3 class="member-name editor-name">{{ editor.name }}</h3>
+                  <p class="member-affiliation" *ngIf="editor.affiliation">
+                    {{ editor.affiliation }}
+                  </p>
+                </div>
+
+                <!-- Bio Section -->
+                <div *ngIf="editor.bio" class="member-bio">
+                  <div
+                    *ngIf="
+                      editor.bioContentType === 'text' || !editor.bioContentType
+                    "
+                  >
+                    {{ getContentAsString(editor.bio) }}
+                  </div>
+                  <ul *ngIf="editor.bioContentType === 'list'" class="bio-list">
+                    <li *ngFor="let item of getContentAsArray(editor.bio)">
+                      {{ item }}
+                    </li>
+                  </ul>
+                </div>
+
+                <!-- Dynamic Sections -->
+                <div
+                  *ngFor="let section of editor.dynamicSections"
+                  class="dynamic-section"
+                >
+                  <h6 class="section-heading">{{ section.heading }}</h6>
+                  <div
+                    *ngIf="section.contentType === 'text'"
+                    class="section-content"
+                  >
+                    {{ section.content }}
+                  </div>
+                  <ul
+                    *ngIf="section.contentType === 'list'"
+                    class="section-list"
+                  >
+                    <li *ngFor="let item of getContentAsArray(section.content)">
+                      {{ item }}
+                    </li>
+                  </ul>
+                </div>
+
+                <!-- Contact Info -->
+                <div
+                  class="member-contact"
+                  *ngIf="editor.email || editor.phone"
+                >
+                  <small class="text-muted">
+                    <span *ngIf="editor.email">
+                      <i class="bi bi-envelope me-1"></i>{{ editor.email }}
+                    </span>
+                    <span *ngIf="editor.phone" class="ms-3">
+                      <i class="bi bi-phone me-1"></i>{{ editor.phone }}
+                    </span>
+                  </small>
+                </div>
+
+                <!-- Admin Edit Controls -->
+                <div *ngIf="isAdmin()" class="admin-edit-controls">
+                  <div class="d-flex gap-2">
+                    <button
+                      class="btn btn-outline-primary btn-sm"
+                      (click)="editBoardMember(editor)"
+                      title="Edit Member"
+                    >
+                      <i class="bi bi-pencil me-1"></i>
+                      Edit
+                    </button>
+                    <button
+                      class="btn btn-outline-warning btn-sm"
+                      (click)="toggleMemberStatus(editor)"
+                      title="Toggle Active Status"
+                    >
+                      <i
+                        class="bi bi-eye-slash me-1"
+                        *ngIf="editor.isActive"
+                      ></i>
+                      <i class="bi bi-eye me-1" *ngIf="!editor.isActive"></i>
+                      {{ editor.isActive ? "Deactivate" : "Activate" }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Associate Editor Section -->
+    <section
+      *ngIf="hasAnyMembersInPosition('Associate Editor')"
+      class="associate-editor-section"
+    >
+      <div class="container">
+        <div class="section-header text-center">
+          <h2 class="section-title font-display">
+            <span class="gradient-text">Associate Editor</span>
+          </h2>
+        </div>
+        <div class="row justify-content-center">
+          <div
+            *ngFor="let editor of getBoardMembersByPosition('Associate Editor')"
+            class="col-xl-8 col-lg-10 mb-4"
+          >
+            <div class="editor-card horizontal-layout">
+              <div class="member-avatar">
+                <div *ngIf="!editor.imageUrl" class="avatar-placeholder">
+                  <i class="bi bi-person-fill"></i>
+                </div>
+                <img
+                  *ngIf="editor.imageUrl"
+                  [src]="editor.imageUrl"
+                  [alt]="editor.name"
+                  class="member-image"
+                />
+              </div>
+              <div class="member-info">
+                <div class="member-header center-aligned">
+                  <h3 class="member-name editor-name">{{ editor.name }}</h3>
+                  <p class="member-affiliation" *ngIf="editor.affiliation">
+                    {{ editor.affiliation }}
+                  </p>
+                </div>
+
+                <!-- Bio Section -->
+                <div *ngIf="editor.bio" class="member-bio">
+                  <div
+                    *ngIf="
+                      editor.bioContentType === 'text' || !editor.bioContentType
+                    "
+                  >
+                    {{ getContentAsString(editor.bio) }}
+                  </div>
+                  <ul *ngIf="editor.bioContentType === 'list'" class="bio-list">
+                    <li *ngFor="let item of getContentAsArray(editor.bio)">
+                      {{ item }}
+                    </li>
+                  </ul>
+                </div>
+
+                <!-- Dynamic Sections -->
+                <div
+                  *ngFor="let section of editor.dynamicSections"
+                  class="dynamic-section"
+                >
+                  <h6 class="section-heading">{{ section.heading }}</h6>
+                  <div
+                    *ngIf="section.contentType === 'text'"
+                    class="section-content"
+                  >
+                    {{ section.content }}
+                  </div>
+                  <ul
+                    *ngIf="section.contentType === 'list'"
+                    class="section-list"
+                  >
+                    <li *ngFor="let item of getContentAsArray(section.content)">
+                      {{ item }}
+                    </li>
+                  </ul>
+                </div>
+
+                <!-- Contact Info -->
+                <div
+                  class="member-contact"
+                  *ngIf="editor.email || editor.phone"
+                >
+                  <small class="text-muted">
+                    <span *ngIf="editor.email">
+                      <i class="bi bi-envelope me-1"></i>{{ editor.email }}
+                    </span>
+                    <span *ngIf="editor.phone" class="ms-3">
+                      <i class="bi bi-phone me-1"></i>{{ editor.phone }}
+                    </span>
+                  </small>
+                </div>
+
+                <!-- Admin Edit Controls -->
+                <div *ngIf="isAdmin()" class="admin-edit-controls">
+                  <div class="d-flex gap-2">
+                    <button
+                      class="btn btn-outline-primary btn-sm"
+                      (click)="editBoardMember(editor)"
+                      title="Edit Member"
+                    >
+                      <i class="bi bi-pencil me-1"></i>
+                      Edit
+                    </button>
+                    <button
+                      class="btn btn-outline-warning btn-sm"
+                      (click)="toggleMemberStatus(editor)"
+                      title="Toggle Active Status"
+                    >
+                      <i
+                        class="bi bi-eye-slash me-1"
+                        *ngIf="editor.isActive"
+                      ></i>
+                      <i class="bi bi-eye me-1" *ngIf="!editor.isActive"></i>
+                      {{ editor.isActive ? "Deactivate" : "Activate" }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Editorial Board Section -->
+    <section
+      *ngIf="hasAnyMembersInPosition('Editorial Board Member')"
+      class="editorial-board-section"
+    >
+      <div class="container">
+        <div class="section-header text-center">
+          <h2 class="section-title font-display">
+            <span class="gradient-text">Editorial Board</span>
+          </h2>
+          <p class="section-subtitle">
+            Distinguished academics and researchers contributing to the
+            journal's excellence
+          </p>
+        </div>
+
+        <div class="row g-4">
+          <div
+            *ngFor="
+              let member of getBoardMembersByPosition('Editorial Board Member');
+              let i = index
+            "
+            class="col-lg-6"
+          >
+            <div class="board-member-card modern-card">
+              <div class="member-avatar">
+                <div *ngIf="!member.imageUrl" class="avatar-placeholder">
+                  <i class="bi bi-person-fill"></i>
+                </div>
+                <img
+                  *ngIf="member.imageUrl"
+                  [src]="member.imageUrl"
+                  [alt]="member.name"
+                  class="member-image"
+                />
+              </div>
+              <div class="member-info">
+                <div class="member-header">
+                  <h4 class="member-name">{{ member.name }}</h4>
+                  <p class="member-affiliation" *ngIf="member.affiliation">
+                    {{ member.affiliation }}
+                  </p>
+                </div>
+
+                <!-- Bio Preview -->
+                <div *ngIf="member.bio" class="bio-preview">
+                  <p class="bio-text">{{ getTruncatedBio(member) }}</p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="card-actions">
+                  <button
+                    class="btn btn-primary btn-sm view-profile-btn"
+                    (click)="openMemberProfile(member)"
+                    *ngIf="hasAdditionalContent(member)"
+                  >
+                    <i class="bi bi-person-lines-fill me-1"></i>
+                    View Profile
+                  </button>
+                </div>
+
+                <!-- Admin Edit Controls -->
+                <div *ngIf="isAdmin()" class="admin-edit-controls">
+                  <div class="d-flex gap-2">
+                    <button
+                      class="btn btn-outline-primary btn-sm"
+                      (click)="editBoardMember(member)"
+                      title="Edit Member"
+                    >
+                      <i class="bi bi-pencil me-1"></i>
+                      Edit
+                    </button>
+                    <button
+                      class="btn btn-outline-warning btn-sm"
+                      (click)="toggleMemberStatus(member)"
+                      title="Toggle Active Status"
+                    >
+                      <i
+                        class="bi bi-eye-slash me-1"
+                        *ngIf="member.isActive"
+                      ></i>
+                      <i class="bi bi-eye me-1" *ngIf="!member.isActive"></i>
+                      {{ member.isActive ? "Deactivate" : "Activate" }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Team/Impact Section (if you want to add any general content) -->
+    <section
+      *ngIf="
+        !hasAnyMembersInPosition('Patron') &&
+        !hasAnyMembersInPosition('Chief Editor') &&
+        !hasAnyMembersInPosition('Associate Editor') &&
+        !hasAnyMembersInPosition('Editorial Board Member')
+      "
+      class="empty-state py-5"
+    >
+      <div class="container">
+        <div class="text-center">
+          <div class="empty-state-icon mb-4">
+            <i class="bi bi-people display-1 text-muted"></i>
+          </div>
+          <h3 class="mb-3 text-muted">Editorial Board Coming Soon</h3>
+          <p class="mb-4 text-muted">
+            We are building our distinguished editorial team. Please check back
+            soon.
+          </p>
+          <a routerLink="/about" class="btn btn-outline-primary">
+            <i class="bi bi-info-circle me-2"></i>
+            Learn About IJDR
+          </a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Board Member Modal -->
+  <app-board-member-modal></app-board-member-modal>
+</div>

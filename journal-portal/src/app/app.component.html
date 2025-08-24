@@ -1,5 +1,10 @@
-<div class="container-fluid">
-  <app-header />
-  <router-outlet></router-outlet>
-  <app-footer />
+<div class="app-container">
+  <app-header class="app-header"></app-header>
+  <main class="main-content">
+    <router-outlet></router-outlet>
+  </main>
+  <app-footer class="app-footer"></app-footer>
 </div>
+
+<!-- PDF Modal -->
+<app-pdf-modal></app-pdf-modal>
