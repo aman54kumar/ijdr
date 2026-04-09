@@ -76,6 +76,7 @@ export class AdminComponent implements OnInit {
 
   // Authentication
   currentUser: User | null = null;
+  loggingOut = false;
 
   // Board Member Management
   boardMembers: BoardMember[] = [];
@@ -433,12 +434,18 @@ export class AdminComponent implements OnInit {
 
   // Authentication Methods
   async logout() {
+    if (this.loggingOut) {
+      return;
+    }
+    this.loggingOut = true;
     try {
       await this.authService.signOut();
-      this.router.navigate(['/login']);
+      await this.router.navigateByUrl('/login', { replaceUrl: true });
     } catch (error) {
       console.error('Logout error:', error);
-      this.toast.show('Error logging out. Please try again.', 'danger');
+      this.toast.show('Could not sign out. Please try again.', 'danger');
+    } finally {
+      this.loggingOut = false;
     }
   }
 
