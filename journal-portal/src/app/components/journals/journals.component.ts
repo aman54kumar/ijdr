@@ -2,22 +2,34 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { NgxSkeletonLoaderModule } from 'ngx-skeleton-loader';
 import { iJournal } from '../../type/journals.type';
 import { FirebaseJournalService } from '../../services/firebase-journal.service';
 import { PdfModalService } from '../../services/pdf-modal.service';
+import { ToastService } from '../../services/toast.service';
 import { TruncatePipe } from '../../pipes/truncate.pipe';
 import {
   CardComponent,
   CardAction,
   CardMeta,
-  CardStat,
 } from '../common/card/card.component';
+import {
+  computePopularViewCutoff,
+  getJournalHighlightTags,
+  type JournalHighlightTag,
+} from '../../utils/journal-issue-tags.util';
 
 @Component({
   selector: 'app-journals',
   standalone: true,
   templateUrl: './journals.component.html',
-  imports: [CommonModule, FormsModule, TruncatePipe, CardComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    TruncatePipe,
+    CardComponent,
+    NgxSkeletonLoaderModule,
+  ],
   styleUrls: ['./journals.component.scss'],
 })
 export class JournalsComponent implements OnInit {
@@ -27,11 +39,17 @@ export class JournalsComponent implements OnInit {
   yearKeys: string[] = [];
   searchText: string = '';
   loading: boolean = true;
+  sortMode: 'newest' | 'views' = 'newest';
+  filterYear: string = '';
+  yearFilterOptions: string[] = [];
+  /** Cutoff from full catalog; +Infinity means no issue counts as Popular. */
+  popularViewCutoff = Number.POSITIVE_INFINITY;
 
   constructor(
     private firebaseService: FirebaseJournalService,
     private router: Router,
-    private pdfModalService: PdfModalService
+    private pdfModalService: PdfModalService,
+    private toast: ToastService
   ) {}
 
   ngOnInit() {
@@ -70,8 +88,11 @@ export class JournalsComponent implements OnInit {
           (a, b) => parseInt(b) - parseInt(a)
         );
 
-        // Initialize filtered list
-        this.filteredJournalsList = [...this.journals];
+        this.yearFilterOptions = [
+          ...new Set(this.journals.map((j) => String(j.year))),
+        ].sort((a, b) => parseInt(b) - parseInt(a));
+        this.popularViewCutoff = computePopularViewCutoff(this.journals);
+        this.applyFilters();
         this.loading = false;
       },
       error: (error) => {
@@ -99,11 +120,28 @@ export class JournalsComponent implements OnInit {
   }
 
   searchJournals() {
-    if (!this.searchText.trim()) {
-      this.filteredJournalsList = [...this.journals];
-    } else {
+    this.applyFilters();
+  }
+
+  clearSearch() {
+    this.searchText = '';
+    this.filterYear = '';
+    this.sortMode = 'newest';
+    this.applyFilters();
+  }
+
+  onSortOrYearChange() {
+    this.applyFilters();
+  }
+
+  private applyFilters() {
+    let list = [...this.journals];
+    if (this.filterYear) {
+      list = list.filter((j) => String(j.year) === this.filterYear);
+    }
+    if (this.searchText.trim()) {
       const searchTerm = this.searchText.toLowerCase();
-      this.filteredJournalsList = this.journals.filter((journal) => {
+      list = list.filter((journal) => {
         const haystack = [
           journal.title,
           journal.volume,
@@ -119,20 +157,28 @@ export class JournalsComponent implements OnInit {
         return haystack.includes(searchTerm);
       });
     }
-    this.groupJournalsByYear();
-  }
-
-  clearSearch() {
-    this.searchText = '';
-    this.filteredJournalsList = [...this.journals];
+    if (this.sortMode === 'views') {
+      list.sort((a, b) => {
+        const vc = (b.viewCount || 0) - (a.viewCount || 0);
+        if (vc !== 0) return vc;
+        if (a.year !== b.year) return parseInt(b.year) - parseInt(a.year);
+        if (a.volume !== b.volume) return b.volume - a.volume;
+        return b.number - a.number;
+      });
+    } else {
+      list.sort((a, b) => {
+        if (a.year !== b.year) return parseInt(b.year) - parseInt(a.year);
+        if (a.volume !== b.volume) return b.volume - a.volume;
+        return b.number - a.number;
+      });
+    }
+    this.filteredJournalsList = list;
     this.groupJournalsByYear();
   }
 
   trackByJournal(index: number, journal: iJournal): any {
     return journal.id || index;
   }
-
-  // Removed getRandomViews() method - was generating fake view counts
 
   // Returns essential journal metadata (volume and issue number only - year is in title)
   getJournalMeta(journal: iJournal): CardMeta[] {
@@ -143,16 +189,8 @@ export class JournalsComponent implements OnInit {
     ];
   }
 
-  // Returns real journal statistics with actual view counts
-  getJournalStats(journal: iJournal): CardStat[] {
-    return [
-      // Display real view count from database
-      {
-        icon: 'bi bi-eye',
-        label: 'Views',
-        value: (journal.viewCount || 0).toLocaleString(),
-      },
-    ];
+  journalHighlightTags(journal: iJournal): JournalHighlightTag[] {
+    return getJournalHighlightTags(journal, this.popularViewCutoff);
   }
 
   getJournalActions(journal: iJournal): CardAction[] {
@@ -188,11 +226,9 @@ export class JournalsComponent implements OnInit {
 
   openJournalPDF(journal: iJournal) {
     if (journal.id) {
-      // Increment view count before opening PDF
-      this.firebaseService.incrementViewCount(journal.id);
       this.pdfModalService.openModal(journal);
     } else {
-      alert('Journal not available.');
+      this.toast.show('Journal not available.', 'warning');
     }
   }
 

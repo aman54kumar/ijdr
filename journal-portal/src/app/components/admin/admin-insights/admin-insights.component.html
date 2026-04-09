@@ -1,0 +1,66 @@
+<div class="insights-panel">
+  <h2 class="mb-3">Insights</h2>
+  <p class="text-muted small mb-4">
+    Per-issue popularity from Firestore
+    <span
+      class="d-inline-block ms-1"
+      tabindex="0"
+      title="Views ≈ times the issue page was opened in a browser session (not unique visitors). For site-wide traffic, use Google Analytics."
+    >
+      <i class="bi bi-info-circle" aria-hidden="true"></i>
+    </span>
+  </p>
+
+  <div class="mb-4 d-flex flex-wrap gap-2">
+    <a
+      class="btn btn-outline-primary btn-sm"
+      href="https://analytics.google.com/"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <i class="bi bi-graph-up-arrow me-1"></i>Open Google Analytics
+    </a>
+    <a
+      class="btn btn-outline-secondary btn-sm"
+      href="https://console.firebase.google.com/"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <i class="bi bi-fire me-1"></i>Open Firebase Console
+    </a>
+  </div>
+
+  <div *ngIf="loading" class="text-center py-4">
+    <div class="spinner-border text-primary" role="status"></div>
+  </div>
+
+  <div *ngIf="!loading" class="table-responsive">
+    <table class="table table-sm table-striped align-middle">
+      <thead>
+        <tr>
+          <th>Issue</th>
+          <th>Year</th>
+          <th class="text-end">Views</th>
+          <th class="text-end">Updated</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let j of journals">
+          <td>
+            <a [routerLink]="['/journal', j.id]" target="_blank" rel="noopener">{{
+              j.title
+            }}</a>
+          </td>
+          <td>{{ j.year }}</td>
+          <td class="text-end">{{ j.viewCount || 0 | number }}</td>
+          <td class="text-end text-muted small">
+            <span *ngIf="j.updatedAt?.toDate">{{
+              j.updatedAt!.toDate() | date : 'mediumDate'
+            }}</span>
+            <span *ngIf="!j.updatedAt?.toDate">—</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

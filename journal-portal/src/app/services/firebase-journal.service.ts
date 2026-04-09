@@ -12,7 +12,9 @@ import {
   orderBy,
   Timestamp,
   getDocs,
+  getDoc,
   where,
+  increment,
 } from '@angular/fire/firestore';
 import {
   Storage,
@@ -205,18 +207,18 @@ export class FirebaseJournalService {
 
     // If new PDF file is provided, upload it
     if (pdfFile) {
-      // Delete old PDF first
-      const currentJournal = await docData(journalRef);
-      currentJournal.subscribe(async (journal) => {
-        if (journal && journal['pdfUrl']) {
-          try {
-            const oldPdfRef = ref(this.storage, journal['pdfUrl']);
-            await deleteObject(oldPdfRef);
-          } catch (error) {
-            console.warn('Old PDF deletion failed:', error);
+      const snap = await getDoc(journalRef);
+      const prevUrl = snap.data()?.['pdfUrl'] as string | undefined;
+      if (prevUrl) {
+        try {
+          const path = this.storagePathFromDownloadUrl(prevUrl);
+          if (path) {
+            await deleteObject(ref(this.storage, path));
           }
+        } catch (error) {
+          console.warn('Old PDF deletion failed:', error);
         }
-      });
+      }
 
       // Upload new PDF
       const pdfUrl = await this.uploadJournalPDF(pdfFile, id);
@@ -234,21 +236,18 @@ export class FirebaseJournalService {
   // Delete journal
   async deleteJournal(id: string): Promise<void> {
     const journalRef = doc(this.firestore, 'journals', id);
-
-    // Get journal data to delete PDF
-    const journalData = await docData(journalRef);
-    journalData.subscribe(async (journal) => {
-      if (journal && journal['pdfUrl']) {
-        try {
-          const pdfRef = ref(this.storage, journal['pdfUrl']);
-          await deleteObject(pdfRef);
-        } catch (error) {
-          console.warn('PDF deletion failed:', error);
+    const snap = await getDoc(journalRef);
+    const pdfUrl = snap.data()?.['pdfUrl'] as string | undefined;
+    if (pdfUrl) {
+      try {
+        const path = this.storagePathFromDownloadUrl(pdfUrl);
+        if (path) {
+          await deleteObject(ref(this.storage, path));
         }
+      } catch (error) {
+        console.warn('PDF deletion failed:', error);
       }
-    });
-
-    // Delete the document
+    }
     await deleteDoc(journalRef);
   }
 
@@ -256,34 +255,28 @@ export class FirebaseJournalService {
   async incrementViewCount(journalId: string): Promise<void> {
     try {
       const journalRef = doc(this.firestore, 'journals', journalId);
-
-      // Get current journal data
-      const journalSnapshot = await getDocs(
-        query(
-          collection(this.firestore, 'journals'),
-          where('__name__', '==', journalId)
-        )
-      );
-
-      if (!journalSnapshot.empty) {
-        const currentData = journalSnapshot.docs[0].data();
-        const currentViewCount = currentData['viewCount'] || 0;
-
-        // Increment view count
-        await updateDoc(journalRef, {
-          viewCount: currentViewCount + 1,
-          updatedAt: Timestamp.now(),
-        });
-
-        console.log(
-          `View count incremented for journal ${journalId}: ${
-            currentViewCount + 1
-          }`
-        );
-      }
+      await updateDoc(journalRef, {
+        viewCount: increment(1),
+        updatedAt: Timestamp.now(),
+      });
     } catch (error) {
       console.error('Error incrementing view count:', error);
-      // Don't throw error - view counting shouldn't break the app
+    }
+  }
+
+  /** Decode storage object path from a Firebase download URL (for deleteObject). */
+  private storagePathFromDownloadUrl(firebaseUrl: string): string | null {
+    try {
+      const url = new URL(firebaseUrl);
+      const pathParts = url.pathname.split('/');
+      const oIndex = pathParts.findIndex((part) => part === 'o');
+      if (oIndex === -1 || oIndex === pathParts.length - 1) {
+        return null;
+      }
+      const encodedPath = pathParts.slice(oIndex + 1).join('/');
+      return decodeURIComponent(encodedPath);
+    } catch {
+      return null;
     }
   }
 

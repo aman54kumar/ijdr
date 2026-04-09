@@ -1,8 +1,4 @@
-import {
-  ApplicationConfig,
-  provideZoneChangeDetection,
-  inject,
-} from '@angular/core';
+import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter, withInMemoryScrolling } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 
@@ -11,6 +7,12 @@ import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
 import { provideFirestore, getFirestore } from '@angular/fire/firestore';
 import { provideStorage, getStorage } from '@angular/fire/storage';
 import { provideAuth, getAuth } from '@angular/fire/auth';
+import {
+  provideAnalytics,
+  getAnalytics,
+  UserTrackingService,
+} from '@angular/fire/analytics';
+import { providePerformance, getPerformance } from '@angular/fire/performance';
 import { firebaseConfig } from '../environments/firebase-config';
 
 export const appConfig: ApplicationConfig = {
@@ -27,5 +29,8 @@ export const appConfig: ApplicationConfig = {
     provideFirestore(() => getFirestore()),
     provideAuth(() => getAuth()),
     provideStorage(() => getStorage()),
+    provideAnalytics(() => getAnalytics()),
+    providePerformance(() => getPerformance()),
+    UserTrackingService,
   ],
 };

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { JournalHighlightTag } from '../../../utils/journal-issue-tags.util';
 
 export interface CardAction {
   label: string;
@@ -54,9 +55,31 @@ export interface CardStat {
       </div>
 
       <!-- Card Body -->
-      <div class="card-body" *ngIf="content || stats || tags">
-        <!-- Main Content -->
-        <div class="card-content" *ngIf="content">
+      <div
+        class="card-body"
+        *ngIf="
+          includeProjectedBody ||
+          (content != null && content !== '') ||
+          (stats && stats.length > 0) ||
+          (tags && tags.length > 0) ||
+          (highlightTags && highlightTags.length > 0)
+        "
+      >
+        <!-- Highlight tags (New / Popular — data-driven), above body content -->
+        <div class="card-tags card-tags--highlights" *ngIf="highlightTags?.length">
+          <span
+            *ngFor="let t of highlightTags"
+            class="tag"
+            [ngClass]="t.kind === 'new' ? 'tag-new' : 'tag-popular'"
+            >{{ t.label }}</span
+          >
+        </div>
+
+        <!-- Main Content: string and/or projected (set includeProjectedBody when using ng-content only) -->
+        <div class="card-content" *ngIf="content != null && content !== ''">
+          {{ content }}
+        </div>
+        <div class="card-content" *ngIf="includeProjectedBody">
           <ng-content></ng-content>
         </div>
 
@@ -112,6 +135,8 @@ export interface CardStat {
 export class CardComponent {
   @Input() title?: string;
   @Input() content?: string;
+  /** When true, projected content (ng-content) is shown in the card body. */
+  @Input() includeProjectedBody = false;
   @Input() cardClass?: string;
   @Input() showImage: boolean = false;
   @Input() imageType:
@@ -125,6 +150,7 @@ export class CardComponent {
   @Input() meta?: CardMeta[];
   @Input() stats?: CardStat[];
   @Input() tags?: string[];
+  @Input() highlightTags?: JournalHighlightTag[];
   @Input() actions?: CardAction[];
   @Input() clickable: boolean = false;
 

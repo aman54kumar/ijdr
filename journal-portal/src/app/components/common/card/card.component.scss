@@ -195,13 +195,30 @@
       flex-wrap: wrap;
       gap: var(--space-2);
 
+      &.card-tags--highlights {
+        margin-bottom: var(--space-3);
+      }
+
       .tag {
         background: var(--secondary-100);
         color: var(--secondary-700);
         padding: var(--space-1) var(--space-2);
         border-radius: var(--radius-md);
         font-size: var(--text-xs);
-        font-weight: 500;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+
+        &.tag-new {
+          background: var(--success-100);
+          color: var(--success-800);
+          border: 1px solid var(--success-200);
+        }
+
+        &.tag-popular {
+          background: var(--warning-100);
+          color: var(--warning-900);
+          border: 1px solid var(--warning-300);
+        }
       }
     }
   }

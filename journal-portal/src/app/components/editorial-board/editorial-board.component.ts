@@ -1,12 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FirebaseJournalService } from '../../services/firebase-journal.service';
 import { AuthService } from '../../services/auth.service';
 import { BoardMemberModalService } from '../../services/board-member-modal.service';
 import { BoardMemberModalComponent } from '../board-member-modal/board-member-modal.component';
 import { BoardMember } from '../../type/journals.type';
 import { User } from '@angular/fire/auth';
+import { ToastService } from '../../services/toast.service';
+import { ConfirmModalService } from '../../services/confirm-modal.service';
 
 @Component({
   selector: 'app-editorial-board',
@@ -18,6 +21,9 @@ export class EditorialBoardComponent implements OnInit {
   boardMembers: BoardMember[] = [];
   loading = true;
   currentUser: User | null = null;
+  isAdminUser = false;
+
+  private readonly destroyRef = inject(DestroyRef);
 
   // Bio truncation settings
   readonly bioPreviewLength = 120; // characters
@@ -34,7 +40,9 @@ export class EditorialBoardComponent implements OnInit {
     private firebaseService: FirebaseJournalService,
     private authService: AuthService,
     private router: Router,
-    private modalService: BoardMemberModalService
+    private modalService: BoardMemberModalService,
+    private toast: ToastService,
+    private confirmModal: ConfirmModalService
   ) {}
 
   ngOnInit() {
@@ -47,6 +55,10 @@ export class EditorialBoardComponent implements OnInit {
     this.authService.currentUser$.subscribe((user) => {
       this.currentUser = user;
     });
+
+    this.authService.adminClaim$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((ok) => (this.isAdminUser = ok));
   }
 
   // Scroll to top of the page
@@ -135,14 +147,9 @@ export class EditorialBoardComponent implements OnInit {
     );
   }
 
-  // Check if current user is admin
-  isAdmin(): boolean {
-    return !!this.currentUser;
-  }
-
   // Edit board member - navigate to admin panel
   editBoardMember(member: BoardMember) {
-    if (this.isAdmin()) {
+    if (this.isAdminUser) {
       // Store the member ID in session storage for the admin panel to pick up
       sessionStorage.setItem('editMemberId', member.id);
       this.router.navigate(['/admin']).then(() => {
@@ -154,7 +161,7 @@ export class EditorialBoardComponent implements OnInit {
 
   // Add new board member - navigate to admin panel
   addBoardMember() {
-    if (this.isAdmin()) {
+    if (this.isAdminUser) {
       sessionStorage.removeItem('editMemberId'); // Clear any existing edit state
       this.router.navigate(['/admin']).then(() => {
         // Ensure admin page starts from top
@@ -165,21 +172,25 @@ export class EditorialBoardComponent implements OnInit {
 
   // Quick toggle active status
   async toggleMemberStatus(member: BoardMember) {
-    if (
-      this.isAdmin() &&
-      confirm(`${member.isActive ? 'Deactivate' : 'Activate'} ${member.name}?`)
-    ) {
-      try {
-        await this.firebaseService.updateBoardMember(member.id, {
-          isActive: !member.isActive,
-        });
-        this.loadBoardMembers(); // Refresh the list
-        // Scroll to top after status change to show updated state
-        setTimeout(() => this.scrollToTop(), 100);
-      } catch (error) {
-        console.error('Error updating member status:', error);
-        alert('Error updating member status. Please try again.');
-      }
+    if (!this.isAdminUser) {
+      return;
+    }
+    const ok = await this.confirmModal.ask(
+      member.isActive ? 'Deactivate member' : 'Activate member',
+      `${member.isActive ? 'Deactivate' : 'Activate'} ${member.name}?`
+    );
+    if (!ok) {
+      return;
+    }
+    try {
+      await this.firebaseService.updateBoardMember(member.id, {
+        isActive: !member.isActive,
+      });
+      this.loadBoardMembers();
+      setTimeout(() => this.scrollToTop(), 100);
+    } catch (error) {
+      console.error('Error updating member status:', error);
+      this.toast.show('Error updating member status. Please try again.', 'danger');
     }
   }
 }

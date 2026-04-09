@@ -32,7 +32,7 @@
 
   <!-- Admin Controls -->
   <section
-    *ngIf="!loading && isAdmin()"
+    *ngIf="!loading && isAdminUser"
     class="admin-controls py-3 bg-light border-bottom"
   >
     <div class="container">
@@ -142,7 +142,7 @@
                 </div>
 
                 <!-- Admin Edit Controls -->
-                <div *ngIf="isAdmin()" class="admin-edit-controls">
+                <div *ngIf="isAdminUser" class="admin-edit-controls">
                   <div class="d-flex gap-2">
                     <button
                       class="btn btn-outline-primary btn-sm"
@@ -263,7 +263,7 @@
                 </div>
 
                 <!-- Admin Edit Controls -->
-                <div *ngIf="isAdmin()" class="admin-edit-controls">
+                <div *ngIf="isAdminUser" class="admin-edit-controls">
                   <div class="d-flex gap-2">
                     <button
                       class="btn btn-outline-primary btn-sm"
@@ -384,7 +384,7 @@
                 </div>
 
                 <!-- Admin Edit Controls -->
-                <div *ngIf="isAdmin()" class="admin-edit-controls">
+                <div *ngIf="isAdminUser" class="admin-edit-controls">
                   <div class="d-flex gap-2">
                     <button
                       class="btn btn-outline-primary btn-sm"
@@ -477,7 +477,7 @@
                 </div>
 
                 <!-- Admin Edit Controls -->
-                <div *ngIf="isAdmin()" class="admin-edit-controls">
+                <div *ngIf="isAdminUser" class="admin-edit-controls">
                   <div class="d-flex gap-2">
                     <button
                       class="btn btn-outline-primary btn-sm"

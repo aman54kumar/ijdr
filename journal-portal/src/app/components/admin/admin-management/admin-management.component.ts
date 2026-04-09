@@ -86,7 +86,8 @@ export class AdminManagementComponent {
         );
 
         if (success) {
-          this.successMessage = 'Admin account created successfully!';
+          this.successMessage =
+            'Account created. Grant the admin custom claim for this user in Firebase (see functions/scripts/setAdminClaim.js) before they can use the admin panel.';
           this.createAdminForm.reset();
           this.showCreateForm = false;
         }
