@@ -1,116 +1,97 @@
-# 🌟 IJDR Journal Portal
+# IJDR Journal Portal
 
-A modern, Firebase-powered journal publication portal built with Angular 18.
+Public website and admin tooling for the **Indian Journal of Development Research** ([ijdrpub.in](https://ijdrpub.in/)): browse issues, open PDFs, contact the journal, and manage content with Firebase-backed auth and storage.
 
-## 🚀 Live Website
+## Stack
 
-**Visit**: https://ijdrpub.in
+- **Framework:** Angular 19 (standalone components, application builder)
+- **UI:** Bootstrap 5, Bootstrap Icons, SCSS
+- **Backend:** Firebase (Authentication, Firestore, Storage, Hosting)
+- **Cloud Functions (TypeScript):** PDF proxy (`getPdf`), dynamic `sitemap.xml`, `rss.xml`
+- **PDF:** PDF.js in-modal; full-issue page uses iframe streaming where appropriate
 
-## 📋 Features
+## Repository layout
 
-- 🔐 **Secure Admin Panel** - Firebase Authentication
-- 📚 **Journal Management** - Create, edit, and manage journal publications
-- 📄 **Article Management** - Full article lifecycle management
-- 🔄 **PDF Processing** - Upload and extract journal metadata
-- 📱 **Responsive Design** - Works on all devices
-- 🌍 **Global CDN** - Fast loading worldwide via Firebase
-- 🔒 **SSL Secured** - Automatic HTTPS encryption
-
-## 🛠 Tech Stack
-
-- **Frontend**: Angular 18 with Bootstrap 5
-- **Backend**: Firebase (Firestore, Authentication, Storage)
-- **Hosting**: Firebase Hosting
-- **Build Tool**: Angular CLI
-- **Styling**: SCSS with Bootstrap
-
-## 📁 Project Structure
-
-```
-ijdr-journal-portal/
-├── src/                    # Angular application source
-│   ├── app/               # Main application components
-│   ├── assets/            # Static assets
-│   └── environments/      # Environment configurations
-├── public/                # Public assets
-├── scripts/               # Utility scripts
-├── firebase.json          # Firebase configuration
-├── firestore.rules        # Firestore security rules
-├── storage.rules          # Firebase Storage security rules
-└── package.json           # Dependencies and scripts
+```text
+journal-portal/
+├── src/app/           # Components, routes, guards, services
+├── public/            # Static assets copied to build (e.g. robots.txt)
+├── functions/         # Firebase Cloud Functions (src + compiled lib)
+├── firebase.json      # Hosting rewrites, headers, Firestore/Storage config
+├── firestore.rules    # Least-privilege Firestore rules
+├── storage.rules      # Scoped Storage rules (journals/, boardMembers/)
+└── angular.json       # Build; pdf.worker from pdfjs-dist
 ```
 
-## 🔧 Development
+## Prerequisites
 
-### Prerequisites
+- **Node.js 20+** (recommended; matches deployment docs)
+- **npm** 9+
+- **Firebase CLI** for deploys (`npm install -g firebase-tools` or `npx firebase`)
 
-- Node.js 18+
-- Angular CLI
-- Firebase CLI
-
-### Setup
+## Local development
 
 ```bash
-# Clone repository
-git clone https://github.com/aman54kumar/ijdr.git
-cd ijdr
-
-# Install dependencies
-npm install
-
-# Start development server
-ng serve
+cd journal-portal
+npm ci
+npm start
 ```
 
-### Build
+Open the URL shown by the CLI (typically `http://localhost:4200`).
+
+Firebase features need valid environment config in `src/environments/` (project id, keys). Do not commit secrets; use local overrides or CI secrets for production keys.
+
+## Production build
 
 ```bash
-# Build for production
-ng build --configuration production
+npm run build -- --configuration=production
+```
 
-# Deploy to Firebase
+Output: `dist/journal-portal/browser/` (Firebase Hosting `public` target in `firebase.json`).
+
+## Deploy
+
+Repo-level steps, Hosting cache behavior, and Docker/nginx options are documented in [**DEPLOYMENT.md**](../DEPLOYMENT.md) at the repository root.
+
+Typical Firebase deploy from this folder:
+
+```bash
 firebase deploy --only hosting
+firebase deploy --only functions    # when Functions change
+firebase deploy --only firestore    # rules + indexes
+firebase deploy --only storage      # Storage rules
 ```
 
-## 🔐 Admin Access
+## Admin access
 
-- **URL**: https://ijdrpub.in/login
-- **Features**: Journal creation, article management, PDF processing
-- **Security**: Firebase Authentication required
+- Sign-in: `/login` (Firebase Auth).
+- **Admin** actions require the Firebase Auth custom claim `admin: true`. A one-off script lives under `functions/scripts/setAdminClaim.js` (run with service account credentials; see script header).
 
-## 🌐 Firebase Configuration
+## Features (high level)
 
-The project uses Firebase for:
+- Public journals listing with search, year filter, sort (newest / most viewed), skeleton loading
+- Issue detail and PDF viewing; per-issue `viewCount` with session deduplication
+- Editorial and advisory boards; legal pages
+- Contact form → Firestore `contactSubmissions`; **Admin → Messages** inbox
+- **Admin → Insights:** issues by `viewCount` with links to Google Analytics and Firebase Console
+- SEO: `robots.txt`, sitemap, canonical and Open Graph / Twitter tags on issue pages
+- Analytics: AngularFire Analytics (SPA `page_view`), Performance Monitoring bootstrap
 
-- **Authentication**: Secure admin login
-- **Firestore**: Journal and article data storage
-- **Storage**: PDF file management
-- **Hosting**: Global CDN with automatic SSL
+## Security model (summary)
 
-## 📖 Usage
+- Firestore: public read where needed; writes restricted by `request.auth.token.admin` (and validated anonymous **create** for contact submissions).
+- Storage: reads for journal/board paths as required by the app; writes/deletes admin-only.
+- See `firestore.rules` and `storage.rules` for the exact policy.
 
-1. **Public Access**: Browse journals and articles at https://ijdrpub.in
-2. **Admin Access**: Login at https://ijdrpub.in/login for management features
-3. **Content Management**: Upload journals, manage articles, process PDFs
+## Further reading
 
-## 🔍 Debugging
+| Document | Purpose |
+|----------|---------|
+| [IMPROVEMENTS-ROADMAP.md](./IMPROVEMENTS-ROADMAP.md) | **Remaining** optional work and ops tasks |
+| [DEPLOYMENT.md](../DEPLOYMENT.md) | Hosting, Docker, Firebase deploy |
+| [FIREBASE_PDF_SOLUTION.md](./FIREBASE_PDF_SOLUTION.md) | PDF hosting and proxy notes |
+| [CUSTOM_DOMAIN_SETUP.md](./CUSTOM_DOMAIN_SETUP.md) | Domain / Firebase Hosting |
 
-```bash
-# Check Firebase configuration
-node scripts/check-firebase-config.js
+## License
 
-# View Firebase console
-https://console.firebase.google.com/project/ijdr-e41d4
-```
-
-## 📝 License
-
-This project is proprietary and confidential.
-
-## 🤝 Contributing
-
-This is a private project. For authorized contributors, please follow standard Git workflow.
-
----
-
-**🌟 IJDR Journal Portal** - Empowering academic publishing with modern technology.
+Proprietary. All rights reserved unless otherwise agreed in writing.
