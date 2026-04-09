@@ -3,6 +3,7 @@
     "source": "functions"
   },
   "hosting": {
+    "site": "ijdr-e41d4",
     "public": "dist/journal-portal/browser",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
@@ -16,6 +17,15 @@
       }
     ],
     "headers": [
+      {
+        "source": "/index.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
       {
         "source": "**/*",
         "headers": [
