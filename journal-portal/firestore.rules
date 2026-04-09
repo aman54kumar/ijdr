@@ -25,10 +25,17 @@ service cloud.firestore {
     match /journals/{journalId} {
       allow read: if true;
       allow create, delete: if isAdmin();
-      // Public read; allow anonymous view-count bumps (only these fields may change).
+      // Public view-count bumps: only viewCount + updatedAt, and viewCount must increase by exactly 1
+      // (handles missing viewCount via get(..., 0); required for new issues created without the field).
       allow update: if isAdmin()
-        || request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['viewCount', 'updatedAt']);
+        || (
+             request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['viewCount', 'updatedAt'])
+             && request.resource.data.viewCount is int
+             && request.resource.data.updatedAt is timestamp
+             && request.resource.data.viewCount
+                  == resource.data.get('viewCount', 0) + 1
+           );
     }
 
     match /articles/{articleId} {

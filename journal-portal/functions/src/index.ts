@@ -49,7 +49,8 @@ export const getPdf = functions.https.onRequest(async (req, res) => {
       return;
     }
 
-    const journalId = req.path.split('/').pop();
+    const rawId = req.path.split('/').pop();
+    const journalId = rawId ? decodeURIComponent(rawId) : '';
 
     if (!journalId) {
       res.status(400).send('Journal ID required');
@@ -99,9 +100,7 @@ export const getPdf = functions.https.onRequest(async (req, res) => {
       req.query.disposition === 'attachment' ? 'attachment' : 'inline';
     res.set(
       'Content-Disposition',
-      `${disposition}; filename="${sanitizeFilename(
-        journalData.title || 'journal'
-      )}.pdf"`
+      `${disposition}; filename="${neutralPdfDownloadFilename(journalId)}"`
     );
     res.set('Cache-Control', 'public, max-age=3600');
 
@@ -233,9 +232,8 @@ export const rssFeed = functions.https.onRequest(async (req, res) => {
   }
 });
 
-function sanitizeFilename(filename: string): string {
-  return filename
-    .replace(/[^a-z0-9\s\-_\.]/gi, '')
-    .replace(/\s+/g, '_')
-    .substring(0, 50);
+/** ASCII-safe download name so mobile browsers do not show the original upload file name. */
+function neutralPdfDownloadFilename(journalId: string): string {
+  const safe = journalId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 32) || 'issue';
+  return `ijdr-${safe}.pdf`;
 }

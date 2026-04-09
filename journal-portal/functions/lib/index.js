@@ -43,7 +43,8 @@ exports.getPdf = functions.https.onRequest(async (req, res) => {
             res.status(405).send('Method Not Allowed');
             return;
         }
-        const journalId = req.path.split('/').pop();
+        const rawId = req.path.split('/').pop();
+        const journalId = rawId ? decodeURIComponent(rawId) : '';
         if (!journalId) {
             res.status(400).send('Journal ID required');
             return;
@@ -79,7 +80,7 @@ exports.getPdf = functions.https.onRequest(async (req, res) => {
         const [metadata] = await file.getMetadata();
         res.set('Content-Type', 'application/pdf');
         const disposition = req.query.disposition === 'attachment' ? 'attachment' : 'inline';
-        res.set('Content-Disposition', `${disposition}; filename="${sanitizeFilename(journalData.title || 'journal')}.pdf"`);
+        res.set('Content-Disposition', `${disposition}; filename="${neutralPdfDownloadFilename(journalId)}"`);
         res.set('Cache-Control', 'public, max-age=3600');
         if (metadata.size) {
             res.set('Content-Length', metadata.size.toString());
@@ -187,10 +188,9 @@ exports.rssFeed = functions.https.onRequest(async (req, res) => {
         res.status(500).send('Error generating feed');
     }
 });
-function sanitizeFilename(filename) {
-    return filename
-        .replace(/[^a-z0-9\s\-_\.]/gi, '')
-        .replace(/\s+/g, '_')
-        .substring(0, 50);
+/** ASCII-safe download name so mobile browsers do not show the original upload file name. */
+function neutralPdfDownloadFilename(journalId) {
+    const safe = journalId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 32) || 'issue';
+    return `ijdr-${safe}.pdf`;
 }
 //# sourceMappingURL=index.js.map

@@ -9,9 +9,11 @@ import { DomSanitizer, SafeResourceUrl, Title, Meta } from '@angular/platform-br
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FirebaseJournalService } from '../../services/firebase-journal.service';
+import { ToastService } from '../../services/toast.service';
 import { iJournal } from '../../type/journals.type';
 import { take } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+import { publicPdfDisplayUrl } from '../../utils/public-pdf-url.util';
 
 /**
  * Full-issue page at /journal/:id. Uses a native iframe with the Storage download URL so the
@@ -36,9 +38,9 @@ import { environment } from '../../../environments/environment';
             </div>
             <div class="pdf-controls">
               <a
-                *ngIf="iframeEmbedUrl && journal?.pdfUrl"
+                *ngIf="iframeEmbedUrl && pdfTabUrl"
                 class="btn btn-outline-primary btn-sm me-2"
-                [href]="journal?.pdfUrl ?? ''"
+                [href]="pdfTabUrl"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -127,6 +129,8 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
   loading = true;
   error: string | null = null;
   iframeEmbedUrl: SafeResourceUrl | null = null;
+  /** Same-origin /pdf/{id} in production so downloads use a neutral filename on mobile. */
+  pdfTabUrl: string | null = null;
 
   private document = inject(DOCUMENT);
 
@@ -134,6 +138,7 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private firebaseService: FirebaseJournalService,
+    private toast: ToastService,
     private title: Title,
     private meta: Meta,
     private sanitizer: DomSanitizer
@@ -180,15 +185,17 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
       this.loading = true;
       this.error = null;
       this.iframeEmbedUrl = null;
+      this.pdfTabUrl = null;
 
       this.firebaseService
         .getJournalById(journalId)
         .pipe(take(1))
         .subscribe({
           next: (journal) => {
-            if (journal && journal.pdfUrl && journal.id) {
+            const jid = journal?.id;
+            if (journal && journal.pdfUrl && jid) {
               this.journal = {
-                id: journal.id,
+                id: jid,
                 title: journal.title,
                 edition: journal.edition || 'January-June',
                 volume: journal.volume,
@@ -211,7 +218,7 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
                 `Read this issue of the Indian Journal of Development Research: ${issueTitle}.`;
               this.meta.updateTag({ name: 'description', content: desc });
 
-              const canonicalUrl = `${environment.siteUrl}/journal/${journal.id}`;
+              const canonicalUrl = `${environment.siteUrl}/journal/${jid}`;
               this.setCanonicalLink(canonicalUrl);
 
               this.meta.updateTag({ property: 'og:type', content: 'article' });
@@ -233,13 +240,18 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
                 content: desc,
               });
 
-              const viewKey = `ijdr_viewed_${journal.id}`;
-              if (!sessionStorage.getItem(viewKey)) {
-                sessionStorage.setItem(viewKey, '1');
-                void this.firebaseService.incrementViewCount(journal.id);
+              if (this.firebaseService.consumeJournalViewSlot(jid)) {
+                void this.firebaseService.incrementViewCount(jid).catch((err) => {
+                  console.error('View count increment failed:', err);
+                  this.firebaseService.clearJournalViewDedupe(jid);
+                  this.toast.show(
+                    'Could not record this view. If counts never update, deploy latest firestore.rules and check Firebase Console → App Check is not enforcing Firestore without a web provider.',
+                    'warning'
+                  );
+                });
               }
 
-              this.loadPDF(journal.pdfUrl);
+              this.loadPDF(jid, journal.pdfUrl);
             } else {
               this.error = 'Journal or PDF not found';
               this.loading = false;
@@ -256,10 +268,12 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
     }
   }
 
-  private loadPDF(pdfUrl: string) {
+  private loadPDF(journalId: string, storageDownloadUrl: string) {
     try {
+      const displayUrl = publicPdfDisplayUrl(journalId, storageDownloadUrl);
+      this.pdfTabUrl = displayUrl;
       this.iframeEmbedUrl =
-        this.sanitizer.bypassSecurityTrustResourceUrl(pdfUrl);
+        this.sanitizer.bypassSecurityTrustResourceUrl(displayUrl);
       // Spinner hides on iframe (load); safety timeout if load never fires (some PDF plugins)
       setTimeout(() => {
         if (this.loading) {
