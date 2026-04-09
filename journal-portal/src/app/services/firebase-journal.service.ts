@@ -52,7 +52,50 @@ export interface FirebaseJournal {
   providedIn: 'root',
 })
 export class FirebaseJournalService {
+  /**
+   * When sessionStorage throws or is missing (Safari private mode, many in-app browsers),
+   * fall back so the first view on that device still records a count.
+   */
+  private readonly journalViewDedupeMemory = new Set<string>();
+
   constructor(private firestore: Firestore, private storage: Storage) {}
+
+  /**
+   * Reserve a one-time view slot for this journal in this browser session.
+   * Uses sessionStorage when possible; otherwise an in-memory Set (same tab / SPA session).
+   */
+  consumeJournalViewSlot(journalId: string): boolean {
+    const key = `ijdr_viewed_${journalId}`;
+    if (typeof sessionStorage !== 'undefined') {
+      try {
+        if (sessionStorage.getItem(key)) {
+          return false;
+        }
+        sessionStorage.setItem(key, '1');
+        return true;
+      } catch {
+        // fall through — mobile / embedded browsers often block storage
+      }
+    }
+    if (this.journalViewDedupeMemory.has(journalId)) {
+      return false;
+    }
+    this.journalViewDedupeMemory.add(journalId);
+    return true;
+  }
+
+  /** Undo reservation after a failed Firestore write so the user can retry. */
+  clearJournalViewDedupe(journalId: string): void {
+    const key = `ijdr_viewed_${journalId}`;
+    if (typeof sessionStorage !== 'undefined') {
+      try {
+        sessionStorage.removeItem(key);
+      } catch {
+        /* ignore */
+      }
+    }
+    this.journalViewDedupeMemory.delete(journalId);
+  }
 
   // Helper method to clean data for Firestore (remove null/undefined values)
   private cleanFirestoreData(data: any): any {
@@ -158,6 +201,7 @@ export class FirebaseJournalService {
         pdfUrl: '', // Temporary empty URL
         pdfFileName: pdfFile.name,
         fileSize: pdfFile.size,
+        viewCount: 0,
         createdAt: now,
         updatedAt: now,
       };
@@ -251,17 +295,13 @@ export class FirebaseJournalService {
     await deleteDoc(journalRef);
   }
 
-  // Increment view count when journal is viewed
+  /** Bump viewCount by 1. Caller should handle errors (e.g. toast) — do not swallow permission failures. */
   async incrementViewCount(journalId: string): Promise<void> {
-    try {
-      const journalRef = doc(this.firestore, 'journals', journalId);
-      await updateDoc(journalRef, {
-        viewCount: increment(1),
-        updatedAt: Timestamp.now(),
-      });
-    } catch (error) {
-      console.error('Error incrementing view count:', error);
-    }
+    const journalRef = doc(this.firestore, 'journals', journalId);
+    await updateDoc(journalRef, {
+      viewCount: increment(1),
+      updatedAt: Timestamp.now(),
+    });
   }
 
   /** Decode storage object path from a Firebase download URL (for deleteObject). */
@@ -285,7 +325,8 @@ export class FirebaseJournalService {
     file: File,
     journalId: string
   ): Promise<string> {
-    const fileName = `journals/${journalId}/${file.name}`;
+    // Fixed object name so Storage URLs and any direct access do not expose the uploader's filename.
+    const fileName = `journals/${journalId}/issue.pdf`;
     const storageRef = ref(this.storage, fileName);
 
     await uploadBytes(storageRef, file);

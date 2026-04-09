@@ -12,6 +12,8 @@ import { Router } from '@angular/router';
 import { Storage, ref, getBlob } from '@angular/fire/storage';
 import { PdfModalService } from '../../services/pdf-modal.service';
 import { FirebaseJournalService } from '../../services/firebase-journal.service';
+import { ToastService } from '../../services/toast.service';
+import { publicPdfDisplayUrl } from '../../utils/public-pdf-url.util';
 import { iJournal } from '../../type/journals.type';
 import { Subscription } from 'rxjs';
 import { take } from 'rxjs/operators';
@@ -394,6 +396,7 @@ export class PdfModalComponent implements OnInit, OnDestroy {
   constructor(
     private pdfModalService: PdfModalService,
     private firebaseService: FirebaseJournalService,
+    private toast: ToastService,
     private storage: Storage,
     private router: Router,
     private cdr: ChangeDetectorRef
@@ -614,8 +617,20 @@ export class PdfModalComponent implements OnInit, OnDestroy {
         .pipe(take(1))
         .subscribe({
           next: async (journal) => {
-            if (journal?.pdfUrl) {
-              await this.loadPDF(journal.pdfUrl);
+            const jid = journal?.id;
+            const pdfUrl = journal?.pdfUrl;
+            if (jid && pdfUrl) {
+              if (this.firebaseService.consumeJournalViewSlot(jid)) {
+                void this.firebaseService.incrementViewCount(jid).catch((err) => {
+                  console.error('View count increment failed:', err);
+                  this.firebaseService.clearJournalViewDedupe(jid);
+                  this.toast.show(
+                    'Could not record this view. Deploy firestore.rules and ensure App Check is not blocking Firestore.',
+                    'warning'
+                  );
+                });
+              }
+              await this.loadPDF({ id: jid, pdfUrl });
             } else {
               this.error = 'PDF not available for this journal';
               this.loading = false;
@@ -630,9 +645,11 @@ export class PdfModalComponent implements OnInit, OnDestroy {
     );
   }
 
-  private async loadPDF(pdfUrl: string) {
+  private async loadPDF(journal: { id: string; pdfUrl: string }) {
+    const viewerUrl = publicPdfDisplayUrl(journal.id, journal.pdfUrl);
+    const storageUrl = journal.pdfUrl;
     try {
-      console.log('Loading PDF from URL:', pdfUrl);
+      console.log('Loading PDF (viewer URL):', viewerUrl);
       this.cdr.detectChanges();
       await new Promise<void>((resolve) =>
         requestAnimationFrame(() => resolve())
@@ -641,7 +658,7 @@ export class PdfModalComponent implements OnInit, OnDestroy {
       // Layer 1: Try iframe first (avoids CORS issues)
       try {
         console.log('🔄 Trying iframe method first...');
-        this.loadPDFInIframe(pdfUrl);
+        this.loadPDFInIframe(viewerUrl);
         return; // Success!
       } catch (iframeError) {
         console.log('❌ Iframe method failed:', iframeError);
@@ -652,7 +669,7 @@ export class PdfModalComponent implements OnInit, OnDestroy {
           console.log('🔄 Trying direct PDF.js loading...');
 
           const loadingTask = pdfjsLib.getDocument({
-            url: pdfUrl,
+            url: viewerUrl,
             cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/cmaps/`,
             cMapPacked: true,
           });
@@ -670,7 +687,7 @@ export class PdfModalComponent implements OnInit, OnDestroy {
 
           // Layer 3: Try Firebase Storage getBlob() as last resort
           try {
-            const storagePath = this.extractStoragePathFromUrl(pdfUrl);
+            const storagePath = this.extractStoragePathFromUrl(storageUrl);
             if (!storagePath) {
               throw new Error('Could not extract storage path from URL');
             }
@@ -702,14 +719,14 @@ export class PdfModalComponent implements OnInit, OnDestroy {
             console.log('❌ Firebase Storage method failed:', firebaseError);
 
             // Final fallback: Show error with new tab option
-            this.showFinalFallback(pdfUrl);
+            this.showFinalFallback(viewerUrl);
             return;
           }
         }
       }
     } catch (error) {
       console.error('Error loading PDF:', error);
-      this.showFinalFallback(pdfUrl);
+      this.showFinalFallback(viewerUrl);
     }
   }
 
