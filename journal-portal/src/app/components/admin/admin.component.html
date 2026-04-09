@@ -332,7 +332,6 @@
                       id="ssn"
                       formControlName="ssn"
                       placeholder="2249-104X"
-                      pattern="[0-9]{4}-[0-9]{3}[0-9XxA-Za-z]"
                     />
                     <div class="form-text">
                       Default: 2249-104X. Format: NNNN-NNNC (where C can be
@@ -419,11 +418,7 @@
                     <button
                       type="submit"
                       class="btn btn-success"
-                      [disabled]="
-                        uploading ||
-                        journalForm.invalid ||
-                        (!selectedJournal && !selectedPDFFile)
-                      "
+                      [disabled]="isJournalSubmitDisabled"
                     >
                       <span
                         *ngIf="uploading"
@@ -447,6 +442,18 @@
                     >
                       Cancel
                     </button>
+                  </div>
+
+                  <div
+                    class="mt-2 small text-muted"
+                    *ngIf="isJournalSubmitDisabled"
+                  >
+                    <strong>Submit is disabled because:</strong>
+                    <ul class="mb-0 mt-1">
+                      <li *ngFor="let reason of getJournalSubmitBlockers()">
+                        {{ reason }}
+                      </li>
+                    </ul>
                   </div>
 
                   <!-- Validation Messages -->

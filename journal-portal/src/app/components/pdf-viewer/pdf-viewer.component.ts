@@ -6,12 +6,14 @@ import {
   ViewChild,
   inject,
 } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl, Title, Meta } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FirebaseJournalService } from '../../services/firebase-journal.service';
 import { iJournal } from '../../type/journals.type';
 import * as pdfjsLib from 'pdfjs-dist';
 import { Storage, ref, getBlob } from '@angular/fire/storage';
+import { take } from 'rxjs/operators';
 
 // Set the worker source
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
@@ -38,43 +40,62 @@ console.log(
               </small>
             </div>
             <div class="pdf-controls">
-              <div class="btn-group me-3">
-                <button
-                  class="btn btn-outline-secondary btn-sm"
-                  (click)="previousPage()"
-                  [disabled]="currentPage <= 1"
-                >
-                  <i class="bi bi-chevron-left"></i> Previous
-                </button>
-                <button
-                  class="btn btn-outline-secondary btn-sm"
-                  (click)="nextPage()"
-                  [disabled]="currentPage >= totalPages"
-                >
-                  Next <i class="bi bi-chevron-right"></i>
-                </button>
-              </div>
-              <span class="page-info me-3">
-                Page {{ currentPage }} of {{ totalPages }}
-              </span>
-              <div class="btn-group me-3">
-                <button
-                  class="btn btn-outline-secondary btn-sm"
-                  (click)="zoomOut()"
-                >
-                  <i class="bi bi-zoom-out"></i>
-                </button>
-                <span class="btn btn-outline-secondary btn-sm disabled"
-                  >{{ Math.round(scale * 100) }}%</span
-                >
-                <button
-                  class="btn btn-outline-secondary btn-sm"
-                  (click)="zoomIn()"
-                >
-                  <i class="bi bi-zoom-in"></i>
-                </button>
-              </div>
-              <button class="btn btn-outline-primary btn-sm" (click)="goBack()">
+              <ng-container *ngIf="canvasViewerActive">
+                <div class="btn-group me-3">
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    (click)="previousPage()"
+                    [disabled]="currentPage <= 1"
+                  >
+                    <i class="bi bi-chevron-left"></i> Previous
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    (click)="nextPage()"
+                    [disabled]="currentPage >= totalPages"
+                  >
+                    Next <i class="bi bi-chevron-right"></i>
+                  </button>
+                </div>
+                <span class="page-info me-3">
+                  Page {{ currentPage }} of {{ totalPages }}
+                </span>
+                <div class="btn-group me-3">
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    (click)="zoomOut()"
+                  >
+                    <i class="bi bi-zoom-out"></i>
+                  </button>
+                  <span class="btn btn-outline-secondary btn-sm disabled"
+                    >{{ Math.round(scale * 100) }}%</span
+                  >
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    (click)="zoomIn()"
+                  >
+                    <i class="bi bi-zoom-in"></i>
+                  </button>
+                </div>
+              </ng-container>
+              <a
+                *ngIf="iframeEmbedUrl && journal?.pdfUrl"
+                class="btn btn-outline-primary btn-sm me-2"
+                [href]="journal?.pdfUrl ?? ''"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <i class="bi bi-box-arrow-up-right me-1"></i>Open in new tab
+              </a>
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-sm"
+                (click)="goBack()"
+              >
                 <i class="bi bi-arrow-left"></i> Back
               </button>
             </div>
@@ -99,8 +120,20 @@ console.log(
         <button class="btn btn-primary" (click)="goBack()">Go Back</button>
       </div>
 
-      <!-- PDF Canvas Container -->
-      <div *ngIf="!loading && !error" class="pdf-content">
+      <!-- Embedded PDF (avoids Storage XHR/CORS; works for shared deep links) -->
+      <div *ngIf="!loading && !error && iframeEmbedUrl" class="pdf-content">
+        <iframe
+          class="pdf-iframe-viewer w-100 border rounded shadow-sm"
+          [src]="iframeEmbedUrl"
+          title="Journal PDF"
+        ></iframe>
+      </div>
+
+      <!-- PDF.js canvas -->
+      <div
+        *ngIf="!loading && !error && !iframeEmbedUrl"
+        class="pdf-content"
+      >
         <div class="canvas-container d-flex justify-content-center">
           <canvas
             #pdfCanvas
@@ -141,6 +174,12 @@ console.log(
         background: white;
       }
 
+      .pdf-iframe-viewer {
+        min-height: calc(100vh - 140px);
+        border: 1px solid #dee2e6 !important;
+        background: #fff;
+      }
+
       .page-info {
         font-size: 0.9rem;
         font-weight: 500;
@@ -169,6 +208,7 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
   journal: iJournal | null = null;
   loading = true;
   error: string | null = null;
+  iframeEmbedUrl: SafeResourceUrl | null = null;
 
   // PDF.js objects
   private pdfDocument: any = null;
@@ -185,13 +225,23 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private firebaseService: FirebaseJournalService
+    private firebaseService: FirebaseJournalService,
+    private title: Title,
+    private meta: Meta,
+    private sanitizer: DomSanitizer
   ) {}
 
+  get canvasViewerActive(): boolean {
+    return !this.iframeEmbedUrl && this.totalPages > 0;
+  }
+
   ngOnInit() {
+    const st = history.state as { skipViewIncrement?: boolean };
+    const skipIncrement = st?.skipViewIncrement === true;
+
     const journalId = this.route.snapshot.paramMap.get('id');
     if (journalId) {
-      this.loadJournal(journalId);
+      this.loadJournal(journalId, skipIncrement);
     } else {
       this.error = 'No journal ID provided';
       this.loading = false;
@@ -200,6 +250,7 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.cleanup();
+    this.title.setTitle('IJDR - Indian Journal of Development Research');
   }
 
   private cleanup() {
@@ -211,13 +262,16 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async loadJournal(journalId: string) {
+  private async loadJournal(journalId: string, skipViewIncrement: boolean) {
     try {
       this.loading = true;
       this.error = null;
 
-      // Get journal details
-      this.firebaseService.getJournalById(journalId).subscribe({
+      // take(1): docData re-emits after viewCount updates; without this we loop increments + reloads
+      this.firebaseService
+        .getJournalById(journalId)
+        .pipe(take(1))
+        .subscribe({
         next: async (journal) => {
           if (journal && journal.pdfUrl && journal.id) {
             // Map FirebaseJournal to iJournal
@@ -237,6 +291,15 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
               createdAt: journal.createdAt,
               updatedAt: journal.updatedAt,
             } as iJournal;
+            const issueTitle = `${journal.title} · Vol. ${journal.volume}, No. ${journal.number} (${journal.year})`;
+            this.title.setTitle(`${issueTitle} | IJDR`);
+            this.meta.updateTag({
+              name: 'description',
+              content: `Read this issue of the Indian Journal of Development Research: ${issueTitle}.`,
+            });
+            if (!skipViewIncrement) {
+              this.firebaseService.incrementViewCount(journal.id);
+            }
             await this.loadPDF(journal.pdfUrl);
           } else {
             this.error = 'Journal or PDF not found';
@@ -257,10 +320,11 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
   }
 
   private async loadPDF(pdfUrl: string) {
+    this.iframeEmbedUrl = null;
     try {
       console.log('Loading PDF from URL:', pdfUrl);
 
-      // Try Firebase Storage getBlob() first to bypass CORS
+      // Try Firebase Storage getBlob() first (PDF.js canvas when SDK access works)
       try {
         console.log('Attempting Firebase Storage getBlob() method...');
 
@@ -305,12 +369,14 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
         this.loading = false;
         return; // Success! Exit the method
       } catch (firebaseError) {
-        console.log('❌ Firebase Storage method failed:', firebaseError);
-        console.log('🔄 Trying iframe approach as fallback...');
-
-        // Fallback to iframe approach
-        this.loadPDFInIframe(pdfUrl);
-        return; // Let iframe handle it
+        console.log('❌ Firebase Storage / PDF.js path failed:', firebaseError);
+        // Embed full download URL (token in query) — browser navigation, not XHR → no Storage CORS
+        this.iframeEmbedUrl =
+          this.sanitizer.bypassSecurityTrustResourceUrl(pdfUrl);
+        this.totalPages = 0;
+        this.loading = false;
+        this.error = null;
+        return;
       }
     } catch (error) {
       console.error('Error loading PDF:', error);
@@ -343,83 +409,6 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error extracting storage path:', error);
       return null;
-    }
-  }
-
-  private loadPDFInIframe(pdfUrl: string) {
-    try {
-      // Create iframe to display PDF
-      const container = document.querySelector('.pdf-content');
-      if (container) {
-        container.innerHTML = `
-          <div class="pdf-iframe-container">
-            <div class="pdf-header d-flex justify-content-between align-items-center mb-3">
-              <h5 class="mb-0">${this.journal?.title || 'Journal PDF'}</h5>
-              <div class="btn-group">
-                <button onclick="history.back()" class="btn btn-secondary btn-sm">
-                  <i class="bi bi-arrow-left me-1"></i>
-                  Back
-                </button>
-                <a href="${pdfUrl}" target="_blank" class="btn btn-primary btn-sm">
-                  <i class="bi bi-external-link me-1"></i>
-                  Open in New Tab
-                </a>
-              </div>
-            </div>
-            <div class="iframe-wrapper">
-              <iframe 
-                src="${pdfUrl}" 
-                width="100%" 
-                height="800px" 
-                style="border: 1px solid #dee2e6; border-radius: 0.375rem;"
-                title="Journal PDF">
-                <p>Your browser does not support iframes. 
-                   <a href="${pdfUrl}" target="_blank">Click here to open the PDF in a new tab</a>
-                </p>
-              </iframe>
-            </div>
-          </div>
-        `;
-      }
-
-      this.loading = false;
-      this.error = null;
-
-      console.log('PDF loaded in iframe successfully');
-    } catch (iframeError) {
-      console.log('Iframe approach failed, opening in new tab:', iframeError);
-      this.openPDFInNewTab(pdfUrl);
-    }
-  }
-
-  private openPDFInNewTab(pdfUrl: string) {
-    // Open PDF in new tab/window - this bypasses CORS completely
-    window.open(pdfUrl, '_blank', 'noopener,noreferrer');
-
-    // Show message to user
-    this.loading = false;
-    this.error = null;
-
-    // Update the view to show that PDF was opened externally
-    const container = document.querySelector('.pdf-content');
-    if (container) {
-      container.innerHTML = `
-        <div class="text-center py-5">
-          <div class="card mx-auto" style="max-width: 500px;">
-            <div class="card-body">
-              <i class="bi bi-external-link display-1 text-success mb-3"></i>
-              <h4>PDF Opened Successfully</h4>
-              <p class="text-muted mb-4">
-                The journal PDF has been opened in a new tab/window.
-              </p>
-              <button onclick="history.back()" class="btn btn-primary">
-                <i class="bi bi-arrow-left me-2"></i>
-                Go Back
-              </button>
-            </div>
-          </div>
-        </div>
-      `;
     }
   }
 

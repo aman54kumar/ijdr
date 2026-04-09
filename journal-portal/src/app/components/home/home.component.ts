@@ -76,6 +76,7 @@ export class HomeComponent implements OnInit {
 
   openJournalPDF(journal: iJournal) {
     if (journal.id) {
+      this.firebaseService.incrementViewCount(journal.id);
       this.pdfModalService.openModal(journal);
     } else {
       alert('Journal not available.');
