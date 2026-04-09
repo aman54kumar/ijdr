@@ -25,7 +25,11 @@ import { PdfModalService } from '../../services/pdf-modal.service';
 import { AuthService } from '../../services/auth.service';
 import { User } from '@angular/fire/auth';
 import { AdminManagementComponent } from './admin-management/admin-management.component';
+import { AdminInsightsComponent } from './admin-insights/admin-insights.component';
+import { AdminMessagesComponent } from './admin-messages/admin-messages.component';
 import { BoardMember, BoardMemberSection } from '../../type/journals.type';
+import { ToastService } from '../../services/toast.service';
+import { ConfirmModalService } from '../../services/confirm-modal.service';
 
 /** ISSN is optional in the UI; only validate format when non-empty. */
 function optionalIssnValidator(): ValidatorFn {
@@ -46,6 +50,8 @@ function optionalIssnValidator(): ValidatorFn {
     FormsModule,
     ReactiveFormsModule,
     AdminManagementComponent,
+    AdminInsightsComponent,
+    AdminMessagesComponent,
     DragDropModule,
   ],
   templateUrl: './admin.component.html',
@@ -57,7 +63,9 @@ export class AdminComponent implements OnInit {
     | 'create-journal'
     | 'admin-management'
     | 'board-management'
-    | 'create-board-member' = 'journals';
+    | 'create-board-member'
+    | 'insights'
+    | 'messages' = 'journals';
 
   journals: FirebaseJournal[] = [];
   selectedJournal: FirebaseJournal | null = null;
@@ -88,7 +96,9 @@ export class AdminComponent implements OnInit {
     private authService: AuthService,
     private router: Router,
     private fb: FormBuilder,
-    private pdfModalService: PdfModalService
+    private pdfModalService: PdfModalService,
+    private toast: ToastService,
+    private confirmModal: ConfirmModalService
   ) {
     this.journalForm = this.fb.group({
       title: ['', Validators.required],
@@ -249,11 +259,12 @@ export class AdminComponent implements OnInit {
         this.selectedPDFFile = null;
         this.currentView = 'journals';
         this.loadJournals();
-        alert('Journal created successfully!');
+        this.toast.show('Journal created successfully!', 'success');
       } catch (error) {
         console.error('Error creating journal:', error);
-        alert(
-          `Error creating journal: ${error}. Please check console for details.`
+        this.toast.show(
+          `Error creating journal. Check the console for details.`,
+          'danger'
         );
       } finally {
         this.uploading = false;
@@ -261,7 +272,7 @@ export class AdminComponent implements OnInit {
     } else {
       this.journalForm.markAllAsTouched();
       if (!this.selectedPDFFile) {
-        alert('Please select a PDF file.');
+        this.toast.show('Please select a PDF file.', 'warning');
       }
     }
   }
@@ -284,10 +295,10 @@ export class AdminComponent implements OnInit {
         this.selectedPDFFile = null;
         this.currentView = 'journals';
         this.loadJournals();
-        alert('Journal updated successfully!');
+        this.toast.show('Journal updated successfully!', 'success');
       } catch (error) {
         console.error('Error updating journal:', error);
-        alert('Error updating journal. Please try again.');
+        this.toast.show('Error updating journal. Please try again.', 'danger');
       } finally {
         this.uploading = false;
       }
@@ -295,19 +306,20 @@ export class AdminComponent implements OnInit {
   }
 
   async deleteJournal(journal: FirebaseJournal) {
-    if (
-      confirm(
-        `Are you sure you want to delete "${journal.title}"? This action cannot be undone.`
-      )
-    ) {
-      try {
-        await this.firebaseService.deleteJournal(journal.id!);
-        this.loadJournals();
-        alert('Journal deleted successfully!');
-      } catch (error) {
-        console.error('Error deleting journal:', error);
-        alert('Error deleting journal. Please try again.');
-      }
+    const ok = await this.confirmModal.ask(
+      'Delete journal',
+      `Delete "${journal.title}"? This cannot be undone.`
+    );
+    if (!ok) {
+      return;
+    }
+    try {
+      await this.firebaseService.deleteJournal(journal.id!);
+      this.loadJournals();
+      this.toast.show('Journal deleted successfully!', 'success');
+    } catch (error) {
+      console.error('Error deleting journal:', error);
+      this.toast.show('Error deleting journal. Please try again.', 'danger');
     }
   }
 
@@ -333,6 +345,8 @@ export class AdminComponent implements OnInit {
       | 'admin-management'
       | 'board-management'
       | 'create-board-member'
+      | 'insights'
+      | 'messages'
   ) {
     this.currentView = view;
     this.selectedJournal = null;
@@ -424,7 +438,7 @@ export class AdminComponent implements OnInit {
       this.router.navigate(['/login']);
     } catch (error) {
       console.error('Logout error:', error);
-      alert('Error logging out. Please try again.');
+      this.toast.show('Error logging out. Please try again.', 'danger');
     }
   }
 
@@ -463,7 +477,7 @@ export class AdminComponent implements OnInit {
       };
       this.pdfModalService.openModal(modalJournal);
     } else {
-      alert('Journal not available.');
+      this.toast.show('Journal not available.', 'warning');
     }
   }
 
@@ -479,7 +493,7 @@ export class AdminComponent implements OnInit {
       error: (error) => {
         console.error('Error loading board members:', error);
         this.loading = false;
-        alert('Error loading board members. Please try again.');
+        this.toast.show('Error loading board members. Please try again.', 'danger');
       },
     });
   }
@@ -538,15 +552,15 @@ export class AdminComponent implements OnInit {
         this.resetBoardMemberForm();
         this.loadBoardMembers();
         this.setView('board-management');
-        alert('Board member created successfully!');
+        this.toast.show('Board member created successfully!', 'success');
       } catch (error) {
         console.error('Error creating board member:', error);
-        alert('Error creating board member. Please try again.');
+        this.toast.show('Error creating board member. Please try again.', 'danger');
       } finally {
         this.uploading = false;
       }
     } else {
-      alert('Please fill in all required fields correctly.');
+      this.toast.show('Please fill in all required fields correctly.', 'warning');
     }
   }
 
@@ -603,10 +617,10 @@ export class AdminComponent implements OnInit {
         this.resetBoardMemberForm();
         this.loadBoardMembers();
         this.setView('board-management');
-        alert('Board member updated successfully!');
+        this.toast.show('Board member updated successfully!', 'success');
       } catch (error) {
         console.error('Error updating board member:', error);
-        alert('Error updating board member. Please try again.');
+        this.toast.show('Error updating board member. Please try again.', 'danger');
       } finally {
         this.uploading = false;
       }
@@ -614,15 +628,20 @@ export class AdminComponent implements OnInit {
   }
 
   async deleteBoardMember(member: BoardMember) {
-    if (confirm(`Are you sure you want to delete ${member.name}?`)) {
-      try {
-        await this.firebaseService.deleteBoardMember(member.id);
-        this.loadBoardMembers();
-        alert('Board member deleted successfully!');
-      } catch (error) {
-        console.error('Error deleting board member:', error);
-        alert('Error deleting board member. Please try again.');
-      }
+    const ok = await this.confirmModal.ask(
+      'Deactivate member',
+      `Deactivate ${member.name}? They will be hidden from the public board.`
+    );
+    if (!ok) {
+      return;
+    }
+    try {
+      await this.firebaseService.deleteBoardMember(member.id);
+      this.loadBoardMembers();
+      this.toast.show('Board member deactivated successfully!', 'success');
+    } catch (error) {
+      console.error('Error deleting board member:', error);
+      this.toast.show('Error deactivating board member. Please try again.', 'danger');
     }
   }
 
@@ -665,17 +684,19 @@ export class AdminComponent implements OnInit {
     }, 100);
   }
 
-  onBoardMemberImageSelect(event: any) {
-    const file = event.target.files[0];
+  onBoardMemberImageSelect(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
     if (
-      (file && file.type === 'image/jpeg') ||
-      file.type === 'image/png' ||
-      file.type === 'image/webp'
+      file &&
+      (file.type === 'image/jpeg' ||
+        file.type === 'image/png' ||
+        file.type === 'image/webp')
     ) {
       this.selectedBoardMemberImage = file;
-    } else {
-      alert('Please select a valid image file (JPEG, PNG, or WebP).');
-      event.target.value = '';
+    } else if (file) {
+      this.toast.show('Please select a valid image file (JPEG, PNG, or WebP).', 'warning');
+      input.value = '';
     }
   }
 
@@ -805,7 +826,7 @@ export class AdminComponent implements OnInit {
         console.log(`Reordered ${position} members successfully`);
       } catch (error) {
         console.error('Error reordering board members:', error);
-        alert('Error updating order. Please try again.');
+        this.toast.show('Error updating order. Please try again.', 'danger');
       }
     }
   }

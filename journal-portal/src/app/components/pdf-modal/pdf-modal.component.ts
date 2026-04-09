@@ -1,10 +1,12 @@
 import {
+  ChangeDetectorRef,
   Component,
   ElementRef,
   OnDestroy,
   OnInit,
   ViewChild,
 } from '@angular/core';
+import * as pdfjsLib from 'pdfjs-dist';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Storage, ref, getBlob } from '@angular/fire/storage';
@@ -14,8 +16,8 @@ import { iJournal } from '../../type/journals.type';
 import { Subscription } from 'rxjs';
 import { take } from 'rxjs/operators';
 
-// Import PDF.js
-declare const pdfjsLib: any;
+const PDFJS_VERSION = '3.4.120';
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 
 @Component({
   selector: 'app-pdf-modal',
@@ -151,10 +153,13 @@ declare const pdfjsLib: any;
           </div>
         </div>
 
-        <!-- Modal Content -->
-        <div class="pdf-modal-content">
-          <!-- Loading State -->
-          <div *ngIf="loading" class="loading-container">
+        <!-- Modal Content: mount area must stay in DOM while loading so iframe/PDF can attach -->
+        <div class="pdf-modal-content position-relative">
+          <div
+            *ngIf="loading && !error"
+            class="loading-container position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75"
+            style="z-index: 2"
+          >
             <div class="text-center">
               <div class="spinner-border text-primary mb-3" role="status">
                 <span class="visually-hidden">Loading...</span>
@@ -163,7 +168,6 @@ declare const pdfjsLib: any;
             </div>
           </div>
 
-          <!-- Error State -->
           <div *ngIf="error" class="error-container">
             <div class="text-center">
               <div class="alert alert-warning" role="alert">
@@ -177,13 +181,13 @@ declare const pdfjsLib: any;
             </div>
           </div>
 
-          <!-- PDF Canvas -->
-          <div *ngIf="!loading && !error" class="pdf-canvas-container">
+          <div *ngIf="!error" class="pdf-canvas-container">
             <canvas
               #pdfCanvas
               class="pdf-canvas"
               [style.max-width]="'100%'"
             ></canvas>
+            <div #iframeHost class="iframe-host w-100"></div>
           </div>
         </div>
       </div>
@@ -290,10 +294,15 @@ declare const pdfjsLib: any;
 
       .pdf-canvas-container {
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
         min-height: 100%;
         width: 100%;
+      }
+
+      .iframe-host {
+        min-height: 400px;
       }
 
       .pdf-canvas {
@@ -351,6 +360,8 @@ declare const pdfjsLib: any;
 export class PdfModalComponent implements OnInit, OnDestroy {
   @ViewChild('pdfCanvas', { static: false })
   canvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('iframeHost', { static: false })
+  iframeHost!: ElementRef<HTMLDivElement>;
 
   // Modal state
   isOpen = false;
@@ -384,7 +395,8 @@ export class PdfModalComponent implements OnInit, OnDestroy {
     private pdfModalService: PdfModalService,
     private firebaseService: FirebaseJournalService,
     private storage: Storage,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -546,9 +558,7 @@ export class PdfModalComponent implements OnInit, OnDestroy {
       return;
     }
     this.pdfModalService.closeModal();
-    void this.router.navigate(['/journal', id], {
-      state: { skipViewIncrement: true },
-    });
+    void this.router.navigate(['/journal', id]);
   }
 
   copyShareLink() {
@@ -596,6 +606,7 @@ export class PdfModalComponent implements OnInit, OnDestroy {
 
     this.loading = true;
     this.error = null;
+    this.resetPdfDisplay();
 
     this.subscriptions.add(
       this.firebaseService
@@ -622,6 +633,10 @@ export class PdfModalComponent implements OnInit, OnDestroy {
   private async loadPDF(pdfUrl: string) {
     try {
       console.log('Loading PDF from URL:', pdfUrl);
+      this.cdr.detectChanges();
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve())
+      );
 
       // Layer 1: Try iframe first (avoids CORS issues)
       try {
@@ -630,6 +645,7 @@ export class PdfModalComponent implements OnInit, OnDestroy {
         return; // Success!
       } catch (iframeError) {
         console.log('❌ Iframe method failed:', iframeError);
+        this.resetPdfDisplay();
 
         // Layer 2: Try direct PDF.js loading
         try {
@@ -637,7 +653,7 @@ export class PdfModalComponent implements OnInit, OnDestroy {
 
           const loadingTask = pdfjsLib.getDocument({
             url: pdfUrl,
-            cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+            cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/cmaps/`,
             cMapPacked: true,
           });
 
@@ -666,8 +682,7 @@ export class PdfModalComponent implements OnInit, OnDestroy {
             // Load PDF from ArrayBuffer using PDF.js
             const loadingTask = pdfjsLib.getDocument({
               data: arrayBuffer,
-              cMapUrl:
-                'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+              cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/cmaps/`,
               cMapPacked: true,
             });
 
@@ -812,12 +827,27 @@ export class PdfModalComponent implements OnInit, OnDestroy {
     }
   }
 
+  private resetPdfDisplay() {
+    const host = this.iframeHost?.nativeElement;
+    if (host) {
+      host.innerHTML = '';
+    }
+    const canvas = this.canvasRef?.nativeElement;
+    if (canvas) {
+      canvas.style.display = 'block';
+    }
+  }
+
   private loadPDFInIframe(pdfUrl: string) {
     try {
-      // Create iframe content for the modal
-      const container = document.querySelector('.pdf-canvas-container');
-      if (container) {
-        this.createIframeContent(container, pdfUrl);
+      const host = this.iframeHost?.nativeElement;
+      if (!host) {
+        throw new Error('PDF iframe host not ready');
+      }
+      this.createIframeContent(host, pdfUrl);
+      const canvas = this.canvasRef?.nativeElement;
+      if (canvas) {
+        canvas.style.display = 'none';
       }
 
       this.loading = false;
@@ -832,7 +862,7 @@ export class PdfModalComponent implements OnInit, OnDestroy {
     }
   }
 
-  private createIframeContent(container: Element, pdfUrl: string) {
+  private createIframeContent(host: Element, pdfUrl: string) {
     // Calculate responsive height
     let iframeHeight: string;
     if (this.isFullscreen) {
@@ -845,7 +875,7 @@ export class PdfModalComponent implements OnInit, OnDestroy {
 
     const borderRadius = this.isFullscreen ? '0' : '4px';
 
-    container.innerHTML = `
+    host.innerHTML = `
       <div class="iframe-wrapper" style="width: 100%; height: 100%; min-height: ${iframeHeight};">
         <iframe 
           id="pdf-iframe"
@@ -869,9 +899,9 @@ export class PdfModalComponent implements OnInit, OnDestroy {
     this.totalPages = 0;
     this.currentPage = 1;
 
-    const container = document.querySelector('.pdf-canvas-container');
-    if (container) {
-      container.innerHTML = `
+    const host = this.iframeHost?.nativeElement;
+    if (host) {
+      host.innerHTML = `
         <div class="text-center py-5">
           <div class="card mx-auto" style="max-width: 400px;">
             <div class="card-body">
@@ -888,6 +918,11 @@ export class PdfModalComponent implements OnInit, OnDestroy {
           </div>
         </div>
       `;
+    }
+
+    const canvas = this.canvasRef?.nativeElement;
+    if (canvas) {
+      canvas.style.display = 'none';
     }
 
     console.log('📄 Final fallback: PDF will open in new tab');

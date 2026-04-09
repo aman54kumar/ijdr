@@ -7,7 +7,7 @@ import {
   FormGroup,
   Validators,
 } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 
 @Component({
@@ -30,7 +30,8 @@ export class LoginComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -38,9 +39,13 @@ export class LoginComponent implements OnInit {
     });
   }
 
-  ngOnInit() {
-    // Check if user is already authenticated
-    if (this.authService.isAuthenticated()) {
+  async ngOnInit() {
+    if (this.route.snapshot.queryParamMap.get('denied') === '1') {
+      this.errorMessage =
+        'Your account is not authorized for admin access. Ask a project owner to grant the admin custom claim.';
+    }
+    const user = await this.authService.waitForAuth();
+    if (user && (await this.authService.hasAdminClaim())) {
       this.router.navigate(['/admin']);
     }
   }
@@ -58,10 +63,17 @@ export class LoginComponent implements OnInit {
         const success = await this.authService.signIn(email, password);
 
         if (success) {
+          const isAdmin = await this.authService.hasAdminClaim();
+          if (!isAdmin) {
+            await this.authService.signOut();
+            this.errorMessage =
+              'This account does not have admin access. The admin custom claim must be set in Firebase (see project scripts).';
+            return;
+          }
           this.successMessage = 'Login successful! Redirecting...';
           setTimeout(() => {
             this.router.navigate(['/admin']);
-          }, 1000);
+          }, 600);
         }
       } catch (error) {
         this.errorMessage = error as string;

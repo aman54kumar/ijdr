@@ -13,13 +13,18 @@ export class AuthGuard implements CanActivate {
       // Wait for auth state to initialize
       const user = await this.authService.waitForAuth();
 
-      if (user) {
-        return true;
-      } else {
-        // Redirect to login if not authenticated
+      if (!user) {
         this.router.navigate(['/login']);
         return false;
       }
+      const isAdmin = await this.authService.hasAdminClaim();
+      if (!isAdmin) {
+        this.router.navigate(['/login'], {
+          queryParams: { denied: '1' },
+        });
+        return false;
+      }
+      return true;
     } catch (error) {
       console.error('Auth guard error:', error);
       this.router.navigate(['/login']);

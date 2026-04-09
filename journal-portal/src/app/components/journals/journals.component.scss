@@ -97,9 +97,12 @@
     }
     
     .search-wrapper {
-      max-width: 600px;
       margin: 0 auto;
-      
+
+      &--narrow {
+        max-width: 720px;
+      }
+
       .search-box {
         position: relative;
         margin-bottom: 1rem;
@@ -187,27 +190,173 @@
         }
       }
       
-      .search-stats {
-        text-align: center;
-        
-        .result-count {
-          background: white;
-          padding: 0.5rem 1.25rem;
-          border-radius: 16px;
-          display: inline-block;
-          font-size: 0.8rem;
-          color: var(--secondary-700);
-          font-weight: 500;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-          border: 1px solid rgba(102, 126, 234, 0.1);
-          margin: 0;
-          
-          .count {
-            color: #667eea;
-            font-weight: 700;
-            font-size: 1.1em;
-          }
-        }
+    }
+
+    // Results + Year/Sort — same visual language as search pill, full content width
+    .journal-toolbar {
+      max-width: 100%;
+      margin: 0.25rem auto 0;
+      padding: 0 0.25rem;
+    }
+
+    .journal-toolbar-inner {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 0.75rem 1rem;
+      padding: 0.65rem 1rem 0.75rem;
+      background: #fff;
+      border: 2px solid rgba(102, 126, 234, 0.12);
+      border-radius: 24px;
+      box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.06),
+        0 2px 4px -1px rgba(0, 0, 0, 0.04);
+    }
+
+    .toolbar-result {
+      margin: 0;
+      flex-shrink: 0;
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 0.25rem 0.35rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--secondary-700);
+
+      .count {
+        color: #667eea;
+        font-weight: 800;
+        font-size: 1.125rem;
+        line-height: 1;
+      }
+
+      .toolbar-result-text {
+        color: var(--secondary-600);
+      }
+    }
+
+    .toolbar-divider {
+      width: 1px;
+      height: 2rem;
+      background: linear-gradient(
+        180deg,
+        transparent,
+        rgba(102, 126, 234, 0.22) 20%,
+        rgba(102, 126, 234, 0.22) 80%,
+        transparent
+      );
+      flex-shrink: 0;
+    }
+
+    .toolbar-controls {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      flex: 1 1 0;
+      min-width: 0;
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: 0.65rem;
+    }
+
+    .toolbar-pill {
+      display: flex;
+      align-items: stretch;
+      flex: 1 1 0;
+      min-width: 0;
+      max-width: none;
+      border-radius: 18px;
+      border: 2px solid rgba(102, 126, 234, 0.12);
+      background: #fafbff;
+      overflow: hidden;
+      transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+
+      &:hover {
+        border-color: rgba(102, 126, 234, 0.28);
+      }
+
+      &:focus-within {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.16);
+        background: #fff;
+      }
+    }
+
+    .toolbar-pill-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.5rem;
+      flex-shrink: 0;
+      background: linear-gradient(
+        135deg,
+        rgba(102, 126, 234, 0.12) 0%,
+        rgba(118, 75, 162, 0.1) 100%
+      );
+      color: #5b6ee8;
+      font-size: 1rem;
+    }
+
+    .toolbar-pill-body {
+      flex: 1;
+      min-width: 0;
+      padding: 0.35rem 0.5rem 0.4rem 0.65rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.05rem;
+      justify-content: center;
+    }
+
+    .toolbar-pill-label {
+      margin: 0;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      line-height: 1.2;
+    }
+
+    .toolbar-select-wrap {
+      position: relative;
+
+      &::after {
+        content: '';
+        position: absolute;
+        right: 0.15rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+        border-top: 5px solid #64748b;
+        pointer-events: none;
+        opacity: 0.7;
+      }
+    }
+
+    .toolbar-select {
+      width: 100%;
+      appearance: none;
+      -webkit-appearance: none;
+      margin: 0;
+      padding: 0.1rem 1.35rem 0.1rem 0;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #1e293b;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      line-height: 1.35;
+      text-overflow: ellipsis;
+
+      &:focus {
+        outline: none;
       }
     }
   }
@@ -536,14 +685,41 @@
             font-size: 0.7rem;
           }
         }
-        
-        .search-stats {
-          .result-count {
-            padding: 0.4rem 1rem;
-            font-size: 0.75rem;
-            border-radius: 14px;
-          }
-        }
+      }
+
+      .journal-toolbar {
+        margin-top: 0.15rem;
+        padding: 0;
+      }
+
+      .journal-toolbar-inner {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 0.75rem 0.85rem;
+        border-radius: 20px;
+        gap: 0.65rem;
+      }
+
+      .toolbar-divider {
+        display: none;
+      }
+
+      .toolbar-result {
+        justify-content: center;
+        text-align: center;
+      }
+
+      .toolbar-controls {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        width: 100%;
+        min-width: 0;
+      }
+
+      .toolbar-pill {
+        flex: 1 1 0;
+        min-width: 0;
+        max-width: none;
       }
     }
     
@@ -557,6 +733,18 @@
             padding: 1.25rem;
           }
         }
+      }
+    }
+  }
+
+  @media (max-width: 360px) {
+    .search-section {
+      .toolbar-controls {
+        flex-direction: column;
+      }
+
+      .toolbar-pill {
+        flex: 1 1 auto;
       }
     }
   }

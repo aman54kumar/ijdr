@@ -2,31 +2,58 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Public read access for journals and articles
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    function validContactCreate() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['name', 'email', 'message', 'createdAt', 'read'])
+        && data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 200
+        && data.email is string
+        && data.email.size() <= 320
+        && data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
+        && data.message is string
+        && data.message.size() > 0
+        && data.message.size() <= 10000
+        && data.read == false
+        && data.createdAt is timestamp;
+    }
+
     match /journals/{journalId} {
       allow read: if true;
-      allow write: if request.auth != null; // Only authenticated users can write
+      allow create, delete: if isAdmin();
+      // Public read; allow anonymous view-count bumps (only these fields may change).
+      allow update: if isAdmin()
+        || request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['viewCount', 'updatedAt']);
     }
-    
+
     match /articles/{articleId} {
       allow read: if true;
-      allow write: if request.auth != null; // Only authenticated users can write
+      allow create, update, delete: if isAdmin();
     }
-    
-    // Public read access for board members (so visitors can see the editorial board)
+
     match /boardMembers/{memberId} {
       allow read: if true;
-      allow write: if request.auth != null; // Only authenticated users can write
+      allow create, update, delete: if isAdmin();
     }
-    
-    // Admin users collection (if you want user management)
+
     match /admins/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
     }
-    
-    // Temporary: Allow all authenticated users to read/write everything for debugging
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+
+    match /contactSubmissions/{id} {
+      allow create: if validContactCreate();
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /siteSettings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
-} 
+}

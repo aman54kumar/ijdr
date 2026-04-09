@@ -44,9 +44,26 @@
 
         <!-- Right Visual -->
         <div class="col-lg-5">
-          <div class="hero-visual" *ngIf="latestIssues.length > 0">
+          <div class="hero-visual p-4" *ngIf="loadingIssues">
+            <ngx-skeleton-loader
+              count="1"
+              [theme]="{ height: '280px', 'border-radius': '12px' }"
+            ></ngx-skeleton-loader>
+          </div>
+          <div class="hero-visual" *ngIf="!loadingIssues && latestIssues.length > 0">
             <div class="latest-issue-card">
               <div class="card-badge">Latest Issue</div>
+              <div
+                class="issue-highlight-tags"
+                *ngIf="issueHighlightTags(latestIssues[0]).length"
+              >
+                <span
+                  *ngFor="let t of issueHighlightTags(latestIssues[0])"
+                  class="issue-tag"
+                  [ngClass]="'issue-tag--' + t.kind"
+                  >{{ t.label }}</span
+                >
+              </div>
               <h3 class="issue-title">{{ latestIssues[0].title }}</h3>
               <div class="issue-meta">
                 <span
@@ -87,7 +104,16 @@
       </div>
 
       <!-- Publications Grid -->
-      <div class="row g-4">
+      <div class="row g-4" *ngIf="loadingIssues">
+        <div class="col-lg-4 col-md-6" *ngFor="let _ of [1, 2, 3]">
+          <ngx-skeleton-loader
+            count="1"
+            [theme]="{ height: '220px', 'border-radius': '12px' }"
+          ></ngx-skeleton-loader>
+        </div>
+      </div>
+
+      <div class="row g-4" *ngIf="!loadingIssues">
         <div
           class="col-lg-4 col-md-6"
           *ngFor="let issue of latestIssues; let i = index"
@@ -95,6 +121,17 @@
           <div class="publication-card">
             <div class="card-body">
               <h4 class="card-title">{{ issue.title }}</h4>
+              <div
+                class="issue-highlight-tags"
+                *ngIf="issueHighlightTags(issue).length"
+              >
+                <span
+                  *ngFor="let t of issueHighlightTags(issue)"
+                  class="issue-tag"
+                  [ngClass]="'issue-tag--' + t.kind"
+                  >{{ t.label }}</span
+                >
+              </div>
 
               <div class="card-meta">
                 <div class="meta-item">

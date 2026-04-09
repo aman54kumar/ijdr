@@ -24,12 +24,28 @@ export class AuthService {
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
+  private adminClaimSubject = new BehaviorSubject<boolean>(false);
+  public adminClaim$ = this.adminClaimSubject.asObservable();
+
   constructor(private auth: Auth) {
-    // Listen for authentication state changes
     onAuthStateChanged(this.auth, (user) => {
       this.currentUserSubject.next(user);
       this.isAuthenticatedSubject.next(!!user);
+      void this.refreshAdminClaim(user);
     });
+  }
+
+  private async refreshAdminClaim(user: User | null) {
+    if (!user) {
+      this.adminClaimSubject.next(false);
+      return;
+    }
+    try {
+      const token = await user.getIdTokenResult(true);
+      this.adminClaimSubject.next(token.claims['admin'] === true);
+    } catch {
+      this.adminClaimSubject.next(false);
+    }
   }
 
   /**
@@ -101,6 +117,16 @@ export class AuthService {
    */
   isAuthenticated(): boolean {
     return this.isAuthenticatedSubject.value;
+  }
+
+  /** Firebase Auth custom claim `admin: true` (set via Admin SDK; see functions/scripts/setAdminClaim.js). */
+  async hasAdminClaim(): Promise<boolean> {
+    const user = this.getCurrentUser();
+    if (!user) {
+      return false;
+    }
+    const token = await user.getIdTokenResult(true);
+    return token.claims['admin'] === true;
   }
 
   /**

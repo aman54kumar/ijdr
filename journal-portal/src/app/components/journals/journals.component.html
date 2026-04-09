@@ -17,7 +17,7 @@
   <!-- Search Section -->
   <section class="search-section">
     <div class="container">
-      <div class="search-wrapper">
+      <div class="search-wrapper search-wrapper--narrow">
         <div class="search-box">
           <div class="search-icon">
             <i class="bi bi-search"></i>
@@ -37,12 +37,71 @@
             <i class="bi bi-x-lg"></i>
           </button>
         </div>
-        <div class="search-stats" *ngIf="!loading">
-          <p class="result-count">
+      </div>
+      <div
+        class="journal-toolbar"
+        *ngIf="!loading"
+        aria-label="Results and filters"
+      >
+        <div class="journal-toolbar-inner">
+          <p class="toolbar-result">
             <span class="count">{{ filteredJournalsList.length }}</span>
-            {{ filteredJournalsList.length === 1 ? "journal" : "journals" }}
-            found
+            <span class="toolbar-result-text">
+              {{
+                filteredJournalsList.length === 1 ? "journal" : "journals"
+              }}
+              found
+            </span>
           </p>
+          <span class="toolbar-divider" aria-hidden="true"></span>
+          <div class="toolbar-controls">
+            <div class="toolbar-pill">
+              <span class="toolbar-pill-icon" aria-hidden="true">
+                <i class="bi bi-calendar3"></i>
+              </span>
+              <div class="toolbar-pill-body">
+                <label class="toolbar-pill-label" for="journal-filter-year"
+                  >Year</label
+                >
+                <div class="toolbar-select-wrap">
+                  <select
+                    id="journal-filter-year"
+                    class="toolbar-select"
+                    [(ngModel)]="filterYear"
+                    (ngModelChange)="onSortOrYearChange()"
+                    aria-label="Filter by publication year"
+                  >
+                    <option value="">All years</option>
+                    <option *ngFor="let y of yearFilterOptions" [value]="y">
+                      {{ y }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="toolbar-pill">
+              <span class="toolbar-pill-icon" aria-hidden="true">
+                <i class="bi bi-sort-down-alt"></i>
+              </span>
+              <div class="toolbar-pill-body">
+                <label class="toolbar-pill-label" for="journal-filter-sort"
+                  >Sort</label
+                >
+                <div class="toolbar-select-wrap">
+                  <select
+                    id="journal-filter-sort"
+                    class="toolbar-select"
+                    [(ngModel)]="sortMode"
+                    (ngModelChange)="onSortOrYearChange()"
+                    aria-label="Sort journals"
+                  >
+                    <option value="newest">Newest (volume & issue)</option>
+                    <option value="views">Most viewed</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -51,21 +110,12 @@
   <!-- Journals Grid -->
   <section class="journals-grid">
     <div class="container">
-      <!-- Loading State -->
-      <div *ngIf="loading" class="loading-state">
-        <div class="loading-spinner">
-          <div class="spinner"></div>
-          <p class="loading-text">Loading journals...</p>
-        </div>
-        <div class="skeleton-grid">
-          <div class="skeleton-card" *ngFor="let i of [1, 2, 3, 4, 5, 6]">
-            <div class="skeleton-header loading-shimmer"></div>
-            <div class="skeleton-body">
-              <div class="skeleton-line loading-shimmer"></div>
-              <div class="skeleton-line loading-shimmer"></div>
-              <div class="skeleton-button loading-shimmer"></div>
-            </div>
-          </div>
+      <div *ngIf="loading" class="row g-4">
+        <div class="col-xl-6" *ngFor="let _ of [1, 2, 3, 4, 5, 6]">
+          <ngx-skeleton-loader
+            count="1"
+            [theme]="{ height: '200px', 'border-radius': '12px' }"
+          ></ngx-skeleton-loader>
         </div>
       </div>
 
@@ -102,7 +152,8 @@
                   [showImage]="false"
                   [badge]="{ icon: 'bi bi-journal-bookmark' }"
                   [meta]="getJournalMeta(journal)"
-                  [stats]="getJournalStats(journal)"
+                  [highlightTags]="journalHighlightTags(journal)"
+                  [includeProjectedBody]="true"
                   [actions]="getJournalActions(journal)"
                   cardClass="journal-card-grouped"
                 >

@@ -12,6 +12,14 @@
         "function": "getPdf"
       },
       {
+        "source": "/sitemap.xml",
+        "function": "sitemap"
+      },
+      {
+        "source": "/rss.xml",
+        "function": "rssFeed"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

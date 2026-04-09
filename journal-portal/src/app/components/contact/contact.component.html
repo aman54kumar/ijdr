@@ -159,6 +159,62 @@
         </div>
       </div>
 
+      <!-- Contact form (Firestore) -->
+      <section class="contact-form-section mt-5 mb-4">
+        <div class="row justify-content-center">
+          <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+              <div class="card-body p-4">
+                <h3 class="h5 mb-3">Send us a message</h3>
+                <p class="text-muted small mb-4">
+                  Messages are delivered to the editorial team via our secure
+                  inbox (not by email from this page).
+                </p>
+                <form [formGroup]="form" (ngSubmit)="onSubmit()">
+                  <div class="mb-3">
+                    <label class="form-label" for="c-name">Name</label>
+                    <input
+                      id="c-name"
+                      type="text"
+                      class="form-control"
+                      formControlName="name"
+                      autocomplete="name"
+                    />
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label" for="c-email">Email</label>
+                    <input
+                      id="c-email"
+                      type="email"
+                      class="form-control"
+                      formControlName="email"
+                      autocomplete="email"
+                    />
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label" for="c-msg">Message</label>
+                    <textarea
+                      id="c-msg"
+                      class="form-control"
+                      rows="5"
+                      formControlName="message"
+                    ></textarea>
+                  </div>
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    [disabled]="submitting"
+                  >
+                    <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2"></span>
+                    Send message
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Bottom Quick Links Bar -->
       <div class="quick-links-bar">
         <div class="links-container">

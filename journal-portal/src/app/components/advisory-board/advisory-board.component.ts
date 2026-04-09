@@ -1,12 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FirebaseJournalService } from '../../services/firebase-journal.service';
 import { AuthService } from '../../services/auth.service';
 import { BoardMemberModalService } from '../../services/board-member-modal.service';
 import { BoardMemberModalComponent } from '../board-member-modal/board-member-modal.component';
 import { BoardMember } from '../../type/journals.type';
 import { User } from '@angular/fire/auth';
+import { ToastService } from '../../services/toast.service';
+import { ConfirmModalService } from '../../services/confirm-modal.service';
 
 @Component({
   selector: 'app-advisory-board',
@@ -19,6 +22,9 @@ export class AdvisoryBoardComponent implements OnInit {
   advisoryMembers: BoardMember[] = [];
   loading = true;
   currentUser: User | null = null;
+  isAdminUser = false;
+
+  private readonly destroyRef = inject(DestroyRef);
 
   // Bio truncation settings
   readonly bioPreviewLength = 120; // characters
@@ -27,7 +33,9 @@ export class AdvisoryBoardComponent implements OnInit {
     private firebaseService: FirebaseJournalService,
     private authService: AuthService,
     private router: Router,
-    private modalService: BoardMemberModalService
+    private modalService: BoardMemberModalService,
+    private toast: ToastService,
+    private confirmModal: ConfirmModalService
   ) {}
 
   ngOnInit() {
@@ -40,6 +48,10 @@ export class AdvisoryBoardComponent implements OnInit {
     this.authService.currentUser$.subscribe((user) => {
       this.currentUser = user;
     });
+
+    this.authService.adminClaim$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((ok) => (this.isAdminUser = ok));
 
     // Handle editMemberId from session storage (for direct editing from other pages)
     const editMemberId = sessionStorage.getItem('editMemberId');
@@ -86,10 +98,6 @@ export class AdvisoryBoardComponent implements OnInit {
     return this.getBoardMembersByPosition(position).length > 0;
   }
 
-  isAdmin(): boolean {
-    return !!this.currentUser;
-  }
-
   getTruncatedBio(member: BoardMember): string {
     if (!member.bio) return '';
 
@@ -117,8 +125,7 @@ export class AdvisoryBoardComponent implements OnInit {
   }
 
   addBoardMember() {
-    // Navigate to admin panel for adding new Advisory Board Member
-    if (this.isAdmin()) {
+    if (this.isAdminUser) {
       sessionStorage.removeItem('editMemberId'); // Clear any existing edit state
       this.router.navigate(['/admin']).then(() => {
         // Ensure admin page starts from top
@@ -137,20 +144,22 @@ export class AdvisoryBoardComponent implements OnInit {
     const newStatus = !member.isActive;
     const action = newStatus ? 'activate' : 'deactivate';
 
-    if (confirm(`Are you sure you want to ${action} ${member.name}?`)) {
-      try {
-        await this.firebaseService.updateBoardMember(member.id, {
-          isActive: newStatus,
-        });
-
-        // Reload the board members
-        this.loadBoardMembers();
-
-        alert(`${member.name} has been ${action}d successfully.`);
-      } catch (error) {
-        console.error(`Error ${action}ing member:`, error);
-        alert(`Error ${action}ing member. Please try again.`);
-      }
+    const ok = await this.confirmModal.ask(
+      `${action} member`,
+      `Are you sure you want to ${action} ${member.name}?`
+    );
+    if (!ok) {
+      return;
+    }
+    try {
+      await this.firebaseService.updateBoardMember(member.id, {
+        isActive: newStatus,
+      });
+      this.loadBoardMembers();
+      this.toast.show(`${member.name} has been ${action}d successfully.`, 'success');
+    } catch (error) {
+      console.error(`Error ${action}ing member:`, error);
+      this.toast.show(`Error ${action}ing member. Please try again.`, 'danger');
     }
   }
 }

@@ -1,31 +1,54 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
-// Initialize Firebase Admin
 admin.initializeApp();
 
-// PDF Proxy Function - Creates clean, secure URLs and serves PDFs without CORS issues
+const SITE_ORIGIN =
+  process.env.SITEMAP_SITE_ORIGIN || 'https://ijdrpub.in';
+
+const STATIC_PATHS = [
+  '/',
+  '/journals',
+  '/about',
+  '/editorial-board',
+  '/advisory-board',
+  '/publisher',
+  '/contact',
+  '/contribute',
+  '/login',
+  '/legal/privacy',
+  '/legal/terms',
+  '/legal/copyright',
+  '/legal/open-access',
+  '/legal/accessibility',
+];
+
+function xmlEscape(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** Streams PDF from Storage. View counts are tracked on the SPA journal page only (see roadmap A.3). */
 export const getPdf = functions.https.onRequest(async (req, res) => {
   try {
-    // Set CORS headers to allow embedding in iframe
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET');
     res.set('Access-Control-Allow-Headers', 'Content-Type');
-    res.set('X-Frame-Options', 'SAMEORIGIN'); // Allow iframe embedding from same origin
+    res.set('X-Frame-Options', 'SAMEORIGIN');
 
-    // Handle preflight requests
     if (req.method === 'OPTIONS') {
       res.status(204).send('');
       return;
     }
 
-    // Only allow GET requests
     if (req.method !== 'GET') {
       res.status(405).send('Method Not Allowed');
       return;
     }
 
-    // Get journal ID from URL path: /pdf/journal-id
     const journalId = req.path.split('/').pop();
 
     if (!journalId) {
@@ -33,9 +56,6 @@ export const getPdf = functions.https.onRequest(async (req, res) => {
       return;
     }
 
-    console.log(`📄 PDF request for journal: ${journalId}`);
-
-    // Get journal document from Firestore
     const journalDoc = await admin
       .firestore()
       .collection('journals')
@@ -43,7 +63,6 @@ export const getPdf = functions.https.onRequest(async (req, res) => {
       .get();
 
     if (!journalDoc.exists) {
-      console.log(`❌ Journal not found: ${journalId}`);
       res.status(404).send('Journal not found');
       return;
     }
@@ -51,31 +70,15 @@ export const getPdf = functions.https.onRequest(async (req, res) => {
     const journalData = journalDoc.data();
 
     if (!journalData?.pdfUrl) {
-      console.log(`❌ No PDF URL for journal: ${journalId}`);
       res.status(404).send('PDF not available');
       return;
     }
 
-    // Increment view count
-    try {
-      await journalDoc.ref.update({
-        viewCount: admin.firestore.FieldValue.increment(1),
-      });
-      console.log(`📊 Incremented view count for journal: ${journalId}`);
-    } catch (viewCountError) {
-      console.error('Warning: Could not increment view count:', viewCountError);
-      // Don't fail the request if view count update fails
-    }
-
-    // Get the file from Firebase Storage
     const bucket = admin.storage().bucket();
-
-    // Extract file path from Firebase Storage URL
     const url = new URL(journalData.pdfUrl);
     const pathMatch = url.pathname.match(/\/o\/(.+?)(\?|$)/);
 
     if (!pathMatch) {
-      console.log(`❌ Invalid storage URL format: ${journalData.pdfUrl}`);
       res.status(500).send('Invalid PDF reference');
       return;
     }
@@ -83,38 +86,32 @@ export const getPdf = functions.https.onRequest(async (req, res) => {
     const filePath = decodeURIComponent(pathMatch[1]);
     const file = bucket.file(filePath);
 
-    // Check if file exists
     const [exists] = await file.exists();
     if (!exists) {
-      console.log(`❌ PDF file not found: ${filePath}`);
       res.status(404).send('PDF file not found');
       return;
     }
 
-    // Get file metadata
     const [metadata] = await file.getMetadata();
 
-    // Set appropriate headers for PDF
     res.set('Content-Type', 'application/pdf');
+    const disposition =
+      req.query.disposition === 'attachment' ? 'attachment' : 'inline';
     res.set(
       'Content-Disposition',
-      `inline; filename="${sanitizeFilename(
+      `${disposition}; filename="${sanitizeFilename(
         journalData.title || 'journal'
       )}.pdf"`
     );
-    res.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+    res.set('Cache-Control', 'public, max-age=3600');
 
     if (metadata.size) {
       res.set('Content-Length', metadata.size.toString());
     }
 
-    console.log(`✅ Serving PDF: ${journalData.title} (${filePath})`);
-
-    // Stream the file directly to the response
     const stream = file.createReadStream();
-
     stream.on('error', (error) => {
-      console.error('❌ Stream error:', error);
+      console.error('PDF stream error:', error);
       if (!res.headersSent) {
         res.status(500).send('Error streaming PDF');
       }
@@ -122,17 +119,123 @@ export const getPdf = functions.https.onRequest(async (req, res) => {
 
     stream.pipe(res);
   } catch (error) {
-    console.error('❌ PDF proxy error:', error);
+    console.error('PDF proxy error:', error);
     if (!res.headersSent) {
       res.status(500).send('Internal server error');
     }
   }
 });
 
-// Helper function to sanitize filename for PDF download
+export const sitemap = functions.https.onRequest(async (req, res) => {
+  if (req.method !== 'GET') {
+    res.status(405).send('Method Not Allowed');
+    return;
+  }
+
+  try {
+    const snap = await admin.firestore().collection('journals').get();
+    const urls: { loc: string; changefreq: string; priority: string }[] = [];
+
+    for (const p of STATIC_PATHS) {
+      const loc = p === '/' ? SITE_ORIGIN : `${SITE_ORIGIN}${p}`;
+      urls.push({ loc, changefreq: 'weekly', priority: p === '/' ? '1.0' : '0.8' });
+    }
+
+    for (const doc of snap.docs) {
+      urls.push({
+        loc: `${SITE_ORIGIN}/journal/${doc.id}`,
+        changefreq: 'monthly',
+        priority: '0.7',
+      });
+    }
+
+    const body =
+      `<?xml version="1.0" encoding="UTF-8"?>` +
+      `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
+      urls
+        .map(
+          (u) =>
+            `<url><loc>${xmlEscape(u.loc)}</loc>` +
+            `<changefreq>${u.changefreq}</changefreq>` +
+            `<priority>${u.priority}</priority></url>`
+        )
+        .join('') +
+      `</urlset>`;
+
+    res.set('Content-Type', 'application/xml; charset=utf-8');
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.status(200).send(body);
+  } catch (e) {
+    console.error('sitemap error', e);
+    res.status(500).send('Error generating sitemap');
+  }
+});
+
+/** Last 30 issues as RSS 2.0 (newest first). */
+export const rssFeed = functions.https.onRequest(async (req, res) => {
+  if (req.method !== 'GET') {
+    res.status(405).send('Method Not Allowed');
+    return;
+  }
+
+  try {
+    const snap = await admin
+      .firestore()
+      .collection('journals')
+      .orderBy('year', 'desc')
+      .orderBy('volume', 'desc')
+      .orderBy('number', 'desc')
+      .limit(30)
+      .get();
+
+    const items: string[] = [];
+    for (const doc of snap.docs) {
+      const d = doc.data();
+      const title =
+        (d.title as string) ||
+        `Vol. ${d.volume}, No. ${d.number} (${d.year})`;
+      const link = `${SITE_ORIGIN}/journal/${doc.id}`;
+      const desc =
+        (d.description as string) ||
+        `Indian Journal of Development Research — ${title}`;
+      const updated =
+        d.updatedAt?.toDate?.()?.toUTCString?.() ||
+        d.createdAt?.toDate?.()?.toUTCString?.() ||
+        new Date().toUTCString();
+      items.push(
+        `<item><title>${xmlEscape(title)}</title>` +
+          `<link>${xmlEscape(link)}</link>` +
+          `<guid>${xmlEscape(link)}</guid>` +
+          `<pubDate>${xmlEscape(updated)}</pubDate>` +
+          `<description>${xmlEscape(desc)}</description></item>`
+      );
+    }
+
+    const channelTitle = 'Indian Journal of Development Research — New issues';
+    const body =
+      `<?xml version="1.0" encoding="UTF-8"?>` +
+      `<rss version="2.0"><channel>` +
+      `<title>${xmlEscape(channelTitle)}</title>` +
+      `<link>${xmlEscape(SITE_ORIGIN)}</link>` +
+      `<description>${xmlEscape(
+        'New issues of IJDR (IJDRpub.in)'
+      )}</description>` +
+      `<language>en-in</language>` +
+      items.join('') +
+      `</channel></rss>`;
+
+    res.set('Content-Type', 'application/rss+xml; charset=utf-8');
+    res.set('Cache-Control', 'public, max-age=1800');
+    res.status(200).send(body);
+  } catch (e) {
+    console.error('rss error', e);
+    res.status(500).send('Error generating feed');
+  }
+});
+
 function sanitizeFilename(filename: string): string {
   return filename
-    .replace(/[^a-z0-9\s\-_\.]/gi, '') // Remove special characters
-    .replace(/\s+/g, '_') // Replace spaces with underscores
-    .substring(0, 50); // Limit length
+    .replace(/[^a-z0-9\s\-_\.]/gi, '')
+    .replace(/\s+/g, '_')
+    .substring(0, 50);
 }
