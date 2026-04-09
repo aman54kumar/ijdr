@@ -59,7 +59,7 @@ export class JournalsComponent implements OnInit {
 
         // Group journals by year
         this.groupedJournals = this.journals.reduce((acc, journal) => {
-          const year = journal.year.toString();
+          const year = String(journal.year);
           if (!acc[year]) acc[year] = [];
           acc[year].push(journal);
           return acc;
@@ -85,7 +85,7 @@ export class JournalsComponent implements OnInit {
   groupJournalsByYear() {
     this.groupedJournals = {};
     this.filteredJournalsList.forEach((journal) => {
-      const year = journal.year;
+      const year = String(journal.year);
       if (!this.groupedJournals[year]) {
         this.groupedJournals[year] = [];
       }
@@ -103,12 +103,23 @@ export class JournalsComponent implements OnInit {
       this.filteredJournalsList = [...this.journals];
     } else {
       const searchTerm = this.searchText.toLowerCase();
-      this.filteredJournalsList = this.journals.filter((journal) =>
-        `${journal.title} ${journal.volume} ${journal.number} ${journal.year}`
-          .toLowerCase()
-          .includes(searchTerm)
-      );
+      this.filteredJournalsList = this.journals.filter((journal) => {
+        const haystack = [
+          journal.title,
+          journal.volume,
+          journal.number,
+          journal.year,
+          journal.edition,
+          journal.description,
+          journal.ssn,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return haystack.includes(searchTerm);
+      });
     }
+    this.groupJournalsByYear();
   }
 
   clearSearch() {
@@ -152,7 +163,27 @@ export class JournalsComponent implements OnInit {
         action: () => this.openJournalPDF(journal),
         class: 'btn-primary btn-full',
       },
+      {
+        label: 'Copy link',
+        icon: 'bi bi-link-45deg',
+        action: () => this.copyJournalShareLink(journal),
+        class: 'btn-outline-secondary btn-full',
+      },
     ];
+  }
+
+  copyJournalShareLink(journal: iJournal) {
+    if (!journal.id) {
+      return;
+    }
+    const url = `${window.location.origin}/journal/${journal.id}`;
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url).catch(() => {
+        window.prompt('Copy this link:', url);
+      });
+    } else {
+      window.prompt('Copy this link:', url);
+    }
   }
 
   openJournalPDF(journal: iJournal) {
@@ -171,17 +202,6 @@ export class JournalsComponent implements OnInit {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  }
-
-  // This can be removed if you switch to using filteredJournalsList in template
-  filteredJournals() {
-    if (!this.searchText) return this.journals;
-    const text = this.searchText.toLowerCase();
-    return this.journals.filter((journal) =>
-      `${journal.title} vol ${journal.volume} no ${journal.number}`
-        .toLowerCase()
-        .includes(text)
-    );
   }
 
   // Scroll to top of the page

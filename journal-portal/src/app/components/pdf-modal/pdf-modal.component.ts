@@ -6,11 +6,13 @@ import {
   ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { Storage, ref, getBlob } from '@angular/fire/storage';
 import { PdfModalService } from '../../services/pdf-modal.service';
 import { FirebaseJournalService } from '../../services/firebase-journal.service';
 import { iJournal } from '../../type/journals.type';
 import { Subscription } from 'rxjs';
+import { take } from 'rxjs/operators';
 
 // Import PDF.js
 declare const pdfjsLib: any;
@@ -25,11 +27,20 @@ declare const pdfjsLib: any;
       class="pdf-modal-overlay"
       (click)="onOverlayClick($event)"
     >
-      <div class="pdf-modal-container" [class.fullscreen]="isFullscreen">
+      <div
+        class="pdf-modal-container"
+        [class.fullscreen]="isFullscreen"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-labelledby]="journal ? 'pdf-modal-title' : null"
+        (keydown)="onDialogKeydown($event)"
+      >
         <!-- Modal Header -->
         <div class="pdf-modal-header">
           <div class="pdf-info">
-            <h4 class="mb-0" *ngIf="journal">{{ journal.title }}</h4>
+            <h4 class="mb-0" id="pdf-modal-title" *ngIf="journal">
+              {{ journal.title }}
+            </h4>
             <small class="text-muted" *ngIf="journal">
               Volume {{ journal.volume }}, Issue {{ journal.number }} •
               {{ journal.year }}
@@ -94,6 +105,29 @@ declare const pdfjsLib: any;
             <!-- Window Controls -->
             <div class="btn-group">
               <button
+                type="button"
+                class="btn btn-outline-primary btn-sm"
+                *ngIf="journal?.id"
+                (click)="openFullPage()"
+                title="Open this issue on its own page (bookmark or share)"
+              >
+                <i class="bi bi-box-arrow-up-right"></i>
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm"
+                *ngIf="journal?.id"
+                (click)="copyShareLink()"
+                [title]="linkCopied ? 'Link copied' : 'Copy link to this issue'"
+              >
+                <i
+                  class="bi"
+                  [class.bi-check2]="linkCopied"
+                  [class.bi-link-45deg]="!linkCopied"
+                ></i>
+              </button>
+              <button
+                type="button"
                 class="btn btn-outline-secondary btn-sm"
                 (click)="toggleFullscreen()"
                 [title]="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
@@ -105,7 +139,9 @@ declare const pdfjsLib: any;
                 ></i>
               </button>
               <button
+                type="button"
                 class="btn btn-outline-danger btn-sm"
+                id="pdf-modal-close-btn"
                 (click)="closeModal()"
                 title="Close"
               >
@@ -335,12 +371,20 @@ export class PdfModalComponent implements OnInit, OnDestroy {
   // Make Math available in template
   Math = Math;
 
+  linkCopied = false;
+  private linkCopiedTimer: ReturnType<typeof setTimeout> | null = null;
+
   private subscriptions = new Subscription();
+
+  private readonly boundFullscreenChange = () => this.onFullscreenChange();
+  private readonly boundDocumentKeydown = (e: KeyboardEvent) =>
+    this.onDocumentKeydown(e);
 
   constructor(
     private pdfModalService: PdfModalService,
     private firebaseService: FirebaseJournalService,
-    private storage: Storage
+    private storage: Storage,
+    private router: Router
   ) {}
 
   ngOnInit() {
@@ -350,6 +394,12 @@ export class PdfModalComponent implements OnInit, OnDestroy {
         this.isOpen = isOpen;
         if (isOpen && this.journal) {
           this.loadJournal();
+        }
+        if (isOpen) {
+          this.linkCopied = false;
+          setTimeout(() =>
+            document.getElementById('pdf-modal-close-btn')?.focus()
+          );
         }
       })
     );
@@ -383,23 +433,20 @@ export class PdfModalComponent implements OnInit, OnDestroy {
       })
     );
 
-    // Handle fullscreen change events
-    document.addEventListener(
-      'fullscreenchange',
-      this.onFullscreenChange.bind(this)
-    );
-
-    // Handle ESC key to close modal
-    document.addEventListener('keydown', this.onKeyDown.bind(this));
+    document.addEventListener('fullscreenchange', this.boundFullscreenChange);
+    document.addEventListener('keydown', this.boundDocumentKeydown);
   }
 
   ngOnDestroy() {
     this.subscriptions.unsubscribe();
     document.removeEventListener(
       'fullscreenchange',
-      this.onFullscreenChange.bind(this)
+      this.boundFullscreenChange
     );
-    document.removeEventListener('keydown', this.onKeyDown.bind(this));
+    document.removeEventListener('keydown', this.boundDocumentKeydown);
+    if (this.linkCopiedTimer) {
+      clearTimeout(this.linkCopiedTimer);
+    }
 
     // Clean up PDF document
     if (this.pdfDocument) {
@@ -453,10 +500,76 @@ export class PdfModalComponent implements OnInit, OnDestroy {
     }
   }
 
-  private onKeyDown(event: KeyboardEvent) {
+  private onDocumentKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape' && this.isOpen) {
       event.preventDefault();
       this.closeModal();
+    }
+  }
+
+  onDialogKeydown(event: KeyboardEvent) {
+    if (event.key !== 'Tab') {
+      return;
+    }
+    const container = event.currentTarget as HTMLElement;
+    const list = this.getFocusables(container);
+    if (list.length === 0) {
+      return;
+    }
+    const first = list[0];
+    const last = list[list.length - 1];
+    const active = document.activeElement;
+    if (event.shiftKey) {
+      if (active === first) {
+        event.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+  }
+
+  private getFocusables(container: HTMLElement): HTMLElement[] {
+    const sel =
+      'button:not([disabled]), a[href]:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    return Array.from(container.querySelectorAll<HTMLElement>(sel)).filter(
+      (el) => el.offsetWidth > 0 || el.offsetHeight > 0 || el === document.activeElement
+    );
+  }
+
+  openFullPage() {
+    const id = this.journal?.id;
+    if (!id) {
+      return;
+    }
+    this.pdfModalService.closeModal();
+    void this.router.navigate(['/journal', id], {
+      state: { skipViewIncrement: true },
+    });
+  }
+
+  copyShareLink() {
+    const id = this.journal?.id;
+    if (!id) {
+      return;
+    }
+    const url = `${window.location.origin}/journal/${id}`;
+    const done = () => {
+      this.linkCopied = true;
+      if (this.linkCopiedTimer) {
+        clearTimeout(this.linkCopiedTimer);
+      }
+      this.linkCopiedTimer = setTimeout(() => (this.linkCopied = false), 2000);
+    };
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url).then(done).catch(() => {
+        window.prompt('Copy this link:', url);
+      });
+    } else {
+      window.prompt('Copy this link:', url);
     }
   }
 
@@ -485,21 +598,24 @@ export class PdfModalComponent implements OnInit, OnDestroy {
     this.error = null;
 
     this.subscriptions.add(
-      this.firebaseService.getJournalById(this.journal.id).subscribe({
-        next: async (journal) => {
-          if (journal?.pdfUrl) {
-            await this.loadPDF(journal.pdfUrl);
-          } else {
-            this.error = 'PDF not available for this journal';
+      this.firebaseService
+        .getJournalById(this.journal.id)
+        .pipe(take(1))
+        .subscribe({
+          next: async (journal) => {
+            if (journal?.pdfUrl) {
+              await this.loadPDF(journal.pdfUrl);
+            } else {
+              this.error = 'PDF not available for this journal';
+              this.loading = false;
+            }
+          },
+          error: (error) => {
+            console.error('Error loading journal:', error);
+            this.error = 'Failed to load journal';
             this.loading = false;
-          }
-        },
-        error: (error) => {
-          console.error('Error loading journal:', error);
-          this.error = 'Failed to load journal';
-          this.loading = false;
-        },
-      })
+          },
+        })
     );
   }
 

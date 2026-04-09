@@ -9,12 +9,16 @@ export class PdfModalService {
   private isOpenSubject = new BehaviorSubject<boolean>(false);
   private journalSubject = new BehaviorSubject<iJournal | null>(null);
   private isFullscreenSubject = new BehaviorSubject<boolean>(false);
+  private previousActiveElement: HTMLElement | null = null;
 
   public isOpen$ = this.isOpenSubject.asObservable();
   public journal$ = this.journalSubject.asObservable();
   public isFullscreen$ = this.isFullscreenSubject.asObservable();
 
   openModal(journal: iJournal) {
+    const active = document.activeElement;
+    this.previousActiveElement =
+      active instanceof HTMLElement ? active : null;
     this.journalSubject.next(journal);
     this.isOpenSubject.next(true);
     // Prevent body scrolling when modal is open
@@ -31,6 +35,9 @@ export class PdfModalService {
     if (document.fullscreenElement) {
       document.exitFullscreen();
     }
+    const toFocus = this.previousActiveElement;
+    this.previousActiveElement = null;
+    queueMicrotask(() => toFocus?.focus?.());
   }
 
   toggleFullscreen() {

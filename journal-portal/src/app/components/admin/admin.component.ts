@@ -8,6 +8,9 @@ import {
   FormGroup,
   FormArray,
   Validators,
+  ValidatorFn,
+  AbstractControl,
+  ValidationErrors,
 } from '@angular/forms';
 import {
   CdkDragDrop,
@@ -23,6 +26,16 @@ import { AuthService } from '../../services/auth.service';
 import { User } from '@angular/fire/auth';
 import { AdminManagementComponent } from './admin-management/admin-management.component';
 import { BoardMember, BoardMemberSection } from '../../type/journals.type';
+
+/** ISSN is optional in the UI; only validate format when non-empty. */
+function optionalIssnValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const raw = control.value;
+    if (raw == null || String(raw).trim() === '') return null;
+    const v = String(raw).trim();
+    return /^\d{4}-\d{3}[0-9XxA-Za-z]$/.test(v) ? null : { pattern: true };
+  };
+}
 
 @Component({
   selector: 'app-admin',
@@ -84,7 +97,7 @@ export class AdminComponent implements OnInit {
       number: [null, [Validators.required, Validators.min(1)]],
       year: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
       description: [''],
-      ssn: ['2249-104X', Validators.pattern(/^\d{4}-\d{3}[0-9XxA-Za-z]$/)], // ISSN format NNNN-NNNC with default (accepts letters)
+      ssn: ['2249-104X', optionalIssnValidator()],
     });
 
     this.boardMemberForm = this.fb.group({
@@ -112,6 +125,17 @@ export class AdminComponent implements OnInit {
     this.authService.currentUser$.subscribe((user) => {
       this.currentUser = user;
     });
+
+    // Keep `title` in sync with Edition + Year for journal creation.
+    // (The UI shows a generated title preview; this ensures the required `title`
+    // control is actually populated so the form can be valid.)
+    this.journalForm.get('edition')?.valueChanges.subscribe(() => {
+      this.syncJournalTitle();
+    });
+    this.journalForm.get('year')?.valueChanges.subscribe(() => {
+      this.syncJournalTitle();
+    });
+    this.syncJournalTitle();
 
     // Check if we're coming from editorial board to edit a specific member
     this.checkForDirectEdit();
@@ -190,8 +214,19 @@ export class AdminComponent implements OnInit {
     return '';
   }
 
+  private syncJournalTitle() {
+    const generatedTitle = this.getGeneratedTitle();
+    this.journalForm.patchValue(
+      { title: generatedTitle || '' },
+      { emitEvent: false }
+    );
+  }
+
   // Journal Management
   async createJournal() {
+    // Ensure `title` is populated from Edition + Year before validating/saving.
+    this.syncJournalTitle();
+
     if (this.journalForm.valid && this.selectedPDFFile) {
       try {
         this.uploading = true;
@@ -224,6 +259,7 @@ export class AdminComponent implements OnInit {
         this.uploading = false;
       }
     } else {
+      this.journalForm.markAllAsTouched();
       if (!this.selectedPDFFile) {
         alert('Please select a PDF file.');
       }
@@ -335,6 +371,50 @@ export class AdminComponent implements OnInit {
       }
     });
     return formErrors;
+  }
+
+  /** Matches the Create/Update Journal button `[disabled]` logic. */
+  get isJournalSubmitDisabled(): boolean {
+    return (
+      this.uploading ||
+      this.journalForm.invalid ||
+      (!this.selectedJournal && !this.selectedPDFFile)
+    );
+  }
+
+  /** Human-readable reasons the journal submit button stays disabled. */
+  getJournalSubmitBlockers(): string[] {
+    const out: string[] = [];
+    if (this.uploading) out.push('Saving in progress—please wait.');
+    if (!this.selectedJournal && !this.selectedPDFFile) {
+      out.push('Choose a PDF file under “Journal PDF”.');
+    }
+    if (this.journalForm.invalid) {
+      const c = this.journalForm.controls;
+      if (c['title']?.invalid) {
+        out.push(
+          'Title is still empty—select an edition (and year for the full title).'
+        );
+      }
+      if (c['edition']?.invalid) {
+        out.push('Select an edition: January–June or July–December.');
+      }
+      if (c['volume']?.invalid) {
+        out.push('Volume must be a number ≥ 1.');
+      }
+      if (c['number']?.invalid) {
+        out.push('Issue number must be a number ≥ 1.');
+      }
+      if (c['year']?.invalid) {
+        out.push('Year must be exactly 4 digits (e.g. 2024).');
+      }
+      if (c['ssn']?.invalid) {
+        out.push(
+          'ISSN format is invalid (use e.g. 2249-104X) or clear the field.'
+        );
+      }
+    }
+    return out;
   }
 
   // Authentication Methods

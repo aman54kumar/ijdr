@@ -28,7 +28,7 @@
         type="button"
         (click)="isNavbarCollapsed = !isNavbarCollapsed"
         aria-controls="navbarNav"
-        aria-expanded="false"
+        [attr.aria-expanded]="!isNavbarCollapsed"
         aria-label="Toggle navigation"
       >
         <span class="toggler-line" [class.active]="!isNavbarCollapsed"></span>

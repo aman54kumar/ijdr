@@ -25,20 +25,19 @@
               the patronage of Adi Shakiti Shri Sankta Mata.
             </p>
             <div class="social-links">
-              <a href="#" class="social-link" aria-label="Facebook">
-                <i class="bi bi-facebook"></i>
-              </a>
-              <a href="#" class="social-link" aria-label="Twitter">
-                <i class="bi bi-twitter"></i>
-              </a>
-              <a href="#" class="social-link" aria-label="LinkedIn">
-                <i class="bi bi-linkedin"></i>
-              </a>
-              <a href="#" class="social-link" aria-label="Email">
+              <a
+                href="mailto:chiefeditorijdr31@gmail.com"
+                class="social-link"
+                aria-label="Email the chief editor"
+              >
                 <i class="bi bi-envelope"></i>
               </a>
-              <a href="#" class="social-link" aria-label="RSS">
-                <i class="bi bi-rss"></i>
+              <a
+                href="mailto:dr.vijaylal18@gmail.com"
+                class="social-link"
+                aria-label="Email for manuscript submissions"
+              >
+                <i class="bi bi-file-earmark-plus"></i>
               </a>
             </div>
           </div>
@@ -50,17 +49,17 @@
             <h4 class="section-title">Quick Links</h4>
             <ul class="link-list">
               <li>
-                <a href="#" class="footer-link">
+                <a routerLink="/" class="footer-link">
                   <i class="bi bi-house-door"></i>Home
                 </a>
               </li>
               <li>
-                <a href="#" class="footer-link">
+                <a routerLink="/journals" class="footer-link">
                   <i class="bi bi-journal-bookmark"></i>Journals
                 </a>
               </li>
               <li>
-                <a href="#" class="footer-link">
+                <a routerLink="/about" class="footer-link">
                   <i class="bi bi-info-circle"></i>About
                 </a>
               </li>
@@ -70,7 +69,7 @@
                 </a>
               </li>
               <li>
-                <a href="#" class="footer-link">
+                <a routerLink="/contribute" class="footer-link">
                   <i class="bi bi-file-earmark-plus"></i>Submit Paper
                 </a>
               </li>
@@ -84,28 +83,23 @@
             <h4 class="section-title">Resources</h4>
             <ul class="link-list">
               <li>
-                <a href="#" class="footer-link">
+                <a routerLink="/contribute" class="footer-link">
                   <i class="bi bi-file-text"></i>Guidelines
                 </a>
               </li>
               <li>
-                <a href="#" class="footer-link">
-                  <i class="bi bi-download"></i>Templates
-                </a>
-              </li>
-              <li>
-                <a href="#" class="footer-link">
-                  <i class="bi bi-question-circle"></i>FAQ
-                </a>
-              </li>
-              <li>
-                <a href="#" class="footer-link">
+                <a routerLink="/journals" class="footer-link">
                   <i class="bi bi-archive"></i>Archives
                 </a>
               </li>
               <li>
-                <a href="#" class="footer-link">
-                  <i class="bi bi-search"></i>Search
+                <a routerLink="/journals" class="footer-link">
+                  <i class="bi bi-search"></i>Search issues
+                </a>
+              </li>
+              <li>
+                <a routerLink="/contact" class="footer-link">
+                  <i class="bi bi-envelope"></i>Contact
                 </a>
               </li>
             </ul>
@@ -139,7 +133,10 @@
                 <div class="contact-details">
                   <p><strong>Email</strong></p>
                   <p>
-                    dr.vijaylal18&#64;gmail.com<br />
+                    <strong>Chief Editor:</strong>
+                    chiefeditorijdr31&#64;gmail.com<br />
+                    <strong>Submissions:</strong> dr.vijaylal18&#64;gmail.com<br />
+                    <strong>Associate Editor:</strong>
                     subhaskumarzero&#64;gmail.com
                   </p>
                 </div>
@@ -158,8 +155,8 @@
         <div class="col-md-6">
           <div class="copyright">
             <p>
-              &copy; 2025 Indian Journal of Development Research. All rights
-              reserved.
+              &copy; {{ currentYear }} Indian Journal of Development Research.
+              All rights reserved.
             </p>
           </div>
         </div>

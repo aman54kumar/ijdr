@@ -36,7 +36,7 @@ def health_check(request):
         return JsonResponse({'status': 'unhealthy', 'error': str(e)}, status=500)
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('django-admin/', admin.site.urls),
     path('api/health/', health_check, name='health_check'),
     path('graphql/', GraphQLView.as_view(graphiql=True)),
     path('api/', include('journals.urls')),
