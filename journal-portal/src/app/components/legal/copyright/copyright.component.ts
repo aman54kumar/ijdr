@@ -8,4 +8,6 @@ import { RouterLink } from '@angular/router';
   templateUrl: './copyright.component.html',
   styleUrl: './copyright.component.scss',
 })
-export class CopyrightComponent {}
+export class CopyrightComponent {
+  readonly currentYear = new Date().getFullYear();
+}
