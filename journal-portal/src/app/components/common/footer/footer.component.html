@@ -1,191 +1,78 @@
-<footer class="modern-footer">
-  <div class="footer-content">
-    <div class="container">
-      <div class="row">
-        <!-- Brand Section -->
-        <div class="col-lg-4 col-md-6 mb-4">
-          <div class="footer-brand">
-            <div class="brand-logo">
-              <div class="logo-container">
-                <div class="logo-placeholder">
-                  <i class="bi bi-journal-bookmark-fill"></i>
-                </div>
-                <div class="logo-overlay">
-                  <i class="bi bi-journal-bookmark-fill"></i>
-                </div>
-              </div>
-              <div class="brand-text">
-                <h3 class="brand-name">IJDR</h3>
-                <p class="brand-tagline">Development Research</p>
-              </div>
-            </div>
-            <p class="brand-description">
-              The Indian Journal of Development Research (ISSN 2249-104X) is an
-              academic journal published by the Institute of Development Studies,
-              Varanasi, under the patronage of Adi Shakiti Shri Sankta Mata.
-            </p>
-            <p class="brand-description small text-muted mt-2 mb-0">
-              <strong>How to cite an issue:</strong> Indian Journal of Development
-              Research, Volume [n], Issue [n] ([year]). URL:
-              https://ijdrpub.in/journal/[issue-id]
-            </p>
-            <div class="social-links">
-              <a
-                href="mailto:chiefeditorijdr31@gmail.com"
-                class="social-link"
-                aria-label="Email the chief editor"
-              >
-                <i class="bi bi-envelope"></i>
-              </a>
-              <a
-                href="mailto:dr.vijaylal18@gmail.com"
-                class="social-link"
-                aria-label="Email for manuscript submissions"
-              >
-                <i class="bi bi-file-earmark-plus"></i>
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <!-- Quick Links -->
-        <div class="col-lg-2 col-md-6 mb-4">
-          <div class="footer-section">
-            <h4 class="section-title">Quick Links</h4>
-            <ul class="link-list">
-              <li>
-                <a routerLink="/" class="footer-link">
-                  <i class="bi bi-house-door"></i>Home
-                </a>
-              </li>
-              <li>
-                <a routerLink="/journals" class="footer-link">
-                  <i class="bi bi-journal-bookmark"></i>Journals
-                </a>
-              </li>
-              <li>
-                <a routerLink="/about" class="footer-link">
-                  <i class="bi bi-info-circle"></i>About
-                </a>
-              </li>
-              <li>
-                <a routerLink="/editorial-board" class="footer-link">
-                  <i class="bi bi-people"></i>Editorial Board
-                </a>
-              </li>
-              <li>
-                <a routerLink="/contribute" class="footer-link">
-                  <i class="bi bi-file-earmark-plus"></i>Submit Paper
-                </a>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <!-- Resources -->
-        <div class="col-lg-2 col-md-6 mb-4">
-          <div class="footer-section">
-            <h4 class="section-title">Resources</h4>
-            <ul class="link-list">
-              <li>
-                <a routerLink="/contribute" class="footer-link">
-                  <i class="bi bi-file-text"></i>Guidelines
-                </a>
-              </li>
-              <li>
-                <a routerLink="/journals" class="footer-link">
-                  <i class="bi bi-archive"></i>Archives
-                </a>
-              </li>
-              <li>
-                <a routerLink="/journals" class="footer-link">
-                  <i class="bi bi-search"></i>Search issues
-                </a>
-              </li>
-              <li>
-                <a href="/rss.xml" class="footer-link" rel="noopener noreferrer">
-                  <i class="bi bi-rss"></i>RSS feed
-                </a>
-              </li>
-              <li>
-                <a routerLink="/contact" class="footer-link">
-                  <i class="bi bi-envelope"></i>Contact
-                </a>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <!-- Contact Info -->
-        <div class="col-lg-4 col-md-6 mb-4">
-          <div class="footer-section">
-            <h4 class="section-title">Contact Information</h4>
-            <div class="contact-info">
-              <div class="contact-item">
-                <div class="contact-icon">
-                  <i class="bi bi-geo-alt-fill"></i>
-                </div>
-                <div class="contact-details">
-                  <p><strong>Address</strong></p>
-                  <p>
-                    Institute of Development Studies<br />
-                    N-8/192A-1-K, Prayaga Nagar<br />
-                    Sunderpur (B.H.U.)<br />
-                    Varanasi-221005 (UP) INDIA
-                  </p>
-                </div>
-              </div>
-
-              <div class="contact-item">
-                <div class="contact-icon">
-                  <i class="bi bi-envelope-fill"></i>
-                </div>
-                <div class="contact-details">
-                  <p><strong>Email</strong></p>
-                  <p>
-                    <strong>Chief Editor:</strong>
-                    chiefeditorijdr31&#64;gmail.com<br />
-                    <strong>Submissions:</strong> dr.vijaylal18&#64;gmail.com<br />
-                    <strong>Associate Editor:</strong>
-                    subhaskumarzero&#64;gmail.com
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <a routerLink="/" class="footer-logo" aria-label="IJDR home">
+        <img
+          src="assets/images/logos/ijdr-logo-full.png"
+          alt="IJDR – Indian Journal of Development Research"
+          width="260"
+          height="89"
+          loading="lazy"
+        />
+      </a>
+      <p class="footer-about">
+        Published by the Institute of Development Studies, Varanasi, under the
+        patronage of Adi Shakiti Shri Sankta Mata.
+      </p>
+      <p class="footer-issn"><strong>ISSN</strong> 2249-104X</p>
     </div>
+
+    <nav class="footer-col" aria-label="Journal">
+      <h2 class="footer-heading">Journal</h2>
+      <ul>
+        <li><a routerLink="/">Home</a></li>
+        <li><a routerLink="/journals">All issues</a></li>
+        <li><a routerLink="/about">About</a></li>
+        <li><a routerLink="/editorial-board">Editorial board</a></li>
+        <li><a routerLink="/advisory-board">Advisory board</a></li>
+      </ul>
+    </nav>
+
+    <nav class="footer-col" aria-label="Authors and readers">
+      <h2 class="footer-heading">Authors &amp; readers</h2>
+      <ul>
+        <li><a routerLink="/contribute">Submit a paper</a></li>
+        <li><a routerLink="/contribute">Author guidelines</a></li>
+        <li><a href="/rss.xml" rel="noopener noreferrer">RSS feed</a></li>
+        <li><a routerLink="/contact">Contact</a></li>
+      </ul>
+    </nav>
+
+    <nav class="footer-col" aria-label="Legal">
+      <h2 class="footer-heading">Policies</h2>
+      <ul>
+        <li><a routerLink="/legal/privacy">Privacy policy</a></li>
+        <li><a routerLink="/legal/terms">Terms of service</a></li>
+        <li><a routerLink="/legal/copyright">Copyright</a></li>
+        <li><a routerLink="/legal/open-access">Open access</a></li>
+        <li><a routerLink="/legal/accessibility">Accessibility</a></li>
+      </ul>
+    </nav>
+
+    <address class="footer-col footer-contact">
+      <h2 class="footer-heading">Contact</h2>
+      <p>
+        Institute of Development Studies<br />
+        N-8/192A-1-K, Prayaga Nagar<br />
+        Sunderpur (B.H.U.)<br />
+        Varanasi-221005 (UP), India
+      </p>
+      <p>
+        <strong>Chief Editor</strong><br />
+        <a href="mailto:chiefeditorijdr31&#64;gmail.com">chiefeditorijdr31&#64;gmail.com</a>
+      </p>
+      <p>
+        <strong>Submissions</strong><br />
+        <a href="mailto:dr.vijaylal18&#64;gmail.com">dr.vijaylal18&#64;gmail.com</a>
+      </p>
+    </address>
   </div>
 
-  <!-- Footer Bottom -->
   <div class="footer-bottom">
     <div class="container">
-      <div class="row align-items-center">
-        <div class="col-md-6">
-          <div class="copyright">
-            <p>
-              &copy; {{ currentYear }} Indian Journal of Development Research.
-              All rights reserved.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Legal Links -->
-  <div class="legal-links">
-    <div class="container">
-      <div class="links-wrapper">
-        <a routerLink="/legal/privacy" class="legal-link">Privacy Policy</a>
-        <a routerLink="/legal/terms" class="legal-link">Terms of Service</a>
-        <a routerLink="/legal/copyright" class="legal-link">Copyright</a>
-        <a routerLink="/legal/open-access" class="legal-link">Open Access</a>
-        <a routerLink="/legal/accessibility" class="legal-link"
-          >Accessibility</a
-        >
-      </div>
+      <p>
+        &copy; {{ currentYear }} Indian Journal of Development Research. All rights reserved.
+      </p>
     </div>
   </div>
 </footer>

@@ -92,7 +92,7 @@ import { publicPdfDisplayUrl } from '../../utils/public-pdf-url.util';
     `
       .pdf-viewer-container {
         min-height: 100vh;
-        background-color: #f8f9fa;
+        background-color: var(--surface-2);
       }
 
       .pdf-header {
@@ -108,7 +108,7 @@ import { publicPdfDisplayUrl } from '../../utils/public-pdf-url.util';
 
       .pdf-iframe-viewer {
         min-height: calc(100vh - 140px);
-        border: 1px solid #dee2e6 !important;
+        border: 1px solid var(--border) !important;
         background: #fff;
       }
 

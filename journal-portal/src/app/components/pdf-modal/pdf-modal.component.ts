@@ -215,7 +215,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
         width: 95%;
         height: 90%;
         max-width: 1200px;
-        background: white;
+        background: var(--surface);
         border-radius: 8px;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         display: flex;
@@ -248,8 +248,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
       }
 
       .pdf-modal-header {
-        background: #f8f9fa;
-        border-bottom: 1px solid #dee2e6;
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--border);
         padding: 15px 20px;
         display: flex;
         justify-content: space-between;
@@ -261,14 +261,14 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
       .pdf-info h4 {
         font-size: 1.1rem;
         font-weight: 600;
-        color: #333;
+        color: var(--text);
         margin: 0;
         line-height: 1.3;
       }
 
       .pdf-info small {
         font-size: 0.85rem;
-        color: #6c757d;
+        color: var(--text-muted);
       }
 
       .pdf-controls {
@@ -290,7 +290,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
         display: flex;
         align-items: center;
         justify-content: center;
-        background: #f0f0f0;
+        background: var(--surface-2);
         padding: 20px;
       }
 

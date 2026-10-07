@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { FAKE_DATA_PROVIDERS } from '../../testing/firebase-stubs';
 
 import { ContactComponent } from './contact.component';
 
@@ -8,7 +10,8 @@ describe('ContactComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ContactComponent]
+      imports: [ContactComponent],
+      providers: [provideRouter([]), ...FAKE_DATA_PROVIDERS],
     })
     .compileComponents();
 

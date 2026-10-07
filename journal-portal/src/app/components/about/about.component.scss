@@ -109,7 +109,7 @@
 
   // Main content with beautiful styling
   .container {
-    padding: 3rem 0;
+    padding-block: 3rem;
     
     // Page header styling
     .page-header {
@@ -832,7 +832,7 @@
     }
     
     .container {
-      padding: 2rem 0;
+      padding-block: 2rem;
     }
     
     .detail-card,

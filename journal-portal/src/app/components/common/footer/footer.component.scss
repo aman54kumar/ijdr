@@ -1,487 +1,98 @@
-.modern-footer {
-  background: var(--gradient-primary);
-  position: relative;
-  overflow: hidden;
-  
-  // Animated background elements
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" fill="none" stroke="rgba(255, 255, 255, 0.05)"><circle cx="50" cy="50" r="40"/><path d="M20 50h60M50 20v60"/></svg>');
-    background-size: 120px 120px;
-    animation: float 20s ease-in-out infinite;
-    z-index: 1;
-  }
-  
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, rgba(181, 215, 124, 0.8) 0%, rgba(255, 237, 78, 0.6) 50%, rgba(181, 215, 124, 0.8) 100%);
-    z-index: 3;
-  }
+.site-footer {
+  background: #0a2238;
+  color: rgba(255, 255, 255, 0.82);
+  margin-top: auto;
+  font-size: var(--text-sm);
 
-  .footer-content {
-    position: relative;
-    z-index: 2;
-    padding: var(--space-8) 0 var(--space-6);
-    
-    .footer-brand {
-      .brand-logo {
-        display: flex;
-        align-items: center;
-        gap: var(--space-3);
-        margin-bottom: var(--space-4);
-        
-        .logo-container {
-          position: relative;
-          width: 60px;
-          height: 60px;
-          
-          .logo-placeholder,
-          .logo-overlay {
-            position: absolute;
-            inset: 0;
-            border-radius: var(--radius-xl);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            
-            i {
-              font-size: 1.75rem;
-              transition: all 0.3s ease;
-            }
-          }
-          
-          .logo-placeholder {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-            
-            i {
-              color: white;
-            }
-          }
-          
-          .logo-overlay {
-            background: rgba(181, 215, 124, 0.2);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(181, 215, 124, 0.4);
-            opacity: 0;
-            transform: scale(1.1);
-            
-            i {
-              color: var(--accent-light);
-            }
-          }
-          
-          &:hover {
-            .logo-placeholder {
-              transform: scale(0.95);
-              opacity: 0.8;
-            }
-            
-            .logo-overlay {
-              opacity: 1;
-              transform: scale(1);
-            }
-          }
-        }
-        
-        .brand-text {
-          .brand-name {
-            font-size: var(--text-xl);
-            font-weight: 800;
-            color: white !important;
-            margin-bottom: var(--space-1);
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-          }
-          
-          .brand-tagline {
-            font-size: var(--text-sm);
-            color: rgba(255, 255, 255, 0.9) !important;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            margin: 0;
-          }
-        }
-      }
-      
-      .brand-description {
-        color: rgba(255, 255, 255, 0.9) !important;
-        line-height: 1.6;
-        margin-bottom: var(--space-4);
-        font-size: var(--text-sm);
-      }
-      
-      .social-links {
-        display: flex;
-        gap: var(--space-2);
-        
-        .social-link {
-          width: 40px;
-          height: 40px;
-          border-radius: var(--radius-md);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          text-decoration: none;
-          transition: all 0.3s ease;
-          position: relative;
-          overflow: hidden;
-          background: rgba(255, 255, 255, 0.15);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          
-          &::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, var(--accent-light), var(--accent-lighter));
-            opacity: 0;
-            transform: scale(0.8);
-            transition: all 0.3s ease;
-            border-radius: var(--radius-md);
-          }
-          
-          i {
-            font-size: var(--text-base);
-            color: white !important;
-            position: relative;
-            z-index: 3;
-            transition: all 0.3s ease;
-          }
-          
-          &:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(181, 215, 124, 0.3);
-            
-            &::after {
-              opacity: 1;
-              transform: scale(1);
-            }
-            
-            i {
-              color: var(--navy-ink) !important;
-              transform: scale(1.1);
-            }
-          }
-        }
-      }
-    }
-    
-    .footer-section {
-      .section-title {
-        font-size: var(--text-base);
-        font-weight: 700;
-        color: white !important;
-        margin-bottom: var(--space-3);
-        position: relative;
-        padding-bottom: var(--space-1);
-        
-        &::after {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          width: 30px;
-          height: 2px;
-          background: linear-gradient(90deg, var(--accent-light), var(--accent-lighter));
-          border-radius: var(--radius-full);
-        }
-      }
-      
-      .link-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        
-        li {
-          margin-bottom: var(--space-2);
-          
-          .footer-link {
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-            color: rgba(255, 255, 255, 0.9) !important;
-            text-decoration: none;
-            font-size: var(--text-sm);
-            font-weight: 500;
-            transition: all 0.3s ease;
-            padding: var(--space-1) var(--space-2);
-            border-radius: var(--radius-sm);
-            position: relative;
-            
-            &::before {
-              content: '';
-              position: absolute;
-              left: 0;
-              top: 50%;
-              transform: translateY(-50%);
-              width: 0;
-              height: 100%;
-              background: rgba(181, 215, 124, 0.15);
-              border-radius: var(--radius-sm);
-              transition: all 0.3s ease;
-              z-index: 1;
-            }
-            
-            i {
-              font-size: var(--text-sm);
-              color: rgba(255, 255, 255, 0.8) !important;
-              transition: all 0.3s ease;
-              position: relative;
-              z-index: 2;
-            }
-            
-            span {
-              position: relative;
-              z-index: 2;
-            }
-            
-            &:hover {
-              color: white !important;
-              transform: translateX(3px);
-              
-              &::before {
-                width: 100%;
-              }
-              
-              i {
-                color: var(--accent-light) !important;
-                transform: scale(1.1);
-              }
-            }
-          }
-        }
-      }
-      
-      .contact-info {
-        .contact-item {
-          display: flex;
-          align-items: flex-start;
-          gap: var(--space-3);
-          margin-bottom: var(--space-3);
-          padding: var(--space-3);
-          background: rgba(255, 255, 255, 0.15);
-          backdrop-filter: blur(10px);
-          border-radius: var(--radius-md);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          transition: all 0.3s ease;
-          
-          &:hover {
-            background: rgba(181, 215, 124, 0.15);
-            border-color: rgba(181, 215, 124, 0.4);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(181, 215, 124, 0.2);
-          }
-          
-          .contact-icon {
-            width: 40px;
-            height: 40px;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            
-            i {
-              font-size: var(--text-base);
-              color: white !important;
-            }
-          }
-          
-          .contact-details {
-            p {
-              margin: 0;
-              
-              strong {
-                color: white !important;
-                font-weight: 600;
-                font-size: var(--text-sm);
-                display: block;
-                margin-bottom: var(--space-1);
-              }
-              
-              &:not(:has(strong)) {
-                color: rgba(255, 255, 255, 0.9) !important;
-                font-size: var(--text-xs);
-                line-height: 1.5;
-              }
-            }
-          }
-        }
-      }
+  a {
+    color: rgba(255, 255, 255, 0.82) !important;
+
+    &:hover {
+      color: #fff !important;
+      text-decoration: underline;
     }
   }
 
-  .footer-bottom {
-    background: rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(10px);
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-    padding: var(--space-4) 0;
-    position: relative;
-    z-index: 2;
-    
-    .copyright {
-      p {
-        color: rgba(255, 255, 255, 0.9) !important;
-        margin: 0;
-        font-size: var(--text-xs);
-        text-align: center;
-        font-weight: 500;
-      }
-    }
-  }
-
-  .legal-links {
-    background: rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(15px);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding: var(--space-3) 0;
-    position: relative;
-    z-index: 2;
-    
-    .links-wrapper {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: var(--space-4);
-      flex-wrap: wrap;
-      
-      .legal-link {
-        color: rgba(255, 255, 255, 0.8) !important;
-        text-decoration: none;
-        font-size: var(--text-xs);
-        font-weight: 500;
-        padding: var(--space-1) var(--space-2);
-        border-radius: var(--radius-sm);
-        transition: all 0.3s ease;
-        position: relative;
-        
-        &::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: rgba(181, 215, 124, 0.15);
-          border-radius: var(--radius-sm);
-          opacity: 0;
-          transition: all 0.3s ease;
-        }
-        
-        &:hover {
-          color: white !important;
-          transform: translateY(-1px);
-          
-          &::before {
-            opacity: 1;
-          }
-        }
-      }
-    }
-  }
-
-  // Responsive Design
-  @media (max-width: 768px) {
-    .footer-content {
-      padding: var(--space-6) 0 var(--space-4);
-      
-      .footer-brand {
-        text-align: center;
-        margin-bottom: var(--space-6);
-        
-        .brand-logo {
-          justify-content: center;
-        }
-        
-        .social-links {
-          justify-content: center;
-        }
-      }
-      
-      .footer-section {
-        text-align: center;
-        margin-bottom: var(--space-4);
-        
-        .section-title {
-          &::after {
-            left: 50%;
-            transform: translateX(-50%);
-          }
-        }
-        
-        .contact-info {
-          .contact-item {
-            flex-direction: column;
-            text-align: center;
-            gap: var(--space-2);
-          }
-        }
-      }
-    }
-    
-    .legal-links {
-      .links-wrapper {
-        flex-direction: column;
-        gap: var(--space-2);
-      }
-    }
-  }
-
-  @media (max-width: 576px) {
-    .footer-content {
-      .footer-brand {
-        .brand-logo {
-          flex-direction: column;
-          gap: var(--space-2);
-        }
-        
-        .social-links {
-          .social-link {
-            width: 35px;
-            height: 35px;
-            
-            i {
-              font-size: var(--text-sm);
-            }
-          }
-        }
-      }
-    }
+  p {
+    color: rgba(255, 255, 255, 0.82) !important;
+    font-size: var(--text-sm);
   }
 }
 
-// Keyframe animations
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px) rotate(0deg);
-    opacity: 0.05;
+.footer-grid {
+  display: grid;
+  gap: var(--space-8);
+  padding-top: var(--space-12);
+  padding-bottom: var(--space-8);
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
   }
-  
-  25% {
-    transform: translateY(-8px) rotate(3deg);
-    opacity: 0.08;
+
+  @media (min-width: 1100px) {
+    grid-template-columns: 1.5fr 1fr 1fr 1fr 1.4fr;
   }
-  
-  50% {
-    transform: translateY(-4px) rotate(-3deg);
-    opacity: 0.05;
+}
+
+// The logo is dark-on-transparent: it always sits on a light tile in the dark footer
+.footer-logo {
+  display: inline-block;
+  background: #f4f7fb;
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+
+  img {
+    display: block;
+    width: 100%;
+    max-width: 220px;
+    height: auto;
   }
-  
-  75% {
-    transform: translateY(-12px) rotate(2deg);
-    opacity: 0.06;
+}
+
+.footer-about {
+  margin-top: var(--space-4);
+  max-width: 22rem;
+}
+
+.footer-issn {
+  margin: 0;
+}
+
+.footer-heading {
+  font-family: var(--font-family-primary);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-light) !important;
+  margin-bottom: var(--space-3);
+}
+
+.footer-col {
+  font-style: normal;
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  li {
+    margin-bottom: var(--space-2);
+  }
+}
+
+.footer-contact p {
+  margin-bottom: var(--space-3);
+}
+
+.footer-bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  padding: var(--space-4) 0;
+
+  p {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: rgba(255, 255, 255, 0.7) !important;
   }
 }
