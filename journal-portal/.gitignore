@@ -1,6 +1,7 @@
 # See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
-src/environments
+src/environments/*
+!src/environments/firebase-config.example.ts
 # Compiled output
 /dist
 /tmp
@@ -53,3 +54,6 @@ Thumbs.db
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Cloud Functions dependencies (functions/lib is committed: firebase.json has no predeploy build)
+functions/node_modules

@@ -142,6 +142,24 @@ Output directory: `journal-portal/dist/journal-portal/browser/`.
 
 ---
 
+## Secrets
+
+Never commit credentials. `firebase-config.ts` (web config), `.env*`, service-account JSON and `firebase_key.json` are gitignored.
+
+**Gemini API key (used from Phase 3 on).** Gemini is called only from Cloud Functions; the key lives in Secret Manager and is never in the browser bundle or git. Set it yourself in a terminal (do not paste it into chat or a file):
+
+```bash
+cd journal-portal
+firebase functions:secrets:set GEMINI_API_KEY   # prompts for the value
+firebase functions:secrets:access GEMINI_API_KEY  # verify it exists (prints the value; don't share)
+```
+
+Functions declare it with `defineSecret('GEMINI_API_KEY')` and `secrets: [GEMINI_API_KEY]`. Secret Manager requires the Blaze plan. For local runs, export `GEMINI_API_KEY` in your shell only.
+
+**If a key leaks:** rotate it in Google Cloud Console (IAM -> Service Accounts -> Keys, or Secret Manager), then update the secret and redeploy functions.
+
+---
+
 ## 6. Quick checklist (copy before a release)
 
 - [ ] `git pull` on the machine doing the deploy.

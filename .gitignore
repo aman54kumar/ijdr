@@ -1,0 +1,25 @@
+# Python virtualenvs and caches
+ijdr-env/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+
+# Secrets / local env
+.env
+.env.*
+!.env.example
+*service-account*.json
+*serviceAccount*.json
+firebase_key.json
+
+# Local databases and uploads
+db.sqlite3
+db.sqlite3-journal
+
+# OS / editor
+.DS_Store
+Thumbs.db
