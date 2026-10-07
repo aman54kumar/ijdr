@@ -8,7 +8,7 @@ Phased plan to modernize the IJDR portal (live at https://ijdrpub.in) in functio
 
 | Phase | Title | Status |
 |-------|-------|--------|
-| 0 | Repo hygiene and safety | In progress (PDF untrack + key rotation pending user) |
+| 0 | Repo hygiene and safety | Done (3 user follow-ups deferred, see notes) |
 | 1 | Design foundation and UI polish | Not started |
 | 2 | Content model: articles + admin entry | Not started |
 | 3 | Gemini ingest pipeline | Not started |
@@ -60,6 +60,8 @@ Phased plan to modernize the IJDR portal (live at https://ijdrpub.in) in functio
 - App builds and `firebase deploy --only functions` dry-run still resolves dependencies.
 
 **Out of scope:** history rewriting (needs explicit user approval), deleting the Django backend.
+
+**Notes/deviations:** `functions/lib` stays tracked (no predeploy build). `admin-setup.service` and `defaultAdminConfig` removed. Sample PDFs untracked. Password scrubbed from local history (backup bundle in scratchpad). Clean checkout and `firebase deploy --only functions --dry-run` verified. **Deferred for the user:** (1) force-push the rewritten history, (2) change the old admin password in Firebase Auth, (3) decide on rotating `firebase_key.json`.
 
 ---
 
