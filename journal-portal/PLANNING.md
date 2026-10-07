@@ -9,7 +9,7 @@ Phased plan to modernize the IJDR portal (live at https://ijdrpub.in) in functio
 | Phase | Title | Status |
 |-------|-------|--------|
 | 0 | Repo hygiene and safety | Done (3 user follow-ups deferred, see notes) |
-| 1 | Design foundation and UI polish | Done (not deployed; needs the admin's cover backfill + a live check) |
+| 1 | Design foundation and UI polish | Done (covers backfilled; not deployed) |
 | 2 | Content model: articles + admin entry | Not started |
 | 3 | Gemini ingest pipeline | Not started |
 | 4 | Discovery: article pages, search, citations, SEO | Not started |
@@ -101,7 +101,7 @@ Phased plan to modernize the IJDR portal (live at https://ijdrpub.in) in functio
 - Tokens: semantic set (`--bg --surface --surface-2 --text --text-muted --border --brand --link --accent-*`) in `src/styles.scss`. The legacy `--primary/secondary/academic-navy/accent-*` scales still exist and auto-invert in dark mode, so unmigrated components follow the theme. New code should use the semantic tokens.
 - Dark mode: `ThemeService` + header toggle, `localStorage` key `ijdr-theme`, inline script in `index.html` prevents a flash. PDF viewer/modal chrome is themed (the PDF page itself stays white).
 - `common/card` was replaced by `common/issue-card` + `common/issue-cover`. Search icon in the header is a disabled placeholder until Phase 4.
-- Covers: `CoverService` renders page 1 with pdf.js at upload; admin has "Generate missing covers". **Backfill has not been run** (needs an admin session).
+- Covers: `CoverService` renders page 1 with pdf.js at upload; admin has "Generate missing covers". Backfill run on 2026-10-07 (8/8). Storage bucket CORS had to be applied once (see `DEPLOYMENT.md`). Known: the issue PDFs' own cover pages print the old domain `ijdr.co.in`, so the thumbnails show it too. Left as is by decision; fix by replacing the PDFs (or adding a custom-cover upload).
 - Announcement: `siteSettings/announcement`, admin tab "Announcement". Not yet exercised against live Firestore (unit-tested only).
 - Accessibility: axe-core run on 7 routes x 2 themes: no colour-contrast violations; `/` and `/journals` clean. Remaining moderate `heading-order` findings on /about, /contact, /contribute, /editorial-board (card headings skip levels). Lighthouse itself was not run (no suitable Chrome here). The accessibility statement lists claims (audits, captions, Braille...) that nobody has verified; only true new items were added.
 - Tests: the 8 pre-existing failing specs were fixed with Firebase stubs (`src/app/testing/firebase-stubs.ts`); 28 pass. Run with `CHROME_BIN=/opt/ltbrowser/chrome npx ng test --watch=false --browsers=ChromeHeadless` on this machine.
