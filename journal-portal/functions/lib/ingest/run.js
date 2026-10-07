@@ -73,6 +73,9 @@ function explainGeminiError(e) {
     if (/RESOURCE_EXHAUSTED|\b429\b/.test(msg)) {
         return new IngestError('resource-exhausted', 'Gemini quota or rate limit reached. Wait a while (or until tomorrow for the daily limit) and try again.');
     }
+    if (/fetch failed|TIMEOUT|timed out|ECONNRESET/i.test(msg)) {
+        return new IngestError('internal', 'The connection to Gemini timed out. Try again; if it repeats, the issue may be too large for one request.');
+    }
     if (/UNAVAILABLE|\b503\b|overloaded/i.test(msg)) {
         return new IngestError('internal', 'Gemini is temporarily overloaded. Try again in a few minutes.');
     }
@@ -191,27 +194,42 @@ async function runIngest(opts) {
             throw new IngestError('failed-precondition', 'Gemini could not process this PDF.');
         }
         log(`Generating with ${model}`);
-        const response = await withBackoff(() => ai.models.generateContent({
-            model,
-            contents: [
-                {
-                    role: 'user',
-                    parts: [
-                        { fileData: { fileUri: uploaded.uri, mimeType: 'application/pdf' } },
-                        { text: ingest_1.INGEST_PROMPT },
-                    ],
+        // Stream the answer: a non-streaming call sends no headers until the whole
+        // (long) answer is ready and trips Node's 5-minute headers timeout.
+        const { text, usage, finishReason } = await withBackoff(async () => {
+            const stream = await ai.models.generateContentStream({
+                model,
+                contents: [
+                    {
+                        role: 'user',
+                        parts: [
+                            { fileData: { fileUri: uploaded.uri, mimeType: 'application/pdf' } },
+                            { text: ingest_1.INGEST_PROMPT },
+                        ],
+                    },
+                ],
+                config: {
+                    responseMimeType: 'application/json',
+                    responseSchema: ingest_1.INGEST_RESPONSE_SCHEMA,
+                    temperature: 0,
+                    maxOutputTokens: 32768,
                 },
-            ],
-            config: {
-                responseMimeType: 'application/json',
-                responseSchema: ingest_1.INGEST_RESPONSE_SCHEMA,
-                temperature: 0,
-                maxOutputTokens: 32768,
-            },
-        }), log);
-        const text = response.text;
+            });
+            let out = '';
+            let usageMeta;
+            let reason;
+            for await (const chunk of stream) {
+                out += chunk.text ?? '';
+                usageMeta = chunk.usageMetadata ?? usageMeta;
+                reason = chunk.candidates?.[0]?.finishReason ?? reason;
+            }
+            return { text: out, usage: usageMeta, finishReason: reason };
+        }, log);
         if (!text) {
             throw new IngestError('internal', 'Gemini returned an empty response (it may have been blocked or truncated).');
+        }
+        if (finishReason === 'MAX_TOKENS') {
+            throw new IngestError('internal', 'Gemini ran out of output space for this issue and the list was cut off. Try again, or split the issue.');
         }
         let parsed;
         try {
@@ -278,7 +296,6 @@ async function runIngest(opts) {
             articlesStatus: total === 0 ? 'none' : anyPublished ? 'published' : 'draft',
             updatedAt: firestore_1.FieldValue.serverTimestamp(),
         });
-        const usage = response.usageMetadata;
         const result = { created: drafts.length, kept: plan.keptCount, replaced: plan.deleteIds.length, warnings };
         await jobRef.update({
             state: 'done',

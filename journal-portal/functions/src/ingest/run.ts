@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, type GenerateContentResponseUsageMetadata } from '@google/genai';
 import type { Bucket } from '@google-cloud/storage';
 import { FieldValue, Timestamp, type Firestore } from 'firebase-admin/firestore';
 import * as fs from 'node:fs';
@@ -69,6 +69,9 @@ function explainGeminiError(e: unknown): IngestError {
   const msg = String((e as any)?.message ?? e);
   if (/RESOURCE_EXHAUSTED|\b429\b/.test(msg)) {
     return new IngestError('resource-exhausted', 'Gemini quota or rate limit reached. Wait a while (or until tomorrow for the daily limit) and try again.');
+  }
+  if (/fetch failed|TIMEOUT|timed out|ECONNRESET/i.test(msg)) {
+    return new IngestError('internal', 'The connection to Gemini timed out. Try again; if it repeats, the issue may be too large for one request.');
   }
   if (/UNAVAILABLE|\b503\b|overloaded/i.test(msg)) {
     return new IngestError('internal', 'Gemini is temporarily overloaded. Try again in a few minutes.');
@@ -197,32 +200,43 @@ export async function runIngest(opts: IngestOptions): Promise<IngestResult> {
     }
 
     log(`Generating with ${model}`);
-    const response = await withBackoff(
-      () =>
-        ai.models.generateContent({
-          model,
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                { fileData: { fileUri: uploaded.uri!, mimeType: 'application/pdf' } },
-                { text: INGEST_PROMPT },
-              ],
-            },
-          ],
-          config: {
-            responseMimeType: 'application/json',
-            responseSchema: INGEST_RESPONSE_SCHEMA,
-            temperature: 0,
-            maxOutputTokens: 32768,
+    // Stream the answer: a non-streaming call sends no headers until the whole
+    // (long) answer is ready and trips Node's 5-minute headers timeout.
+    const { text, usage, finishReason } = await withBackoff(async () => {
+      const stream = await ai.models.generateContentStream({
+        model,
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { fileData: { fileUri: uploaded.uri!, mimeType: 'application/pdf' } },
+              { text: INGEST_PROMPT },
+            ],
           },
-        }),
-      log
-    );
+        ],
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: INGEST_RESPONSE_SCHEMA,
+          temperature: 0,
+          maxOutputTokens: 32768,
+        },
+      });
+      let out = '';
+      let usageMeta: GenerateContentResponseUsageMetadata | undefined;
+      let reason: string | undefined;
+      for await (const chunk of stream) {
+        out += chunk.text ?? '';
+        usageMeta = chunk.usageMetadata ?? usageMeta;
+        reason = chunk.candidates?.[0]?.finishReason ?? reason;
+      }
+      return { text: out, usage: usageMeta, finishReason: reason };
+    }, log);
 
-    const text = response.text;
     if (!text) {
       throw new IngestError('internal', 'Gemini returned an empty response (it may have been blocked or truncated).');
+    }
+    if (finishReason === 'MAX_TOKENS') {
+      throw new IngestError('internal', 'Gemini ran out of output space for this issue and the list was cut off. Try again, or split the issue.');
     }
     let parsed: unknown;
     try {
@@ -289,7 +303,6 @@ export async function runIngest(opts: IngestOptions): Promise<IngestResult> {
       updatedAt: FieldValue.serverTimestamp(),
     });
 
-    const usage = response.usageMetadata;
     const result: IngestResult = { created: drafts.length, kept: plan.keptCount, replaced: plan.deleteIds.length, warnings };
     await jobRef.update({
       state: 'done',
