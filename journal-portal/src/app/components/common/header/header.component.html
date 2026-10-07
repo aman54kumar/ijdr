@@ -1,25 +1,22 @@
-<header class="modern-header">
+<header class="modern-header" [class.scrolled]="scrolled">
   <nav class="navbar navbar-expand-lg">
     <div class="container">
       <!-- Brand -->
-      <a class="navbar-brand" routerLink="/">
-        <div class="brand-container">
-          <div class="logo-wrapper">
-            <!-- Academic logo with book/research theme -->
-            <div class="logo-container">
-              <div class="logo-placeholder">
-                <i class="bi bi-journal-bookmark-fill"></i>
-              </div>
-              <div class="logo-overlay">
-                <i class="bi bi-journal-bookmark-fill"></i>
-              </div>
-            </div>
-          </div>
-          <div class="brand-text">
-            <h1 class="brand-title font-display">IJDR</h1>
-            <p class="brand-subtitle">Development Research</p>
-          </div>
-        </div>
+      <a class="navbar-brand" routerLink="/" aria-label="IJDR home">
+        <span class="brand-container">
+          <span class="logo-badge">
+            <img
+              src="assets/images/logos/ijdr-mark.png"
+              alt=""
+              width="40"
+              height="39"
+            />
+          </span>
+          <span class="brand-text">
+            <span class="brand-title font-display">IJDR</span>
+            <span class="brand-subtitle">Indian Journal of Development Research</span>
+          </span>
+        </span>
       </a>
 
       <!-- Mobile menu button -->
@@ -75,6 +72,8 @@
             <a
               class="nav-link dropdown-toggle"
               href="#"
+              role="button"
+              aria-haspopup="true"
               (click)="$event.preventDefault(); toggleDropdown()"
               [attr.aria-expanded]="isDropdownOpen"
             >
@@ -150,6 +149,33 @@
             </a>
           </li>
         </ul>
+        <div class="header-actions">
+          <button
+            type="button"
+            class="icon-btn"
+            aria-label="Search (coming soon)"
+            title="Search (coming soon)"
+            disabled
+          >
+            <i class="bi bi-search" aria-hidden="true"></i>
+          </button>
+          <button
+            type="button"
+            class="icon-btn"
+            (click)="theme.toggle()"
+            [attr.aria-label]="
+              theme.theme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
+            "
+            [attr.aria-pressed]="theme.theme() === 'dark'"
+            [title]="theme.theme() === 'dark' ? 'Light theme' : 'Dark theme'"
+          >
+            <i
+              class="bi"
+              [ngClass]="theme.theme() === 'dark' ? 'bi-sun' : 'bi-moon-stars'"
+              aria-hidden="true"
+            ></i>
+          </button>
+        </div>
       </div>
     </div>
   </nav>

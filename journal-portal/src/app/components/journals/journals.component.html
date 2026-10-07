@@ -1,207 +1,145 @@
 <div class="modern-journals">
-  <!-- Page Header -->
   <section class="page-header">
     <div class="container">
-      <div class="header-content text-center">
-        <h1 class="page-title font-display">
-          Available <span class="gradient-text">Journals</span>
-        </h1>
-        <p class="page-subtitle">
-          Explore our comprehensive collection of peer-reviewed research
-          publications
-        </p>
-      </div>
+      <h1 class="page-title">Journal issues</h1>
+      <p class="page-subtitle">
+        Browse peer-reviewed volumes of the Indian Journal of Development Research.
+      </p>
     </div>
   </section>
 
-  <!-- Search Section -->
-  <section class="search-section">
-    <div class="container">
-      <div class="search-wrapper search-wrapper--narrow">
-        <div class="search-box">
-          <div class="search-icon">
-            <i class="bi bi-search"></i>
-          </div>
-          <input
-            type="text"
-            class="search-input"
-            placeholder="Search by title, volume, issue, year, ISSN, or description..."
-            [(ngModel)]="searchText"
-            (input)="searchJournals()"
-          />
-          <button
-            class="search-clear"
-            *ngIf="searchText"
-            (click)="clearSearch()"
-          >
-            <i class="bi bi-x-lg"></i>
+  <!-- Sticky search + filters -->
+  <div class="filter-bar" role="search">
+    <div class="container filter-bar-inner">
+      <div class="search-box">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input
+          type="search"
+          class="search-input"
+          placeholder="Search title, volume, year, ISSN…"
+          aria-label="Search journal issues"
+          [(ngModel)]="searchText"
+          (input)="searchJournals()"
+        />
+        @if (searchText) {
+          <button type="button" class="search-clear" (click)="clearSearch()" aria-label="Clear search">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
           </button>
-        </div>
+        }
       </div>
-      <div
-        class="journal-toolbar"
-        *ngIf="!loading"
-        aria-label="Results and filters"
-      >
-        <div class="journal-toolbar-inner">
-          <p class="toolbar-result">
-            <span class="count">{{ filteredJournalsList.length }}</span>
-            <span class="toolbar-result-text">
-              {{
-                filteredJournalsList.length === 1 ? "journal" : "journals"
-              }}
-              found
-            </span>
-          </p>
-          <span class="toolbar-divider" aria-hidden="true"></span>
-          <div class="toolbar-controls">
-            <div class="toolbar-pill">
-              <span class="toolbar-pill-icon" aria-hidden="true">
-                <i class="bi bi-calendar3"></i>
-              </span>
-              <div class="toolbar-pill-body">
-                <label class="toolbar-pill-label" for="journal-filter-year"
-                  >Year</label
-                >
-                <div class="toolbar-select-wrap">
-                  <select
-                    id="journal-filter-year"
-                    class="toolbar-select"
-                    [(ngModel)]="filterYear"
-                    (ngModelChange)="onSortOrYearChange()"
-                    aria-label="Filter by publication year"
-                  >
-                    <option value="">All years</option>
-                    <option *ngFor="let y of yearFilterOptions" [value]="y">
-                      {{ y }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <div class="toolbar-pill">
-              <span class="toolbar-pill-icon" aria-hidden="true">
-                <i class="bi bi-sort-down-alt"></i>
-              </span>
-              <div class="toolbar-pill-body">
-                <label class="toolbar-pill-label" for="journal-filter-sort"
-                  >Sort</label
-                >
-                <div class="toolbar-select-wrap">
-                  <select
-                    id="journal-filter-sort"
-                    class="toolbar-select"
-                    [(ngModel)]="sortMode"
-                    (ngModelChange)="onSortOrYearChange()"
-                    aria-label="Sort journals"
-                  >
-                    <option value="newest">Newest (volume & issue)</option>
-                    <option value="views">Most viewed</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+
+      <!-- Desktop filters -->
+      <div class="filters-inline">
+        <label class="filter-field">
+          <span>Year</span>
+          <select [(ngModel)]="filterYear" (ngModelChange)="onSortOrYearChange()" class="form-select">
+            <option value="">All years</option>
+            @for (y of yearFilterOptions; track y) {
+              <option [value]="y">{{ y }}</option>
+            }
+          </select>
+        </label>
+        <label class="filter-field">
+          <span>Sort</span>
+          <select [(ngModel)]="sortMode" (ngModelChange)="onSortOrYearChange()" class="form-select">
+            <option value="newest">Newest first</option>
+            <option value="views">Most viewed</option>
+          </select>
+        </label>
+      </div>
+
+      <!-- Mobile: opens the bottom sheet -->
+      <button type="button" class="filters-btn" (click)="filtersOpen = true" aria-haspopup="dialog">
+        <i class="bi bi-sliders" aria-hidden="true"></i> Filters
+        @if (activeFilterCount) {
+          <span class="filters-count">{{ activeFilterCount }}</span>
+        }
+      </button>
+
+      <div class="view-toggle" role="group" aria-label="Layout">
+        <button type="button" [class.active]="view === 'grid'" (click)="setView('grid')" aria-label="Grid view" [attr.aria-pressed]="view === 'grid'">
+          <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i>
+        </button>
+        <button type="button" [class.active]="view === 'list'" (click)="setView('list')" aria-label="List view" [attr.aria-pressed]="view === 'list'">
+          <i class="bi bi-list-ul" aria-hidden="true"></i>
+        </button>
       </div>
     </div>
-  </section>
+  </div>
 
-  <!-- Journals Grid -->
   <section class="journals-grid">
     <div class="container">
-      <div *ngIf="loading" class="row g-4">
-        <div class="col-xl-6" *ngFor="let _ of [1, 2, 3, 4, 5, 6]">
-          <ngx-skeleton-loader
-            count="1"
-            [theme]="{ height: '200px', 'border-radius': '12px' }"
-          ></ngx-skeleton-loader>
+      @if (loading) {
+        <div class="issue-grid" [class.issue-grid--list]="view === 'list'">
+          @for (_ of skeletons; track _) {
+            <ngx-skeleton-loader
+              count="1"
+              [theme]="{ height: view === 'list' ? '150px' : '360px', 'border-radius': '12px', margin: '0' }"
+            ></ngx-skeleton-loader>
+          }
         </div>
-      </div>
+      } @else {
+        <p class="result-count" aria-live="polite">
+          {{ filteredJournalsList.length }}
+          {{ filteredJournalsList.length === 1 ? 'issue' : 'issues' }}
+        </p>
 
-      <!-- Journals List -->
-      <div *ngIf="!loading" class="journals-list">
-        <!-- Grouped by Year Display -->
-        <div *ngIf="yearKeys.length > 0" class="journals-by-year">
-          <div *ngFor="let year of yearKeys" class="year-group">
-            <!-- Year Header -->
-            <div class="year-header">
-              <h3 class="year-title">
-                <i class="bi bi-calendar-event me-2"></i>
-                {{ year }}
-              </h3>
-              <span class="year-count">
-                {{ groupedJournals[year].length }}
-                {{
-                  groupedJournals[year].length === 1 ? "Journal" : "Journals"
-                }}
-              </span>
-            </div>
-
-            <!-- Journals Grid for this Year -->
-            <div class="row g-4 mb-5">
-              <div
-                class="col-xl-6 col-lg-6"
-                *ngFor="
-                  let journal of groupedJournals[year];
-                  trackBy: trackByJournal
-                "
-              >
-                <app-card
-                  [title]="journal.title"
-                  [showImage]="false"
-                  [badge]="{ icon: 'bi bi-journal-bookmark' }"
-                  [meta]="getJournalMeta(journal)"
-                  [highlightTags]="journalHighlightTags(journal)"
-                  [includeProjectedBody]="true"
-                  [actions]="getJournalActions(journal)"
-                  cardClass="journal-card-grouped"
-                >
-                  <div class="journal-preview">
-                    <!-- Edition Badge -->
-                    <div class="edition-badge-container mb-2">
-                      <span
-                        class="edition-badge"
-                        [class.jan-jun]="journal.edition === 'January-June'"
-                        [class.jul-dec]="journal.edition === 'July-December'"
-                      >
-                        {{
-                          journal.edition === "July-December"
-                            ? "Jul-Dec"
-                            : "Jan-Jun"
-                        }}
-                      </span>
-                    </div>
-
-                    <p class="journal-description" *ngIf="journal.description">
-                      {{ journal.description | truncate : 120 }}
-                    </p>
-                    <!-- Clean description only - no redundant badges -->
-                  </div>
-                </app-card>
-              </div>
-            </div>
+        @for (year of yearKeys; track year) {
+          <h2 class="year-title">
+            {{ year }}
+            <span class="year-count">{{ groupedJournals[year].length }}</span>
+          </h2>
+          <div class="issue-grid" [class.issue-grid--list]="view === 'list'">
+            @for (journal of groupedJournals[year]; track trackByJournal($index, journal)) {
+              <app-issue-card
+                [issue]="journal"
+                [layout]="view"
+                [tags]="journalHighlightTags(journal)"
+                (read)="openJournalPDF($event)"
+                (copyLink)="copyJournalShareLink($event)"
+              ></app-issue-card>
+            }
           </div>
-        </div>
-
-        <!-- Empty State -->
-        <div *ngIf="yearKeys.length === 0" class="empty-state">
-          <div class="empty-content">
-            <div class="empty-icon">
-              <i class="bi bi-search"></i>
-            </div>
-            <h3 class="empty-title">No journals found</h3>
-            <p class="empty-subtitle">
-              We couldn't find any journals matching your search criteria. Try
-              adjusting your search terms or browse all journals.
-            </p>
-            <button class="btn btn-outline-primary" (click)="clearSearch()">
-              <i class="bi bi-arrow-clockwise me-2"></i>
-              Clear Search
-            </button>
+        } @empty {
+          <div class="empty-state">
+            <img src="assets/images/logos/ijdr-mark.png" alt="" width="72" height="70" />
+            <h2>No issues match your search</h2>
+            <p>Try a different keyword, or clear the filters to see every issue.</p>
+            <button type="button" class="btn btn-primary" (click)="clearSearch()">Clear search and filters</button>
           </div>
-        </div>
-      </div>
+        }
+      }
     </div>
   </section>
+
+  <!-- Mobile filter bottom sheet -->
+  @if (filtersOpen) {
+    <div class="sheet-backdrop" (click)="filtersOpen = false"></div>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <h2 id="sheet-title">Filters</h2>
+      <label class="filter-field">
+        <span>Year</span>
+        <select [(ngModel)]="filterYear" (ngModelChange)="onSortOrYearChange()" class="form-select">
+          <option value="">All years</option>
+          @for (y of yearFilterOptions; track y) {
+            <option [value]="y">{{ y }}</option>
+          }
+        </select>
+      </label>
+      <label class="filter-field">
+        <span>Sort</span>
+        <select [(ngModel)]="sortMode" (ngModelChange)="onSortOrYearChange()" class="form-select">
+          <option value="newest">Newest first</option>
+          <option value="views">Most viewed</option>
+        </select>
+      </label>
+      <div class="sheet-actions">
+        <button type="button" class="btn btn-outline-primary" (click)="clearSearch(); filtersOpen = false">Reset</button>
+        <button type="button" class="btn btn-primary" (click)="filtersOpen = false">
+          Show {{ filteredJournalsList.length }} {{ filteredJournalsList.length === 1 ? 'issue' : 'issues' }}
+        </button>
+      </div>
+    </div>
+  }
 </div>

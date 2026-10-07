@@ -19,6 +19,7 @@ export interface iJournal {
   pdfFileName?: string;
   fileSize?: number;
   viewCount?: number; // Real view tracking
+  coverUrl?: string; // First-page thumbnail in Storage (journals/covers/{id}.jpg)
   createdAt?: any; // Timestamp
   updatedAt?: any; // Timestamp
 }
@@ -73,5 +74,14 @@ export interface FirebaseBoardMember {
     order: number;
   }[];
   createdAt?: any;
+  updatedAt?: any;
+}
+
+/** `siteSettings/announcement` */
+export interface Announcement {
+  enabled: boolean;
+  text: string;
+  linkUrl?: string;
+  linkLabel?: string;
   updatedAt?: any;
 }

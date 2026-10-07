@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -7,12 +7,7 @@ import { iJournal } from '../../type/journals.type';
 import { FirebaseJournalService } from '../../services/firebase-journal.service';
 import { PdfModalService } from '../../services/pdf-modal.service';
 import { ToastService } from '../../services/toast.service';
-import { TruncatePipe } from '../../pipes/truncate.pipe';
-import {
-  CardComponent,
-  CardAction,
-  CardMeta,
-} from '../common/card/card.component';
+import { IssueCardComponent } from '../common/issue-card/issue-card.component';
 import {
   computePopularViewCutoff,
   getJournalHighlightTags,
@@ -26,8 +21,7 @@ import {
   imports: [
     CommonModule,
     FormsModule,
-    TruncatePipe,
-    CardComponent,
+    IssueCardComponent,
     NgxSkeletonLoaderModule,
   ],
   styleUrls: ['./journals.component.scss'],
@@ -42,6 +36,9 @@ export class JournalsComponent implements OnInit {
   sortMode: 'newest' | 'views' = 'newest';
   filterYear: string = '';
   yearFilterOptions: string[] = [];
+  view: 'grid' | 'list' = this.readView();
+  filtersOpen = false;
+  readonly skeletons = [1, 2, 3, 4, 5, 6];
   /** Cutoff from full catalog; +Infinity means no issue counts as Popular. */
   popularViewCutoff = Number.POSITIVE_INFINITY;
 
@@ -70,6 +67,7 @@ export class JournalsComponent implements OnInit {
           pdfUrl: journal.pdfUrl,
           pdfFileName: journal.pdfFileName,
           fileSize: journal.fileSize,
+          coverUrl: journal.coverUrl,
           viewCount: journal.viewCount || 0, // Real view count from database
           createdAt: journal.createdAt,
           updatedAt: journal.updatedAt,
@@ -180,34 +178,34 @@ export class JournalsComponent implements OnInit {
     return journal.id || index;
   }
 
-  // Returns essential journal metadata (volume and issue number only - year is in title)
-  getJournalMeta(journal: iJournal): CardMeta[] {
-    return [
-      { icon: 'bi bi-layers', text: `Volume ${journal.volume}` },
-      { icon: 'bi bi-hash', text: `No. ${journal.number}` },
-      // Removed year since it's already in the title
-    ];
-  }
-
   journalHighlightTags(journal: iJournal): JournalHighlightTag[] {
     return getJournalHighlightTags(journal, this.popularViewCutoff);
   }
 
-  getJournalActions(journal: iJournal): CardAction[] {
-    return [
-      {
-        label: 'Read Journal',
-        icon: 'bi bi-book-open',
-        action: () => this.openJournalPDF(journal),
-        class: 'btn-primary btn-full',
-      },
-      {
-        label: 'Copy link',
-        icon: 'bi bi-link-45deg',
-        action: () => this.copyJournalShareLink(journal),
-        class: 'btn-outline-secondary btn-full',
-      },
-    ];
+  setView(v: 'grid' | 'list') {
+    this.view = v;
+    try {
+      localStorage.setItem('ijdr-journals-view', v);
+    } catch {
+      // storage unavailable: choice applies for this visit only
+    }
+  }
+
+  private readView(): 'grid' | 'list' {
+    try {
+      return localStorage.getItem('ijdr-journals-view') === 'list' ? 'list' : 'grid';
+    } catch {
+      return 'grid';
+    }
+  }
+
+  get activeFilterCount(): number {
+    return (this.filterYear ? 1 : 0) + (this.sortMode !== 'newest' ? 1 : 0);
+  }
+
+  @HostListener('document:keydown.escape')
+  closeFilters() {
+    this.filtersOpen = false;
   }
 
   copyJournalShareLink(journal: iJournal) {

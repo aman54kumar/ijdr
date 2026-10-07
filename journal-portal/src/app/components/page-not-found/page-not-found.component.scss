@@ -128,7 +128,7 @@
         .search-box {
           display: flex;
           align-items: center;
-          background: white;
+          background: var(--surface);
           border-radius: var(--radius-2xl);
           padding: var(--space-2);
           box-shadow: var(--shadow-lg);
@@ -195,7 +195,7 @@
         margin: 0 auto;
         
         .action-card {
-          background: white;
+          background: var(--surface);
           border-radius: var(--radius-2xl);
           padding: var(--space-8);
           text-decoration: none;

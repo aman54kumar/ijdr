@@ -1,4 +1,4 @@
-import { Component, OnInit, Optional, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, Optional, DestroyRef, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   RouterOutlet,
@@ -11,6 +11,7 @@ import { filter } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HeaderComponent } from './components/common/header/header.component';
 import { FooterComponent } from './components/common/footer/footer.component';
+import { AnnouncementBannerComponent } from './components/common/announcement-banner/announcement-banner.component';
 import { PdfModalComponent } from './components/pdf-modal/pdf-modal.component';
 import { DEFAULT_SEO, RouteSeoData } from './route-seo.data';
 import { Analytics, logEvent } from '@angular/fire/analytics';
@@ -20,7 +21,7 @@ import { ConfirmModalService, ConfirmPrompt } from './services/confirm-modal.ser
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, HeaderComponent, FooterComponent, PdfModalComponent],
+  imports: [CommonModule, RouterOutlet, HeaderComponent, FooterComponent, PdfModalComponent, AnnouncementBannerComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
@@ -91,6 +92,18 @@ export class AppComponent implements OnInit {
       clearTimeout(this.toastClear);
       this.toastClear = null;
     }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape() {
+    if (this.confirmPrompt) {
+      this.confirmNo();
+    }
+  }
+
+  focusMain(event: Event) {
+    event.preventDefault();
+    document.getElementById('main-content')?.focus();
   }
 
   confirmYes() {

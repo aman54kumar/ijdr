@@ -3,7 +3,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--gradient-primary);
   position: relative;
   overflow: hidden;
 }
@@ -69,41 +69,41 @@
 }
 
 .login-title {
-  color: #2d3748;
+  color: var(--text);
   font-weight: 700;
   font-size: 1.75rem;
   margin-bottom: 0.5rem;
 }
 
 .login-subtitle {
-  color: #718096;
+  color: var(--text-muted);
   font-size: 0.95rem;
   margin-bottom: 0;
 }
 
 .form-label {
   font-weight: 600;
-  color: #4a5568;
+  color: var(--text);
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
 
   i {
-    color: #667eea;
+    color: var(--brand);
   }
 }
 
 .form-control {
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--border);
   border-radius: 12px;
   padding: 0.75rem 1rem;
   font-size: 0.95rem;
   transition: all 0.3s ease;
-  background-color: #f8fafc;
+  background-color: var(--surface-2);
 
   &:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    background-color: white;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(31, 90, 142, 0.1);
+    background-color: var(--surface);
   }
 
   &.is-invalid {
@@ -112,7 +112,7 @@
   }
 
   &::placeholder {
-    color: #a0aec0;
+    color: var(--text-muted);
     font-size: 0.9rem;
   }
 }
@@ -127,20 +127,20 @@
     transform: translateY(-50%);
     background: none;
     border: none;
-    color: #718096;
+    color: var(--text-muted);
     cursor: pointer;
     padding: 0.5rem;
     border-radius: 6px;
     transition: all 0.2s ease;
 
     &:hover {
-      color: #667eea;
-      background-color: rgba(102, 126, 234, 0.1);
+      color: var(--brand);
+      background-color: rgba(31, 90, 142, 0.1);
     }
 
     &:focus {
       outline: none;
-      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+      box-shadow: 0 0 0 2px rgba(31, 90, 142, 0.2);
     }
   }
 }
@@ -158,7 +158,7 @@
 
   &:not(:disabled):hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 8px 25px rgba(31, 90, 142, 0.3);
   }
 
   &:disabled {
@@ -169,10 +169,10 @@
 }
 
 .btn-login {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: var(--gradient-primary);
 
   &:hover:not(:disabled) {
-    background: linear-gradient(135deg, #5a6fd8, #6a42a0);
+    background: linear-gradient(135deg, var(--brand-solid), #6a42a0);
   }
 }
 
@@ -221,7 +221,7 @@
 .divider {
   border: none;
   height: 1px;
-  background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
   margin: 1.5rem 0 1rem 0;
 }
 
@@ -229,13 +229,13 @@
   text-align: center;
 
   .btn-link {
-    color: #667eea;
+    color: var(--brand);
     text-decoration: none;
     font-weight: 600;
     transition: all 0.2s ease;
 
     &:hover {
-      color: #5a6fd8;
+      color: var(--brand);
       text-decoration: underline;
     }
   }
@@ -243,11 +243,11 @@
 
 .form-header {
   text-align: center;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border);
   padding-bottom: 1.5rem;
 
   .form-title {
-    color: #2d3748;
+    color: var(--text);
     font-weight: 700;
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
@@ -261,7 +261,7 @@
 .login-footer {
   margin-top: 2rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border);
 
   p {
     margin: 0;
@@ -314,11 +314,11 @@
 @media (prefers-color-scheme: dark) {
   .login-card {
     background: rgba(26, 32, 44, 0.95);
-    color: #f7fafc;
+    color: var(--surface-2);
   }
 
   .login-title, .form-title {
-    color: #f7fafc;
+    color: var(--surface-2);
   }
 
   .login-subtitle {
@@ -326,16 +326,16 @@
   }
 
   .form-label {
-    color: #e2e8f0;
+    color: var(--border);
   }
 
   .form-control {
     background-color: #2d3748;
     border-color: #4a5568;
-    color: #f7fafc;
+    color: var(--surface-2);
 
     &::placeholder {
-      color: #718096;
+      color: var(--text-muted);
     }
 
     &:focus {

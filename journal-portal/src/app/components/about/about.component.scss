@@ -2,7 +2,7 @@
 .about-page {
   // Beautiful gradient hero
   .hero-section {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--gradient-primary);
     padding: 4rem 0;
     position: relative;
     overflow: hidden;
@@ -56,7 +56,7 @@
         
         i {
           margin-right: 0.5rem;
-          color: #ffd700 !important;
+          color: var(--accent-light) !important;
           font-size: 1rem;
         }
       }
@@ -89,7 +89,7 @@
           .stat-number {
             font-size: 2.5rem;
             font-weight: 800;
-            color: #ffd700 !important;
+            color: var(--accent-light) !important;
             display: block;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
             margin-bottom: 0.5rem;
@@ -132,7 +132,7 @@
           transform: translateX(-50%);
           width: 80px;
           height: 4px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: var(--gradient-primary);
           border-radius: 2px;
         }
       }
@@ -162,7 +162,7 @@
           top: 0;
           bottom: 0;
           width: 4px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: var(--gradient-primary);
           border-radius: 2px;
         }
       }
@@ -187,18 +187,18 @@
       .section-badge {
         display: inline-flex;
         align-items: center;
-        background: rgba(102, 126, 234, 0.1);
-        color: #667eea;
+        background: rgba(31, 90, 142, 0.1);
+        color: var(--brand);
         padding: 0.5rem 1.25rem;
         border-radius: 20px;
         font-size: 0.875rem;
         font-weight: 600;
         margin-bottom: 1rem;
-        border: 1px solid rgba(102, 126, 234, 0.2);
+        border: 1px solid rgba(31, 90, 142, 0.2);
         
         i {
           margin-right: 0.5rem;
-          color: #667eea;
+          color: var(--brand);
         }
       }
       
@@ -217,7 +217,7 @@
           transform: translateX(-50%);
           width: 60px;
           height: 3px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: var(--gradient-primary);
           border-radius: 2px;
         }
       }
@@ -237,10 +237,10 @@
   .type-card,
   .activity-card,
   .award-card {
-    background: white;
+    background: var(--surface);
     border-radius: 16px;
     padding: 2rem;
-    border: 1px solid rgba(102, 126, 234, 0.1);
+    border: 1px solid rgba(31, 90, 142, 0.1);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     transition: all 0.3s ease;
     position: relative;
@@ -254,14 +254,14 @@
       left: 0;
       right: 0;
       height: 4px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: var(--gradient-primary);
       opacity: 0;
       transition: all 0.3s ease;
     }
     
     &:hover {
-      border-color: rgba(102, 126, 234, 0.2);
-      box-shadow: 0 20px 25px -5px rgba(102, 126, 234, 0.15);
+      border-color: rgba(31, 90, 142, 0.2);
+      box-shadow: 0 20px 25px -5px rgba(31, 90, 142, 0.15);
       transform: translateY(-4px);
       
       &::before {
@@ -270,11 +270,11 @@
       
       .card-icon,
       .detail-icon {
-        background: linear-gradient(135deg, #ffd700, #ffed4e);
+        background: linear-gradient(135deg, var(--accent-light), var(--accent-lighter));
         transform: scale(1.1);
         
         i {
-          color: #1a1a1a;
+          color: var(--navy-ink);
         }
       }
     }
@@ -283,7 +283,7 @@
     .detail-icon {
       width: 60px;
       height: 60px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: var(--gradient-primary);
       border-radius: 12px;
       display: flex;
       align-items: center;
@@ -320,19 +320,19 @@
       gap: 0.5rem;
       
       .meta-item {
-        background: rgba(102, 126, 234, 0.1);
-        color: #667eea;
+        background: rgba(31, 90, 142, 0.1);
+        color: var(--brand);
         padding: 0.25rem 0.75rem;
         border-radius: 12px;
         font-size: 0.75rem;
         font-weight: 600;
-        border: 1px solid rgba(102, 126, 234, 0.2);
+        border: 1px solid rgba(31, 90, 142, 0.2);
         transition: all 0.3s ease;
         
         &:hover {
-          background: linear-gradient(135deg, #ffd700, #ffed4e);
-          color: #1a1a1a;
-          border-color: rgba(255, 215, 0, 0.3);
+          background: linear-gradient(135deg, var(--accent-light), var(--accent-lighter));
+          color: var(--navy-ink);
+          border-color: rgba(181, 215, 124, 0.3);
           transform: translateY(-1px);
         }
       }
@@ -341,7 +341,7 @@
 
   // Journal information section
   .journal-section {
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    background: linear-gradient(135deg, var(--surface-2) 0%, var(--border) 100%);
     padding: 3rem;
     border-radius: 20px;
     margin: 3rem 0;
@@ -388,15 +388,15 @@
         margin-top: 2rem;
         
         .feature-item {
-          background: white;
+          background: var(--surface);
           padding: 1.5rem;
           border-radius: 12px;
-          border: 1px solid rgba(102, 126, 234, 0.1);
+          border: 1px solid rgba(31, 90, 142, 0.1);
           
           .feature-icon {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--gradient-primary);
             border-radius: 8px;
             display: flex;
             align-items: center;
@@ -426,7 +426,7 @@
 
   // Yellow highlights and special elements
   .highlight-text {
-    background: linear-gradient(135deg, #ffd700, #ffed4e);
+    background: linear-gradient(135deg, var(--accent-light), var(--accent-lighter));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -435,7 +435,7 @@
 
   // CTA section with beautiful design
   .cta-section {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--gradient-primary);
     padding: 4rem 0;
     position: relative;
     margin: 3rem 0;
@@ -495,26 +495,26 @@
           gap: 0.5rem;
           font-size: 1rem;
           
-          &.btn-yellow {
-            background: linear-gradient(135deg, #ffd700, #ffed4e);
-            color: #1a1a1a;
+          &.btn-accent {
+            background: linear-gradient(135deg, var(--accent-light), var(--accent-lighter));
+            color: var(--navy-ink);
             border: none;
             
             &:hover {
               transform: translateY(-2px);
-              box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+              box-shadow: 0 8px 25px rgba(181, 215, 124, 0.4);
             }
           }
           
-          &.btn-yellow-outline {
+          &.btn-accent-outline {
             background: transparent;
-            color: #ffd700;
-            border: 2px solid #ffd700;
+            color: var(--accent-light);
+            border: 2px solid var(--accent-light);
             
             &:hover {
-              background: linear-gradient(135deg, #ffd700, #ffed4e);
-              color: #1a1a1a;
-              border-color: #ffd700;
+              background: linear-gradient(135deg, var(--accent-light), var(--accent-lighter));
+              color: var(--navy-ink);
+              border-color: var(--accent-light);
               transform: translateY(-2px);
             }
           }
@@ -536,7 +536,7 @@
         .showcase-icon {
           width: 80px;
           height: 80px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: var(--gradient-primary);
           border-radius: 50%;
           display: flex;
           align-items: center;
@@ -550,11 +550,11 @@
           }
           
           &:hover {
-            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            background: linear-gradient(135deg, var(--accent-light), var(--accent-lighter));
             transform: scale(1.1);
             
             i {
-              color: #1a1a1a;
+              color: var(--navy-ink);
             }
           }
         }
@@ -578,10 +578,10 @@
   .research-section {
     .research-grid {
       .research-card {
-        background: white;
+        background: var(--surface);
         border-radius: 16px;
         padding: 2rem;
-        border: 1px solid rgba(102, 126, 234, 0.1);
+        border: 1px solid rgba(31, 90, 142, 0.1);
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         transition: all 0.3s ease;
         position: relative;
@@ -597,14 +597,14 @@
           left: 0;
           right: 0;
           height: 4px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: var(--gradient-primary);
           opacity: 0;
           transition: all 0.3s ease;
         }
         
         &:hover {
-          border-color: rgba(102, 126, 234, 0.2);
-          box-shadow: 0 20px 25px -5px rgba(102, 126, 234, 0.15);
+          border-color: rgba(31, 90, 142, 0.2);
+          box-shadow: 0 20px 25px -5px rgba(31, 90, 142, 0.15);
           transform: translateY(-4px);
           
           &::before {
@@ -612,11 +612,11 @@
           }
           
           .research-icon {
-            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            background: linear-gradient(135deg, var(--accent-light), var(--accent-lighter));
             transform: scale(1.1);
             
             i {
-              color: #1a1a1a;
+              color: var(--navy-ink);
             }
           }
         }
@@ -624,7 +624,7 @@
         .research-icon {
           width: 60px;
           height: 60px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: var(--gradient-primary);
           border-radius: 12px;
           display: flex;
           align-items: center;
@@ -654,7 +654,7 @@
           .research-focus {
             font-size: 0.875rem;
             font-weight: 600;
-            color: #667eea;
+            color: var(--brand);
             margin-bottom: 1rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -676,13 +676,13 @@
               display: flex;
               align-items: center;
               gap: 0.25rem;
-              background: rgba(102, 126, 234, 0.1);
-              color: #667eea;
+              background: rgba(31, 90, 142, 0.1);
+              color: var(--brand);
               padding: 0.25rem 0.75rem;
               border-radius: 12px;
               font-size: 0.75rem;
               font-weight: 600;
-              border: 1px solid rgba(102, 126, 234, 0.2);
+              border: 1px solid rgba(31, 90, 142, 0.2);
               transition: all 0.3s ease;
               
               i {
@@ -690,9 +690,9 @@
               }
               
               &:hover {
-                background: linear-gradient(135deg, #ffd700, #ffed4e);
-                color: #1a1a1a;
-                border-color: rgba(255, 215, 0, 0.3);
+                background: linear-gradient(135deg, var(--accent-light), var(--accent-lighter));
+                color: var(--navy-ink);
+                border-color: rgba(181, 215, 124, 0.3);
                 transform: translateY(-1px);
               }
             }
@@ -727,10 +727,10 @@
   // Simplified Award Card
   .awards-section {
     .simple-award-card {
-      background: white;
+      background: var(--surface);
       border-radius: 16px;
       padding: 2rem;
-      border: 1px solid rgba(102, 126, 234, 0.1);
+      border: 1px solid rgba(31, 90, 142, 0.1);
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
       transition: all 0.3s ease;
       position: relative;
@@ -743,19 +743,19 @@
         left: 0;
         right: 0;
         height: 4px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: var(--gradient-primary);
       }
       
       &:hover {
-        box-shadow: 0 20px 25px -5px rgba(102, 126, 234, 0.15);
+        box-shadow: 0 20px 25px -5px rgba(31, 90, 142, 0.15);
         transform: translateY(-2px);
         
         .award-icon {
-          background: linear-gradient(135deg, #ffd700, #ffed4e);
+          background: linear-gradient(135deg, var(--accent-light), var(--accent-lighter));
           transform: scale(1.1);
           
           i {
-            color: #1a1a1a;
+            color: var(--navy-ink);
           }
         }
       }
@@ -768,7 +768,7 @@
         .award-icon {
           width: 60px;
           height: 60px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: var(--gradient-primary);
           border-radius: 12px;
           display: flex;
           align-items: center;

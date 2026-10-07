@@ -44,6 +44,7 @@ export interface FirebaseJournal {
   pdfFileName?: string;
   fileSize?: number;
   viewCount?: number; // Real view tracking
+  coverUrl?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -337,6 +338,18 @@ export class FirebaseJournalService {
       cacheControl: 'public, max-age=3600',
     });
     return getDownloadURL(storageRef);
+  }
+
+  /** Upload a cover JPEG to journals/covers/{id}.jpg and store its URL on the issue. */
+  async saveJournalCover(journalId: string, jpeg: Blob): Promise<string> {
+    const storageRef = ref(this.storage, `journals/covers/${journalId}.jpg`);
+    await uploadBytes(storageRef, jpeg, {
+      contentType: 'image/jpeg',
+      cacheControl: 'public, max-age=86400',
+    });
+    const coverUrl = await getDownloadURL(storageRef);
+    await updateDoc(doc(this.firestore, 'journals', journalId), { coverUrl });
+    return coverUrl;
   }
 
   // Search journals

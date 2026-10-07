@@ -1,0 +1,21 @@
+@if (visible) {
+  @let a = announcement()!;
+  <div class="announcement" role="region" aria-label="Announcement">
+    <div class="container announcement-inner">
+      <i class="bi bi-megaphone" aria-hidden="true"></i>
+      <p class="announcement-text">
+        {{ a.text }}
+        @if (isSafe(a.linkUrl)) {
+          @if (isInternal(a.linkUrl)) {
+            <a class="announcement-link" [routerLink]="a.linkUrl">{{ a.linkLabel || 'Learn more' }}</a>
+          } @else {
+            <a class="announcement-link" [href]="a.linkUrl" target="_blank" rel="noopener noreferrer">{{ a.linkLabel || 'Learn more' }}</a>
+          }
+        }
+      </p>
+      <button type="button" class="announcement-close" (click)="dismiss()" aria-label="Dismiss announcement">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+}

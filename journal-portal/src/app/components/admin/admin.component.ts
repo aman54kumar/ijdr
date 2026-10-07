@@ -21,11 +21,13 @@ import {
   FirebaseJournalService,
   FirebaseJournal,
 } from '../../services/firebase-journal.service';
+import { CoverService } from '../../services/cover.service';
 import { PdfModalService } from '../../services/pdf-modal.service';
 import { AuthService } from '../../services/auth.service';
 import { User } from '@angular/fire/auth';
 import { AdminManagementComponent } from './admin-management/admin-management.component';
 import { AdminInsightsComponent } from './admin-insights/admin-insights.component';
+import { AdminAnnouncementComponent } from './admin-announcement/admin-announcement.component';
 import { AdminMessagesComponent } from './admin-messages/admin-messages.component';
 import { BoardMember, BoardMemberSection } from '../../type/journals.type';
 import { ToastService } from '../../services/toast.service';
@@ -52,6 +54,7 @@ function optionalIssnValidator(): ValidatorFn {
     AdminManagementComponent,
     AdminInsightsComponent,
     AdminMessagesComponent,
+    AdminAnnouncementComponent,
     DragDropModule,
   ],
   templateUrl: './admin.component.html',
@@ -65,7 +68,8 @@ export class AdminComponent implements OnInit {
     | 'board-management'
     | 'create-board-member'
     | 'insights'
-    | 'messages' = 'journals';
+    | 'messages'
+    | 'announcement' = 'journals';
 
   journals: FirebaseJournal[] = [];
   selectedJournal: FirebaseJournal | null = null;
@@ -99,7 +103,8 @@ export class AdminComponent implements OnInit {
     private fb: FormBuilder,
     private pdfModalService: PdfModalService,
     private toast: ToastService,
-    private confirmModal: ConfirmModalService
+    private confirmModal: ConfirmModalService,
+    private covers: CoverService
   ) {
     this.journalForm = this.fb.group({
       title: ['', Validators.required],
@@ -233,6 +238,44 @@ export class AdminComponent implements OnInit {
     );
   }
 
+  // Cover thumbnails
+  coverBackfill: { running: boolean; done: number; total: number } | null = null;
+
+  get journalsMissingCover(): number {
+    return this.journals.filter((j) => !j.coverUrl && j.pdfUrl).length;
+  }
+
+  /** A cover failure must never fail the upload itself. */
+  private async tryGenerateCover(journalId: string, file: File) {
+    try {
+      await this.covers.generateFromFile(journalId, file);
+    } catch (e) {
+      console.warn('Cover generation failed:', e);
+      this.toast.show(
+        'Saved, but the cover image could not be generated. Use "Generate missing covers".',
+        'warning'
+      );
+    }
+  }
+
+  async generateMissingCovers() {
+    if (this.coverBackfill?.running) {
+      return;
+    }
+    const total = this.journalsMissingCover;
+    this.coverBackfill = { running: true, done: 0, total };
+    const result = await this.covers.backfillMissing(this.journals, (done, t) => {
+      this.coverBackfill = { running: true, done, total: t };
+    });
+    this.coverBackfill = null;
+    this.toast.show(
+      result.failed.length
+        ? `Covers: ${result.done} generated, ${result.failed.length} failed (${result.failed.join(', ')}).`
+        : `Generated ${result.done} cover${result.done === 1 ? '' : 's'}.`,
+      result.failed.length ? 'warning' : 'success'
+    );
+  }
+
   // Journal Management
   async createJournal() {
     // Ensure `title` is populated from Edition + Year before validating/saving.
@@ -250,10 +293,11 @@ export class AdminComponent implements OnInit {
         console.log('Journal data:', journalData);
         console.log('PDF file:', this.selectedPDFFile);
 
-        await this.firebaseService.createJournal(
+        const newId = await this.firebaseService.createJournal(
           journalData,
           this.selectedPDFFile
         );
+        await this.tryGenerateCover(newId, this.selectedPDFFile);
 
         this.journalForm.reset();
         this.journalForm.patchValue({ ssn: '2249-104X' }); // Restore default ISSN
@@ -289,6 +333,9 @@ export class AdminComponent implements OnInit {
           journalData,
           this.selectedPDFFile || undefined
         );
+        if (this.selectedPDFFile) {
+          await this.tryGenerateCover(this.selectedJournal.id!, this.selectedPDFFile);
+        }
 
         this.selectedJournal = null;
         this.journalForm.reset();
@@ -348,6 +395,7 @@ export class AdminComponent implements OnInit {
       | 'create-board-member'
       | 'insights'
       | 'messages'
+      | 'announcement'
   ) {
     this.currentView = view;
     this.selectedJournal = null;

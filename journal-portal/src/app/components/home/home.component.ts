@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { RouterLink, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { NgxSkeletonLoaderModule } from 'ngx-skeleton-loader';
+import { IssueCardComponent } from '../common/issue-card/issue-card.component';
+import { IssueCoverComponent } from '../common/issue-cover/issue-cover.component';
 import { FirebaseJournalService } from '../../services/firebase-journal.service';
 import { PdfModalService } from '../../services/pdf-modal.service';
 import { ToastService } from '../../services/toast.service';
@@ -14,13 +16,21 @@ import {
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, CommonModule, NgxSkeletonLoaderModule],
+  imports: [
+    RouterLink,
+    CommonModule,
+    NgxSkeletonLoaderModule,
+    IssueCardComponent,
+    IssueCoverComponent,
+  ],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
 })
 export class HomeComponent implements OnInit {
   latestIssues: iJournal[] = [];
   journals: iJournal[] = [];
+  mostRead: iJournal[] = [];
+  stats = { issues: 0, firstYear: '', lastYear: '', views: 0 };
   loadingIssues = true;
   popularViewCutoff = Number.POSITIVE_INFINITY;
 
@@ -62,6 +72,7 @@ export class HomeComponent implements OnInit {
           pdfUrl: journal.pdfUrl,
           pdfFileName: journal.pdfFileName,
           fileSize: journal.fileSize,
+          coverUrl: journal.coverUrl,
           viewCount: journal.viewCount || 0, // Real view count from database
           createdAt: journal.createdAt,
           updatedAt: journal.updatedAt,
@@ -71,6 +82,19 @@ export class HomeComponent implements OnInit {
 
         // Get latest 3 issues for display
         this.latestIssues = this.journals.slice(0, 3);
+
+        // Stats strip and "Most read" come from the same data (no hard-coded numbers)
+        const years = this.journals.map((j) => parseInt(j.year)).filter((y) => !isNaN(y));
+        this.stats = {
+          issues: this.journals.length,
+          firstYear: years.length ? String(Math.min(...years)) : '',
+          lastYear: years.length ? String(Math.max(...years)) : '',
+          views: this.journals.reduce((n, j) => n + (j.viewCount || 0), 0),
+        };
+        this.mostRead = [...this.journals]
+          .filter((j) => (j.viewCount || 0) > 0)
+          .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+          .slice(0, 4);
       },
       error: (error) => {
         this.loadingIssues = false;
@@ -94,6 +118,17 @@ export class HomeComponent implements OnInit {
     } else {
       this.toast.show('Journal not available.', 'warning');
     }
+  }
+
+  copyIssueLink(journal: iJournal) {
+    if (!journal.id) {
+      return;
+    }
+    const url = `${window.location.origin}/journal/${journal.id}`;
+    navigator.clipboard?.writeText(url).then(
+      () => this.toast.show('Link copied.', 'success'),
+      () => window.prompt('Copy this link:', url)
+    );
   }
 
   issueHighlightTags(issue: iJournal): JournalHighlightTag[] {

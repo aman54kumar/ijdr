@@ -7,7 +7,7 @@
     display: flex;
     align-items: center;
     overflow: hidden;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--gradient-primary);
     
     &::before {
       content: '';
@@ -108,22 +108,22 @@
   // Main Contact Section - Light theme for content
   .contact-main-section {
     padding: var(--space-6) 0;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    background: linear-gradient(135deg, var(--surface-2) 0%, var(--border) 100%);
     
     .institute-block,
     .editorial-block {
-      background: white;
+      background: var(--surface);
       border-radius: var(--radius-lg);
       padding: var(--space-4);
       height: 100%;
       box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.06);
-      border: 1px solid rgba(102, 126, 234, 0.1);
+      border: 1px solid rgba(31, 90, 142, 0.1);
       transition: all 0.3s ease;
       
       &:hover {
         transform: translateY(-1px);
-        box-shadow: 0 8px 15px -5px rgba(102, 126, 234, 0.15);
-        border-color: rgba(102, 126, 234, 0.2);
+        box-shadow: 0 8px 15px -5px rgba(31, 90, 142, 0.15);
+        border-color: rgba(31, 90, 142, 0.2);
       }
     }
     
@@ -133,12 +133,12 @@
       gap: var(--space-2);
       margin-bottom: var(--space-3);
       padding-bottom: var(--space-2);
-      border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+      border-bottom: 1px solid rgba(31, 90, 142, 0.1);
       
       .header-icon {
         width: 35px;
         height: 35px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: var(--gradient-primary);
         border-radius: var(--radius-md);
         display: flex;
         align-items: center;
@@ -163,7 +163,7 @@
       .institute-name {
         font-size: var(--text-sm);
         font-weight: 600;
-        color: #667eea;
+        color: var(--brand);
         margin-bottom: var(--space-2);
       }
       
@@ -202,26 +202,26 @@
           transition: all 0.2s ease;
           
           &.map-btn {
-            background: rgba(102, 126, 234, 0.1);
-            color: #667eea;
-            border: 1px solid rgba(102, 126, 234, 0.2);
+            background: rgba(31, 90, 142, 0.1);
+            color: var(--brand);
+            border: 1px solid rgba(31, 90, 142, 0.2);
             
             &:hover {
-              background: rgba(102, 126, 234, 0.2);
-              color: #5a67d8;
+              background: rgba(31, 90, 142, 0.2);
+              color: var(--brand);
               transform: translateY(-1px);
             }
           }
           
           &.submit-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--gradient-primary);
             color: white;
             border: none;
             
             &:hover {
-              background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+              background: linear-gradient(135deg, var(--brand-solid) 0%, #6b46c1 100%);
               transform: translateY(-1px);
-              box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+              box-shadow: 0 2px 4px rgba(31, 90, 142, 0.3);
             }
           }
         }
@@ -250,11 +250,11 @@
             justify-content: center;
             
             &.chief {
-              background: linear-gradient(135deg, #667eea, #764ba2);
+              background: var(--gradient-primary);
             }
             
             &.associate {
-              background: linear-gradient(135deg, #764ba2, #9f7aea);
+              background: linear-gradient(135deg, var(--brand-solid-2), #9f7aea);
             }
             
             i {
@@ -273,7 +273,7 @@
             
             .editor-position {
               font-size: var(--text-xs);
-              color: #667eea;
+              color: var(--brand);
               font-weight: 600;
               margin: 0;
             }
@@ -290,24 +290,24 @@
             align-items: center;
             gap: var(--space-2);
             padding: var(--space-1) var(--space-2);
-            background: rgba(102, 126, 234, 0.05);
+            background: rgba(31, 90, 142, 0.05);
             border-radius: var(--radius-sm);
             text-decoration: none;
             transition: all 0.2s ease;
-            border: 1px solid rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(31, 90, 142, 0.1);
             
             &:hover {
-              background: rgba(102, 126, 234, 0.1);
-              border-color: rgba(102, 126, 234, 0.2);
+              background: rgba(31, 90, 142, 0.1);
+              border-color: rgba(31, 90, 142, 0.2);
               transform: translateX(2px);
             }
             
             &.phone-contact:hover {
-              background: rgba(102, 126, 234, 0.15);
+              background: rgba(31, 90, 142, 0.15);
             }
             
             &.email-contact:hover {
-              background: rgba(118, 75, 162, 0.1);
+              background: rgba(23, 70, 118, 0.1);
             }
             
             &.alt {
@@ -316,7 +316,7 @@
             
             i {
               font-size: var(--text-xs);
-              color: #667eea;
+              color: var(--brand);
               width: 14px;
             }
             
@@ -337,7 +337,7 @@
       background: rgba(255, 255, 255, 0.8);
       backdrop-filter: blur(10px);
       border-radius: var(--radius-lg);
-      border: 1px solid rgba(102, 126, 234, 0.1);
+      border: 1px solid rgba(31, 90, 142, 0.1);
       
       .links-container {
         display: grid;
@@ -350,7 +350,7 @@
           justify-content: center;
           gap: var(--space-1);
           padding: var(--space-2);
-          background: white;
+          background: var(--surface);
           border-radius: var(--radius-md);
           text-decoration: none;
           color: var(--secondary-700);
@@ -358,13 +358,13 @@
           font-size: var(--text-xs);
           transition: all 0.2s ease;
           box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-          border: 1px solid rgba(102, 126, 234, 0.1);
+          border: 1px solid rgba(31, 90, 142, 0.1);
           
           &:hover {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--gradient-primary);
             color: white;
             transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+            box-shadow: 0 2px 4px rgba(31, 90, 142, 0.2);
             border-color: transparent;
           }
           

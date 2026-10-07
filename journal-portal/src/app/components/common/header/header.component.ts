@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, inject } from '@angular/core';
+import { ThemeService } from '../../../services/theme.service';
 import { RouterLink, RouterModule } from '@angular/router';
 
 @Component({
@@ -9,8 +10,20 @@ import { RouterLink, RouterModule } from '@angular/router';
   styleUrl: './header.component.scss',
 })
 export class HeaderComponent {
+  readonly theme = inject(ThemeService);
   isNavbarCollapsed = true;
+  scrolled = false;
   isDropdownOpen = false;
+
+  @HostListener('window:scroll')
+  onScroll() {
+    this.scrolled = window.scrollY > 8;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape() {
+    this.closeNavbar();
+  }
 
   // Close navbar when clicking navigation links (mobile)
   closeNavbar() {

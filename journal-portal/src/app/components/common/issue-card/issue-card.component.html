@@ -1,0 +1,35 @@
+<article class="issue-card" [ngClass]="'issue-card--' + layout">
+  <button type="button" class="issue-cover-btn" (click)="read.emit(issue)" [attr.aria-label]="'Read ' + issue.title">
+    <app-issue-cover [issue]="issue"></app-issue-cover>
+  </button>
+
+  <div class="issue-body">
+    @if (tags.length) {
+      <div class="issue-tags">
+        @for (t of tags; track t.kind) {
+          <span class="issue-tag" [ngClass]="'issue-tag--' + t.kind">{{ t.label }}</span>
+        }
+      </div>
+    }
+    <h3 class="issue-title">{{ issue.title }}</h3>
+    <p class="issue-meta">
+      Vol {{ issue.volume }} · No. {{ issue.number }} · {{ editionLabel }} {{ issue.year }}
+    </p>
+    @if (summary) {
+      <p class="issue-summary">{{ summary }}</p>
+    }
+    <div class="issue-actions">
+      <button type="button" class="btn btn-primary btn-sm" (click)="read.emit(issue)">
+        <i class="bi bi-book me-2" aria-hidden="true"></i>Read issue
+      </button>
+      <button
+        type="button"
+        class="btn btn-outline-primary btn-sm"
+        (click)="copyLink.emit(issue)"
+        [attr.aria-label]="'Copy link to ' + issue.title"
+      >
+        <i class="bi bi-link-45deg" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+</article>

@@ -1,6 +1,8 @@
+<a class="skip-link" href="#main-content" (click)="focusMain($event)">Skip to main content</a>
 <div class="app-container">
+  <app-announcement-banner></app-announcement-banner>
   <app-header class="app-header"></app-header>
-  <main class="main-content">
+  <main class="main-content" id="main-content" tabindex="-1">
     <router-outlet></router-outlet>
   </main>
   <app-footer class="app-footer"></app-footer>
@@ -12,6 +14,8 @@
   <div
     class="toast-container position-fixed bottom-0 end-0 p-3"
     style="z-index: 1080"
+    aria-live="polite"
+    aria-atomic="true"
   >
     <div
       class="toast show"
@@ -43,11 +47,12 @@
     style="background: rgba(0, 0, 0, 0.45)"
     role="dialog"
     aria-modal="true"
+    aria-labelledby="confirm-title"
   >
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">{{ confirmPrompt.title }}</h5>
+          <h5 class="modal-title" id="confirm-title">{{ confirmPrompt.title }}</h5>
         </div>
         <div class="modal-body">
           <p class="mb-0">{{ confirmPrompt.message }}</p>
@@ -56,7 +61,7 @@
           <button type="button" class="btn btn-secondary" (click)="confirmNo()">
             Cancel
           </button>
-          <button type="button" class="btn btn-primary" (click)="confirmYes()">
+          <button type="button" class="btn btn-primary" (click)="confirmYes()" autofocus>
             OK
           </button>
         </div>
