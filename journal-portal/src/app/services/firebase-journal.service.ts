@@ -329,7 +329,13 @@ export class FirebaseJournalService {
     const fileName = `journals/${journalId}/issue.pdf`;
     const storageRef = ref(this.storage, fileName);
 
-    await uploadBytes(storageRef, file);
+    // Neutral filename for downloads even when the browser is sent straight to Storage (large PDFs).
+    const safeId = journalId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 32) || 'issue';
+    await uploadBytes(storageRef, file, {
+      contentType: 'application/pdf',
+      contentDisposition: `inline; filename="ijdr-${safeId}.pdf"`,
+      cacheControl: 'public, max-age=3600',
+    });
     return getDownloadURL(storageRef);
   }
 

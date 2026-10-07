@@ -408,6 +408,16 @@
                       </div>
                     </div>
 
+                    <div
+                      *ngIf="selectedPDFFile && selectedPDFFile.size > 15 * 1024 * 1024"
+                      class="alert alert-warning mt-2"
+                    >
+                      <i class="bi bi-exclamation-triangle me-2"></i>
+                      This PDF is large. Readers on mobile data will load it
+                      slowly. Consider compressing it first with
+                      <code>scripts/compress-pdf.sh</code>.
+                    </div>
+
                     <!-- Current File Info (for editing) -->
                     <div
                       *ngIf="selectedJournal && !selectedPDFFile"
