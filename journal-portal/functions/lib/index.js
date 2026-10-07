@@ -21,6 +21,7 @@ const STATIC_PATHS = [
     '/legal/open-access',
     '/legal/accessibility',
 ];
+const MAX_PROXY_BYTES = 9 * 1024 * 1024;
 function xmlEscape(s) {
     return s
         .replace(/&/g, '&amp;')
@@ -78,6 +79,13 @@ exports.getPdf = functions.https.onRequest(async (req, res) => {
             return;
         }
         const [metadata] = await file.getMetadata();
+        // 1st-gen functions cap responses at 10 MB; larger PDFs fail with a 500.
+        // Hand those off to Storage directly (reads are public per storage.rules).
+        if (Number(metadata.size) > MAX_PROXY_BYTES) {
+            res.set('Cache-Control', 'public, max-age=300');
+            res.redirect(302, journalData.pdfUrl);
+            return;
+        }
         res.set('Content-Type', 'application/pdf');
         const disposition = req.query.disposition === 'attachment' ? 'attachment' : 'inline';
         res.set('Content-Disposition', `${disposition}; filename="${neutralPdfDownloadFilename(journalId)}"`);
