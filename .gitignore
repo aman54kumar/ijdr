@@ -23,3 +23,7 @@ db.sqlite3-journal
 # OS / editor
 .DS_Store
 Thumbs.db
+
+# Sample/large PDFs (kept locally, not in git)
+journal_backend/*.pdf
+journal-portal/membership_form.pdf

@@ -9,10 +9,3 @@ export const firebaseConfig = {
   appId: 'YOUR_APP_ID',
   measurementId: 'G-XXXXXXXXXX',
 };
-
-// Used by utils/admin-setup.service.ts. Use your own values; never commit real ones.
-export const defaultAdminConfig = {
-  email: 'admin@example.com',
-  password: 'CHANGE_ME',
-  displayName: 'IJDR Administrator',
-};
