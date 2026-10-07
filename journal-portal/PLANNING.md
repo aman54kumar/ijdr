@@ -11,7 +11,7 @@ Phased plan to modernize the IJDR portal (live at https://ijdrpub.in) in functio
 | 0 | Repo hygiene and safety | Done (3 user follow-ups deferred, see notes) |
 | 1 | Design foundation and UI polish | Done (covers backfilled; not deployed) |
 | 2 | Content model: articles + admin entry | Done (not deployed; admin UI not exercised against live Firestore) |
-| 3 | Gemini ingest pipeline | Not started |
+| 3 | Gemini ingest pipeline | Built (not deployed; not yet run against a real issue) |
 | 4 | Discovery: article pages, search, citations, SEO | Not started |
 | 5 | AI reader features | Not started |
 | 6 | Reader experience: PDF viewer, PWA, performance | Not started |
@@ -201,7 +201,18 @@ Also add `articleCount?: number` and `articlesStatus?: 'none'|'draft'|'published
 
 **Out of scope:** public display (Phase 4), reader-facing AI (Phase 5).
 
-**Privacy note to add to the privacy policy in this phase:** only published issues are sent to Gemini; free-tier inputs may be used by Google to improve its models; unpublished manuscripts must never go through this pipeline.
+**Notes/deviations (built):**
+- `ingestIssue` (v2 callable) in `functions/src/index.ts`; core in `functions/src/ingest/run.ts` (shared with the local script), prompt/schema in `functions/src/prompts/ingest.ts` (`ingest-v1`), validator and idempotency planner in `functions/src/ingest/validate.ts`. Hand-rolled validation (no zod). Always uses the Gemini Files API (PDF is downloaded to /tmp, uploaded, deleted afterwards).
+- Model default is `gemini-3.5-flash`, taken from Google's model list at implementation time; **its free-tier availability on the user's key is unverified**. Override with `GEMINI_MODEL`.
+- Pages: the model returns printed page numbers plus `pageOffset`; the function stores `pageStart/pageEnd` as file page indexes (printed + offset), cleared with a warning when out of range.
+- Idempotency: re-run deletes only `source:'ai'`, `status:'draft'`, not `humanEdited` articles (the admin service sets `humanEdited` when an AI draft is edited), and skips drafts whose title matches a kept article.
+- Guards: one running job per issue (15 min stale lock), 10/day cap in `ingestStats`, 100 MB cap, 429/503 backoff (5/20/60 s), readable errors on `ingestJobs/{issueId}` with token usage.
+- Review UI is in the Articles tab: extract button with privacy confirm, live job banner, accept checkboxes, confidence badge, per-draft PDF page preview (pdf.js range reads), publish accepted / reject selected, inline editing via the existing editor.
+- Local fallback is `functions/scripts/ingestLocal.js` (JS over compiled `lib`, not .ts).
+- Tests: `npm test` in `functions/` (4 node:test cases on a fixture); rules for `ingestJobs`/`ingestStats` checked in the emulator. Not done: end-to-end run on a real issue (needs a deploy and the admin to try it), and verifying a non-admin call is rejected against the deployed function (code checks `token.admin === true`).
+- `src/environments/firebase-config.ts` contains the public web API key (expected); no Gemini key is in the repo or bundle (grepped).
+
+**Privacy note to add to the privacy policy in this phase (added to section 3 of the privacy policy):** only published issues are sent to Gemini; free-tier inputs may be used by Google to improve its models; unpublished manuscripts must never go through this pipeline.
 
 ---
 

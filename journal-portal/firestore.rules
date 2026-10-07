@@ -48,6 +48,15 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Written by the ingestIssue function (Admin SDK); admins may read and write.
+    match /ingestJobs/{issueId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /ingestStats/{day} {
+      allow read, write: if isAdmin();
+    }
+
     match /boardMembers/{memberId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();

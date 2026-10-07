@@ -29,10 +29,56 @@
           {{ articles.length }} article{{ articles.length === 1 ? '' : 's' }}
           @if (issue?.articlesStatus) { · {{ issue?.articlesStatus }} }
         </span>
-        <button type="button" class="btn btn-primary btn-sm" (click)="openEditor()" [disabled]="!issueId">
-          <i class="bi bi-plus-lg me-1"></i>Add article
-        </button>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-outline-primary btn-sm" (click)="extractWithAi()" [disabled]="!issueId || jobRunning">
+            @if (jobRunning) {
+              <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Extracting…
+            } @else {
+              <i class="bi bi-stars me-1"></i>Extract articles with AI
+            }
+          </button>
+          <button type="button" class="btn btn-primary btn-sm" (click)="openEditor()" [disabled]="!issueId">
+            <i class="bi bi-plus-lg me-1"></i>Add article
+          </button>
+        </div>
       </div>
+
+      @if (job) {
+        <div class="alert mb-3" role="status"
+          [class.alert-info]="job.state === 'running'" [class.alert-danger]="job.state === 'error'" [class.alert-success]="job.state === 'done'">
+          @switch (job.state) {
+            @case ('running') { AI extraction in progress with {{ job.model }}. This usually takes 1–3 minutes; you can leave this page open. }
+            @case ('error') { <strong>Last extraction failed:</strong> {{ job.error }} }
+            @case ('done') {
+              Last extraction: {{ job.result?.created }} new draft(s), {{ job.result?.replaced }} replaced, {{ job.result?.kept }} kept.
+              @if (job.usage?.totalTokens) { <span class="text-muted">({{ job.usage?.totalTokens }} tokens)</span> }
+              @if (job.result?.warnings?.length) {
+                <ul class="mb-0 mt-1 small">
+                  @for (w of job.result?.warnings; track w) { <li>{{ w }}</li> }
+                </ul>
+              }
+            }
+          }
+        </div>
+      }
+
+      @if (aiDrafts.length) {
+        <div class="review-bar d-flex flex-wrap align-items-center gap-2 mb-2">
+          <div class="form-check mb-0">
+            <input class="form-check-input" type="checkbox" id="art-all"
+              [checked]="accepted.size === aiDrafts.length" [indeterminate]="accepted.size > 0 && accepted.size < aiDrafts.length"
+              (change)="toggleAllAccepted()" />
+            <label class="form-check-label" for="art-all">{{ accepted.size }} of {{ aiDrafts.length }} AI drafts accepted</label>
+          </div>
+          <button type="button" class="btn btn-success btn-sm" (click)="publishAccepted()" [disabled]="!accepted.size || bulkBusy">
+            Publish accepted
+          </button>
+          <button type="button" class="btn btn-outline-danger btn-sm" (click)="rejectAccepted()" [disabled]="!accepted.size || bulkBusy">
+            Reject selected
+          </button>
+          <span class="small text-muted">Check the drafts that look right, edit any that don't, then publish.</span>
+        </div>
+      }
 
       @if (loadingArticles) {
         <p>Loading…</p>
@@ -44,6 +90,10 @@
         @for (a of articles; track a.id; let i = $index) {
           <div class="article-row" cdkDrag cdkDragLockAxis="y">
             <i class="bi bi-grip-vertical handle" cdkDragHandle aria-hidden="true"></i>
+            @if (a.source === 'ai' && a.status === 'draft') {
+              <input class="form-check-input mt-0" type="checkbox" [checked]="accepted.has(a.id)" (change)="toggleAccepted(a)"
+                [attr.aria-label]="'Accept ' + a.title" />
+            }
             <div class="meta">
               <div class="title">{{ i + 1 }}. {{ a.title }}</div>
               <div class="small text-muted">
@@ -55,7 +105,11 @@
               {{ a.status }}
             </span>
             @if (a.source === 'ai') {
-              <span class="badge text-bg-info">AI</span>
+              <span class="badge text-bg-info" title="Drafted by AI; check before publishing">AI{{ a.humanEdited ? ' · edited' : '' }}</span>
+              @if (a.aiConfidence != null) {
+                <span class="badge" [class.text-bg-warning]="a.aiConfidence < 0.7" [class.text-bg-light]="a.aiConfidence >= 0.7"
+                  title="Model's own confidence estimate">{{ confidenceLabel(a) }}</span>
+              }
             }
             <div class="btn-group btn-group-sm" role="group" [attr.aria-label]="'Actions for ' + a.title">
               <button type="button" class="btn btn-outline-secondary" (click)="move(i, -1)" [disabled]="i === 0" aria-label="Move up">
@@ -64,6 +118,12 @@
               <button type="button" class="btn btn-outline-secondary" (click)="move(i, 1)" [disabled]="i === articles.length - 1" aria-label="Move down">
                 <i class="bi bi-arrow-down"></i>
               </button>
+              @if (a.pageStart) {
+                <button type="button" class="btn btn-outline-secondary" (click)="togglePreview(a)" [attr.aria-expanded]="previews.has(a.id)"
+                  [attr.aria-label]="'Preview page ' + a.pageStart">
+                  <i class="bi bi-file-earmark-image"></i>
+                </button>
+              }
               <button type="button" class="btn btn-outline-secondary" (click)="toggleStatus(a)">
                 {{ a.status === 'published' ? 'Unpublish' : 'Publish' }}
               </button>
@@ -75,6 +135,15 @@
               </button>
             </div>
           </div>
+          @if (previews.has(a.id)) {
+            <div class="preview mb-2">
+              @switch (previews.get(a.id)) {
+                @case ('') { <span class="text-muted">Loading page {{ a.pageStart }}…</span> }
+                @case ('error') { <span class="text-danger">Could not render page {{ a.pageStart }}.</span> }
+                @default { <img [src]="previews.get(a.id)" [alt]="'Page ' + a.pageStart + ' of the issue PDF'" /> }
+              }
+            </div>
+          }
         }
       </div>
 

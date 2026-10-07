@@ -118,6 +118,24 @@ export interface iArticle {
   issueTitle: string;
   searchTokens?: string[];
   viewCount?: number;
+  // AI ingest provenance (Phase 3)
+  aiConfidence?: number; // 0-1, model's own estimate
+  aiModel?: string;
+  aiPromptVersion?: string;
+  humanEdited?: boolean; // set when an admin edits an AI draft; re-ingest then keeps it
   createdAt?: any;
   updatedAt?: any;
+}
+
+/** `ingestJobs/{issueId}` (admin only). */
+export interface IngestJob {
+  issueId: string;
+  state: 'running' | 'done' | 'error';
+  model?: string;
+  promptVersion?: string;
+  startedAt?: any;
+  finishedAt?: any;
+  error?: string | null;
+  result?: { created: number; kept: number; replaced: number; warnings: string[] } | null;
+  usage?: { promptTokens: number | null; outputTokens: number | null; totalTokens: number | null } | null;
 }

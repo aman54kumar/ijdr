@@ -50,6 +50,27 @@ export class CoverService {
     }
   }
 
+  /** Render one page (1-based) of a stored PDF to a JPEG data URL, reading only the bytes it needs. */
+  async renderPagePreview(pdfUrl: string, pageNumber: number, width = 360): Promise<string> {
+    const task = pdfjsLib.getDocument({ url: pdfUrl, disableAutoFetch: true, rangeChunkSize: 262144 });
+    const doc = await task.promise;
+    try {
+      const page = await doc.getPage(Math.min(Math.max(1, pageNumber), doc.numPages));
+      const base = page.getViewport({ scale: 1 });
+      const viewport = page.getViewport({ scale: width / base.width });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.floor(viewport.width);
+      canvas.height = Math.floor(viewport.height);
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      return canvas.toDataURL('image/jpeg', 0.8);
+    } finally {
+      await doc.destroy();
+    }
+  }
+
   /** Generate and store the cover for an issue from a PDF file the admin just selected. */
   async generateFromFile(journalId: string, file: File): Promise<string> {
     const jpeg = await this.renderCover(await file.arrayBuffer());

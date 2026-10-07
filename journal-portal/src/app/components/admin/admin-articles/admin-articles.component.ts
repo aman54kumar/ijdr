@@ -7,7 +7,9 @@ import { ArticleInput, ArticleService } from '../../../services/article.service'
 import { FirebaseJournal, FirebaseJournalService } from '../../../services/firebase-journal.service';
 import { ConfirmModalService } from '../../../services/confirm-modal.service';
 import { ToastService } from '../../../services/toast.service';
-import { iArticle, iJournal } from '../../../type/journals.type';
+import { CoverService } from '../../../services/cover.service';
+import { IngestService, ingestErrorMessage } from '../../../services/ingest.service';
+import { iArticle, iJournal, IngestJob } from '../../../type/journals.type';
 
 /** Optional page numbers: blank -> undefined. */
 function toPage(v: unknown): number | undefined {
@@ -28,8 +30,20 @@ export class AdminArticlesComponent implements OnInit, OnDestroy {
   private journalService = inject(FirebaseJournalService);
   private confirmModal = inject(ConfirmModalService);
   private toast = inject(ToastService);
+  private ingest = inject(IngestService);
+  private covers = inject(CoverService);
   private subs = new Subscription();
   private articlesSub?: Subscription;
+  private jobSub?: Subscription;
+
+  // AI extraction + review
+  job?: IngestJob;
+  extracting = false;
+  /** Ids of AI drafts the admin has accepted (checked) for publishing. */
+  accepted = new Set<string>();
+  /** Page previews: article id -> data URL, '' while loading, 'error' on failure. */
+  previews = new Map<string, string>();
+  bulkBusy = false;
 
   issues: FirebaseJournal[] = [];
   issueId = '';
@@ -76,6 +90,7 @@ export class AdminArticlesComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.subs.unsubscribe();
     this.articlesSub?.unsubscribe();
+    this.jobSub?.unsubscribe();
   }
 
   private newAuthor() {
@@ -91,6 +106,14 @@ export class AdminArticlesComponent implements OnInit, OnDestroy {
     this.issueId = id;
     this.closeEditor();
     this.articlesSub?.unsubscribe();
+    this.jobSub?.unsubscribe();
+    this.job = undefined;
+    this.accepted.clear();
+    this.previews.clear();
+    this.jobSub = this.ingest.watchJob(id).subscribe({
+      next: (j) => (this.job = j),
+      error: () => (this.job = undefined),
+    });
     this.loadingArticles = true;
     this.articlesSub = this.articleService.getArticlesByIssue(id).subscribe({
       next: (a) => {
@@ -287,6 +310,124 @@ export class AdminArticlesComponent implements OnInit, OnDestroy {
     if (!a.authors.length) return 'No authors';
     const names = a.authors.slice(0, 3).map((x) => x.name);
     return names.join(', ') + (a.authors.length > 3 ? ' et al.' : '');
+  }
+
+  /** Untouched or edited AI drafts waiting for review. */
+  get aiDrafts(): iArticle[] {
+    return this.articles.filter((a) => a.source === 'ai' && a.status === 'draft');
+  }
+
+  get acceptedDrafts(): iArticle[] {
+    return this.aiDrafts.filter((a) => this.accepted.has(a.id));
+  }
+
+  get jobRunning(): boolean {
+    return this.extracting || this.job?.state === 'running';
+  }
+
+  async extractWithAi() {
+    const issue = this.issue;
+    if (!issue || this.jobRunning) {
+      return;
+    }
+    const hasDrafts = this.aiDrafts.some((a) => !a.humanEdited);
+    const ok = await this.confirmModal.ask(
+      'Extract articles with AI',
+      `Send "${issue.title}" to Google Gemini to draft its article list? Only send issues that are already public; free-tier inputs may be used by Google to improve its models. ` +
+        (hasDrafts ? 'Existing untouched AI drafts will be replaced; published and edited articles are kept.' : 'Results arrive as drafts for you to review.')
+    );
+    if (!ok) {
+      return;
+    }
+    this.extracting = true;
+    try {
+      const r = await this.ingest.extract(issue.id!);
+      this.toast.show(`Extracted ${r.created} draft article${r.created === 1 ? '' : 's'}. Review them below.`, 'success');
+      this.accepted = new Set();
+      this.previews.clear();
+    } catch (e) {
+      console.error('Extraction failed', e);
+      this.toast.show(ingestErrorMessage(e), 'danger');
+    } finally {
+      this.extracting = false;
+    }
+  }
+
+  toggleAccepted(a: iArticle) {
+    if (!this.accepted.delete(a.id)) {
+      this.accepted.add(a.id);
+    }
+  }
+
+  toggleAllAccepted() {
+    const drafts = this.aiDrafts;
+    if (this.accepted.size === drafts.length) {
+      this.accepted.clear();
+    } else {
+      this.accepted = new Set(drafts.map((a) => a.id));
+    }
+  }
+
+  async publishAccepted() {
+    const list = this.acceptedDrafts;
+    const noAuthors = list.filter((a) => !a.authors.length);
+    if (noAuthors.length) {
+      this.toast.show(`${noAuthors.length} accepted article(s) have no author. Edit them first.`, 'warning');
+      return;
+    }
+    await this.bulk(list, 'publish');
+  }
+
+  async rejectAccepted() {
+    const list = this.acceptedDrafts;
+    const ok = await this.confirmModal.ask('Reject drafts', `Delete ${list.length} selected draft${list.length === 1 ? '' : 's'}?`);
+    if (ok) {
+      await this.bulk(list, 'delete');
+    }
+  }
+
+  private async bulk(list: iArticle[], action: 'publish' | 'delete') {
+    if (!list.length) {
+      return;
+    }
+    this.bulkBusy = true;
+    try {
+      if (action === 'publish') {
+        await this.articleService.setStatusMany(list, 'published');
+      } else {
+        await this.articleService.deleteMany(list);
+      }
+      list.forEach((a) => this.accepted.delete(a.id));
+      this.toast.show(action === 'publish' ? `Published ${list.length}.` : `Deleted ${list.length}.`, 'success');
+    } catch (e) {
+      console.error('Bulk action failed', e);
+      this.toast.show('Could not complete that action.', 'danger');
+    } finally {
+      this.bulkBusy = false;
+    }
+  }
+
+  /** Toggle the page preview beside a draft (renders the article's first page from the issue PDF). */
+  async togglePreview(a: iArticle) {
+    if (this.previews.has(a.id)) {
+      this.previews.delete(a.id);
+      return;
+    }
+    const url = this.issue?.pdfUrl;
+    if (!url || !a.pageStart) {
+      return;
+    }
+    this.previews.set(a.id, '');
+    try {
+      this.previews.set(a.id, await this.covers.renderPagePreview(url, a.pageStart));
+    } catch (e) {
+      console.warn('Preview failed', e);
+      this.previews.set(a.id, 'error');
+    }
+  }
+
+  confidenceLabel(a: iArticle): string {
+    return a.aiConfidence == null ? '' : `${Math.round(a.aiConfidence * 100)}%`;
   }
 
   pages(a: iArticle): string {

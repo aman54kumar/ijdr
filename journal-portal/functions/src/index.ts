@@ -1,5 +1,8 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { defineSecret } from 'firebase-functions/params';
+import { runIngest, IngestError } from './ingest/run';
 
 admin.initializeApp();
 
@@ -247,3 +250,45 @@ function neutralPdfDownloadFilename(journalId: string): string {
   const safe = journalId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 32) || 'issue';
   return `ijdr-${safe}.pdf`;
 }
+
+// ---------------------------------------------------------------------------
+// Gemini ingest (Phase 3)
+// ---------------------------------------------------------------------------
+
+const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
+
+/**
+ * Admin-only: extract draft articles from an issue's PDF with Gemini.
+ * Progress and errors are written to `ingestJobs/{issueId}`.
+ */
+export const ingestIssue = onCall(
+  {
+    secrets: [GEMINI_API_KEY],
+    timeoutSeconds: 540,
+    memory: '1GiB',
+    maxInstances: 3,
+  },
+  async (request) => {
+    if (request.auth?.token?.['admin'] !== true) {
+      throw new HttpsError('permission-denied', 'Admins only.');
+    }
+    const issueId = (request.data as { issueId?: unknown } | undefined)?.issueId;
+    if (typeof issueId !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(issueId)) {
+      throw new HttpsError('invalid-argument', 'issueId is required.');
+    }
+    try {
+      return await runIngest({
+        db: admin.firestore(),
+        bucket: admin.storage().bucket(),
+        apiKey: GEMINI_API_KEY.value(),
+        issueId,
+        model: process.env['GEMINI_MODEL'],
+      });
+    } catch (e) {
+      if (e instanceof IngestError) {
+        throw new HttpsError(e.code, e.message);
+      }
+      throw new HttpsError('internal', 'Extraction failed.');
+    }
+  }
+);

@@ -184,6 +184,7 @@ export class ArticleService {
     await updateDoc(doc(this.firestore, 'articles', article.id), {
       ...patch,
       searchTokens: buildSearchTokens(data),
+      ...(article.source === 'ai' ? { humanEdited: true } : {}),
       updatedAt: Timestamp.now(),
     });
     await this.refreshIssueSummary(article.issueId);
@@ -195,6 +196,33 @@ export class ArticleService {
       updatedAt: Timestamp.now(),
     });
     await this.refreshIssueSummary(article.issueId);
+  }
+
+  /** Set the status of several articles at once (review screen: publish accepted). */
+  async setStatusMany(articles: iArticle[], status: iArticle['status']): Promise<void> {
+    for (let i = 0; i < articles.length; i += BATCH_LIMIT) {
+      const batch = writeBatch(this.firestore);
+      for (const a of articles.slice(i, i + BATCH_LIMIT)) {
+        batch.update(doc(this.firestore, 'articles', a.id), { status, updatedAt: Timestamp.now() });
+      }
+      await batch.commit();
+    }
+    if (articles.length) {
+      await this.refreshIssueSummary(articles[0].issueId);
+    }
+  }
+
+  async deleteMany(articles: iArticle[]): Promise<void> {
+    for (let i = 0; i < articles.length; i += BATCH_LIMIT) {
+      const batch = writeBatch(this.firestore);
+      for (const a of articles.slice(i, i + BATCH_LIMIT)) {
+        batch.delete(doc(this.firestore, 'articles', a.id));
+      }
+      await batch.commit();
+    }
+    if (articles.length) {
+      await this.refreshIssueSummary(articles[0].issueId);
+    }
   }
 
   async deleteArticle(article: iArticle): Promise<void> {

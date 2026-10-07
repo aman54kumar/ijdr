@@ -33,9 +33,12 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.rssFeed = exports.sitemap = exports.getPdf = void 0;
+exports.ingestIssue = exports.rssFeed = exports.sitemap = exports.getPdf = void 0;
 const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
+const https_1 = require("firebase-functions/v2/https");
+const params_1 = require("firebase-functions/params");
+const run_1 = require("./ingest/run");
 admin.initializeApp();
 const SITE_ORIGIN = process.env.SITEMAP_SITE_ORIGIN || 'https://ijdrpub.in';
 const STATIC_PATHS = [
@@ -233,4 +236,41 @@ function neutralPdfDownloadFilename(journalId) {
     const safe = journalId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 32) || 'issue';
     return `ijdr-${safe}.pdf`;
 }
+// ---------------------------------------------------------------------------
+// Gemini ingest (Phase 3)
+// ---------------------------------------------------------------------------
+const GEMINI_API_KEY = (0, params_1.defineSecret)('GEMINI_API_KEY');
+/**
+ * Admin-only: extract draft articles from an issue's PDF with Gemini.
+ * Progress and errors are written to `ingestJobs/{issueId}`.
+ */
+exports.ingestIssue = (0, https_1.onCall)({
+    secrets: [GEMINI_API_KEY],
+    timeoutSeconds: 540,
+    memory: '1GiB',
+    maxInstances: 3,
+}, async (request) => {
+    if (request.auth?.token?.['admin'] !== true) {
+        throw new https_1.HttpsError('permission-denied', 'Admins only.');
+    }
+    const issueId = request.data?.issueId;
+    if (typeof issueId !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(issueId)) {
+        throw new https_1.HttpsError('invalid-argument', 'issueId is required.');
+    }
+    try {
+        return await (0, run_1.runIngest)({
+            db: admin.firestore(),
+            bucket: admin.storage().bucket(),
+            apiKey: GEMINI_API_KEY.value(),
+            issueId,
+            model: process.env['GEMINI_MODEL'],
+        });
+    }
+    catch (e) {
+        if (e instanceof run_1.IngestError) {
+            throw new https_1.HttpsError(e.code, e.message);
+        }
+        throw new https_1.HttpsError('internal', 'Extraction failed.');
+    }
+});
 //# sourceMappingURL=index.js.map

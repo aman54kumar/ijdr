@@ -166,6 +166,8 @@ firebase functions:secrets:set GEMINI_API_KEY   # prompts for the value
 firebase functions:secrets:access GEMINI_API_KEY  # verify it exists (prints the value; don't share)
 ```
 
+**Ingest function (Phase 3).** `ingestIssue` is a callable 2nd-gen function (admin claim required, 540 s, 1 GiB, max 3 instances). Deploy order: `firebase deploy --only firestore:indexes`, then `firestore:rules`, then `functions:ingestIssue`, then hosting. The model defaults to `gemini-3.5-flash` (`DEFAULT_GEMINI_MODEL` in `functions/src/ingest/run.ts`); override with a `GEMINI_MODEL` env var (e.g. `functions/.env.ijdr-e41d4`). It is capped at 10 extractions per UTC day (`ingestStats/{date}`) and PDFs over 100 MB are refused. Offline fallback: `functions/scripts/ingestLocal.js` (see its header).
+
 Functions declare it with `defineSecret('GEMINI_API_KEY')` and `secrets: [GEMINI_API_KEY]`. Secret Manager requires the Blaze plan. For local runs, export `GEMINI_API_KEY` in your shell only.
 
 **If a key leaks:** rotate it in Google Cloud Console (IAM -> Service Accounts -> Keys, or Secret Manager), then update the secret and redeploy functions.
