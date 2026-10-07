@@ -1,4 +1,4 @@
-import { GoogleGenAI, type GenerateContentResponseUsageMetadata } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel, type GenerateContentResponseUsageMetadata } from '@google/genai';
 import type { Bucket } from '@google-cloud/storage';
 import { FieldValue, Timestamp, type Firestore } from 'firebase-admin/firestore';
 import * as fs from 'node:fs';
@@ -219,12 +219,16 @@ export async function runIngest(opts: IngestOptions): Promise<IngestResult> {
           responseSchema: INGEST_RESPONSE_SCHEMA,
           temperature: 0,
           maxOutputTokens: 32768,
+          // Listing articles needs reading, not deep reasoning; long thinking delays the first byte.
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         },
       });
       let out = '';
       let usageMeta: GenerateContentResponseUsageMetadata | undefined;
       let reason: string | undefined;
+      const t0 = Date.now();
       for await (const chunk of stream) {
+        if (!out) log(`First chunk after ${Math.round((Date.now() - t0) / 1000)}s`);
         out += chunk.text ?? '';
         usageMeta = chunk.usageMetadata ?? usageMeta;
         reason = chunk.candidates?.[0]?.finishReason ?? reason;
@@ -318,7 +322,7 @@ export async function runIngest(opts: IngestOptions): Promise<IngestResult> {
     return result;
   } catch (e) {
     const err = e instanceof IngestError ? e : explainGeminiError(e);
-    if (!(e instanceof IngestError)) console.error(`[ingest ${issueId}]`, e);
+    if (!(e instanceof IngestError)) console.error(`[ingest ${issueId}] ${(e as any)?.name}: ${(e as any)?.message}`, (e as any)?.cause ?? '');
     await jobRef.update({ state: 'error', finishedAt: FieldValue.serverTimestamp(), error: err.message });
     throw err;
   } finally {

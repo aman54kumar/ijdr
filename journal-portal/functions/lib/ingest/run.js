@@ -213,12 +213,17 @@ async function runIngest(opts) {
                     responseSchema: ingest_1.INGEST_RESPONSE_SCHEMA,
                     temperature: 0,
                     maxOutputTokens: 32768,
+                    // Listing articles needs reading, not deep reasoning; long thinking delays the first byte.
+                    thinkingConfig: { thinkingLevel: genai_1.ThinkingLevel.LOW },
                 },
             });
             let out = '';
             let usageMeta;
             let reason;
+            const t0 = Date.now();
             for await (const chunk of stream) {
+                if (!out)
+                    log(`First chunk after ${Math.round((Date.now() - t0) / 1000)}s`);
                 out += chunk.text ?? '';
                 usageMeta = chunk.usageMetadata ?? usageMeta;
                 reason = chunk.candidates?.[0]?.finishReason ?? reason;
@@ -313,7 +318,7 @@ async function runIngest(opts) {
     catch (e) {
         const err = e instanceof IngestError ? e : explainGeminiError(e);
         if (!(e instanceof IngestError))
-            console.error(`[ingest ${issueId}]`, e);
+            console.error(`[ingest ${issueId}] ${e?.name}: ${e?.message}`, e?.cause ?? '');
         await jobRef.update({ state: 'error', finishedAt: firestore_1.FieldValue.serverTimestamp(), error: err.message });
         throw err;
     }
