@@ -371,6 +371,11 @@ ul, ol {
   }
 }
 
+// Links inside running text must not rely on colour alone
+p a:not(.btn):not([class*='btn-']):not(.announcement-link) {
+  text-decoration: underline;
+}
+
 a {
   color: var(--link) !important;
   text-decoration: none;
