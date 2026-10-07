@@ -1,8 +1,41 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.rssFeed = exports.sitemap = exports.getPdf = void 0;
-const functions = require("firebase-functions");
-const admin = require("firebase-admin");
+const functions = __importStar(require("firebase-functions/v1"));
+const admin = __importStar(require("firebase-admin"));
 admin.initializeApp();
 const SITE_ORIGIN = process.env.SITEMAP_SITE_ORIGIN || 'https://ijdrpub.in';
 const STATIC_PATHS = [
@@ -60,7 +93,7 @@ exports.getPdf = functions.https.onRequest(async (req, res) => {
             return;
         }
         const journalData = journalDoc.data();
-        if (!(journalData === null || journalData === void 0 ? void 0 : journalData.pdfUrl)) {
+        if (!journalData?.pdfUrl) {
             res.status(404).send('PDF not available');
             return;
         }
@@ -147,7 +180,6 @@ exports.sitemap = functions.https.onRequest(async (req, res) => {
 });
 /** Last 30 issues as RSS 2.0 (newest first). */
 exports.rssFeed = functions.https.onRequest(async (req, res) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
     if (req.method !== 'GET') {
         res.status(405).send('Method Not Allowed');
         return;
@@ -169,8 +201,8 @@ exports.rssFeed = functions.https.onRequest(async (req, res) => {
             const link = `${SITE_ORIGIN}/journal/${doc.id}`;
             const desc = d.description ||
                 `Indian Journal of Development Research — ${title}`;
-            const updated = ((_d = (_c = (_b = (_a = d.updatedAt) === null || _a === void 0 ? void 0 : _a.toDate) === null || _b === void 0 ? void 0 : _b.call(_a)) === null || _c === void 0 ? void 0 : _c.toUTCString) === null || _d === void 0 ? void 0 : _d.call(_c)) ||
-                ((_h = (_g = (_f = (_e = d.createdAt) === null || _e === void 0 ? void 0 : _e.toDate) === null || _f === void 0 ? void 0 : _f.call(_e)) === null || _g === void 0 ? void 0 : _g.toUTCString) === null || _h === void 0 ? void 0 : _h.call(_g)) ||
+            const updated = d.updatedAt?.toDate?.()?.toUTCString?.() ||
+                d.createdAt?.toDate?.()?.toUTCString?.() ||
                 new Date().toUTCString();
             items.push(`<item><title>${xmlEscape(title)}</title>` +
                 `<link>${xmlEscape(link)}</link>` +
