@@ -3,11 +3,22 @@
     "origin": [
       "http://localhost:4200",
       "http://localhost:3000",
+      "https://ijdrpub.in",
+      "https://www.ijdrpub.in",
       "https://ijdr-e41d4.web.app",
       "https://ijdr-e41d4.firebaseapp.com"
     ],
-    "method": ["GET", "HEAD"],
+    "method": [
+      "GET",
+      "HEAD"
+    ],
     "maxAgeSeconds": 3600,
-    "responseHeader": ["Content-Type", "Content-Length", "Content-Range"]
+    "responseHeader": [
+      "Content-Type",
+      "Content-Length",
+      "Content-Range",
+      "Accept-Ranges",
+      "Range"
+    ]
   }
 ]

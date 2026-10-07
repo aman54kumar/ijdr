@@ -78,7 +78,7 @@ describe('CoverService', () => {
       ],
       (done) => progress.push(done)
     );
-    expect(res).toEqual({ done: 1, failed: ['B'] });
+    expect(res).toEqual({ done: 1, failed: ['B'], reason: 'boom' });
     expect(progress).toEqual([1, 2]);
   });
 });

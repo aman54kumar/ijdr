@@ -270,7 +270,7 @@ export class AdminComponent implements OnInit {
     this.coverBackfill = null;
     this.toast.show(
       result.failed.length
-        ? `Covers: ${result.done} generated, ${result.failed.length} failed (${result.failed.join(', ')}).`
+        ? `Covers: ${result.done} generated, ${result.failed.length} failed. ${result.reason ?? ''}`
         : `Generated ${result.done} cover${result.done === 1 ? '' : 's'}.`,
       result.failed.length ? 'warning' : 'success'
     );

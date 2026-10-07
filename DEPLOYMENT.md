@@ -142,6 +142,18 @@ Output directory: `journal-portal/dist/journal-portal/browser/`.
 
 ---
 
+### Storage CORS (needed for admin cover generation)
+
+The admin "Generate missing covers" action reads issue PDFs from the browser, which requires the Storage bucket to send CORS headers. This is a one-time bucket setting (not part of `firebase deploy`). The config is `journal-portal/cors.json`; apply it from Google Cloud Shell (or any machine with a working `gcloud`):
+
+```bash
+# paste the contents of journal-portal/cors.json into cors.json first
+gcloud storage buckets update gs://ijdr-e41d4.firebasestorage.app --cors-file=cors.json
+gcloud storage buckets describe gs://ijdr-e41d4.firebasestorage.app --format="default(cors_config)"
+```
+
+Re-apply after adding a new site origin to `cors.json`.
+
 ## Secrets
 
 Never commit credentials. `firebase-config.ts` (web config), `.env*`, service-account JSON and `firebase_key.json` are gitignored.
