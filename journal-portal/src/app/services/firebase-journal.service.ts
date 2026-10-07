@@ -45,6 +45,8 @@ export interface FirebaseJournal {
   fileSize?: number;
   viewCount?: number; // Real view tracking
   coverUrl?: string;
+  articleCount?: number;
+  articlesStatus?: 'none' | 'draft' | 'published';
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }

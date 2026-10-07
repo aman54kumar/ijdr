@@ -10,7 +10,7 @@ Phased plan to modernize the IJDR portal (live at https://ijdrpub.in) in functio
 |-------|-------|--------|
 | 0 | Repo hygiene and safety | Done (3 user follow-ups deferred, see notes) |
 | 1 | Design foundation and UI polish | Done (covers backfilled; not deployed) |
-| 2 | Content model: articles + admin entry | Not started |
+| 2 | Content model: articles + admin entry | Done (not deployed; admin UI not exercised against live Firestore) |
 | 3 | Gemini ingest pipeline | Not started |
 | 4 | Discovery: article pages, search, citations, SEO | Not started |
 | 5 | AI reader features | Not started |
@@ -156,6 +156,15 @@ Also add `articleCount?: number` and `articlesStatus?: 'none'|'draft'|'published
 - Builds and tests pass.
 
 **Out of scope:** public article pages (Phase 4), Gemini (Phase 3).
+
+**Notes/deviations (done):**
+- Added `iArticle`, `iArticleAuthor`, `articleCount`/`articlesStatus` on `iJournal` and `FirebaseJournal`. `ArticleService` (`services/article.service.ts`) does CRUD, reorder, issue-field sync, and keeps the issue's `articleCount`/`articlesStatus` current after every write (client-side recompute; fine at this scale). Public queries must filter `status == 'published'`; use `getPublishedArticlesByIssue`.
+- Rules: read only if published or admin; admin create/update require `status` in draft/published and a non-empty title. Verified with the Firestore emulator (anonymous / signed-in non-admin / admin, 21 cases, all pass). The test script lived in the scratchpad, not the repo; rules tests in CI are Phase 7.
+- Indexes added for `issueId+order`, `issueId+status+order`, `status+createdAt`, `status+keywords+createdAt`, `status+issueYear+createdAt`. Deploy indexes before rules/hosting.
+- Admin: new **Articles** tab (`admin-articles` component): issue picker, drag-or-button reorder, authors repeater, keyword chips, page range, publish/unpublish, delete. Editing an issue's title/volume/number/year batch-updates its articles; deleting an issue deletes its articles.
+- `searchTokens` = tokens of title, authors, keywords (accent-folded, Devanagari preserved, stopwords dropped, capped at 120) in `utils/article-search.util.ts`. Whole-word only (no prefix matching) for v1.
+- Stub `ArticlesComponent` deleted; Phase 4 adds real routed components.
+- Tests: 35 pass (new: token util, service pure logic).
 
 ---
 

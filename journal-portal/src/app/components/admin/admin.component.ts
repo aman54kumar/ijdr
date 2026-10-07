@@ -28,10 +28,13 @@ import { User } from '@angular/fire/auth';
 import { AdminManagementComponent } from './admin-management/admin-management.component';
 import { AdminInsightsComponent } from './admin-insights/admin-insights.component';
 import { AdminAnnouncementComponent } from './admin-announcement/admin-announcement.component';
+import { AdminArticlesComponent } from './admin-articles/admin-articles.component';
 import { AdminMessagesComponent } from './admin-messages/admin-messages.component';
 import { BoardMember, BoardMemberSection } from '../../type/journals.type';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
+import { ArticleService } from '../../services/article.service';
+import { iJournal } from '../../type/journals.type';
 
 /** ISSN is optional in the UI; only validate format when non-empty. */
 function optionalIssnValidator(): ValidatorFn {
@@ -55,6 +58,7 @@ function optionalIssnValidator(): ValidatorFn {
     AdminInsightsComponent,
     AdminMessagesComponent,
     AdminAnnouncementComponent,
+    AdminArticlesComponent,
     DragDropModule,
   ],
   templateUrl: './admin.component.html',
@@ -69,7 +73,8 @@ export class AdminComponent implements OnInit {
     | 'create-board-member'
     | 'insights'
     | 'messages'
-    | 'announcement' = 'journals';
+    | 'announcement'
+    | 'articles' = 'journals';
 
   journals: FirebaseJournal[] = [];
   selectedJournal: FirebaseJournal | null = null;
@@ -104,7 +109,8 @@ export class AdminComponent implements OnInit {
     private pdfModalService: PdfModalService,
     private toast: ToastService,
     private confirmModal: ConfirmModalService,
-    private covers: CoverService
+    private covers: CoverService,
+    private articleService: ArticleService
   ) {
     this.journalForm = this.fb.group({
       title: ['', Validators.required],
@@ -336,6 +342,7 @@ export class AdminComponent implements OnInit {
         if (this.selectedPDFFile) {
           await this.tryGenerateCover(this.selectedJournal.id!, this.selectedPDFFile);
         }
+        await this.syncArticleIssueFields(this.selectedJournal, journalData);
 
         this.selectedJournal = null;
         this.journalForm.reset();
@@ -353,6 +360,27 @@ export class AdminComponent implements OnInit {
     }
   }
 
+  /** Keep the issue fields copied onto articles in step with the edited issue. */
+  private async syncArticleIssueFields(
+    journal: FirebaseJournal,
+    edited: Pick<FirebaseJournal, 'title' | 'volume' | 'number' | 'year'>
+  ) {
+    const changed =
+      edited.title !== journal.title ||
+      edited.volume !== journal.volume ||
+      edited.number !== journal.number ||
+      edited.year !== journal.year;
+    if (!changed || !journal.articleCount) {
+      return;
+    }
+    try {
+      await this.articleService.syncIssueFields({ ...journal, ...edited } as iJournal);
+    } catch (e) {
+      console.error('Syncing article issue fields failed', e);
+      this.toast.show('Issue saved, but its articles could not be updated.', 'warning');
+    }
+  }
+
   async deleteJournal(journal: FirebaseJournal) {
     const ok = await this.confirmModal.ask(
       'Delete journal',
@@ -362,6 +390,7 @@ export class AdminComponent implements OnInit {
       return;
     }
     try {
+      await this.articleService.deleteIssueArticles(journal.id!);
       await this.firebaseService.deleteJournal(journal.id!);
       this.loadJournals();
       this.toast.show('Journal deleted successfully!', 'success');
@@ -396,6 +425,7 @@ export class AdminComponent implements OnInit {
       | 'insights'
       | 'messages'
       | 'announcement'
+      | 'articles'
   ) {
     this.currentView = view;
     this.selectedJournal = null;

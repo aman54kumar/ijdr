@@ -1,0 +1,183 @@
+<div class="card">
+  <div class="card-body">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+      <div>
+        <h2 class="h4 mb-1">Articles</h2>
+        <p class="text-muted mb-0">Add the articles of an issue, order them, and publish them one by one.</p>
+      </div>
+      <div>
+        <label class="form-label mb-1" for="art-issue">Issue</label>
+        <select
+          id="art-issue"
+          class="form-select"
+          [ngModel]="issueId"
+          [ngModelOptions]="{ standalone: true }"
+          (ngModelChange)="selectIssue($event)"
+        >
+          @for (i of issues; track i.id) {
+            <option [value]="i.id">{{ i.title }} (Vol {{ i.volume }}, No {{ i.number }})</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    @if (!issues.length) {
+      <p class="text-muted">Create an issue first (Journals tab), then add its articles here.</p>
+    } @else {
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="text-muted small">
+          {{ articles.length }} article{{ articles.length === 1 ? '' : 's' }}
+          @if (issue?.articlesStatus) { · {{ issue?.articlesStatus }} }
+        </span>
+        <button type="button" class="btn btn-primary btn-sm" (click)="openEditor()" [disabled]="!issueId">
+          <i class="bi bi-plus-lg me-1"></i>Add article
+        </button>
+      </div>
+
+      @if (loadingArticles) {
+        <p>Loading…</p>
+      } @else if (!articles.length && !editing) {
+        <p class="text-muted">No articles for this issue yet.</p>
+      }
+
+      <div cdkDropList (cdkDropListDropped)="drop($event)" aria-label="Articles in this issue">
+        @for (a of articles; track a.id; let i = $index) {
+          <div class="article-row" cdkDrag cdkDragLockAxis="y">
+            <i class="bi bi-grip-vertical handle" cdkDragHandle aria-hidden="true"></i>
+            <div class="meta">
+              <div class="title">{{ i + 1 }}. {{ a.title }}</div>
+              <div class="small text-muted">
+                {{ authorLine(a) }}
+                @if (pages(a)) { · {{ pages(a) }} }
+              </div>
+            </div>
+            <span class="badge" [class.text-bg-success]="a.status === 'published'" [class.text-bg-secondary]="a.status === 'draft'">
+              {{ a.status }}
+            </span>
+            @if (a.source === 'ai') {
+              <span class="badge text-bg-info">AI</span>
+            }
+            <div class="btn-group btn-group-sm" role="group" [attr.aria-label]="'Actions for ' + a.title">
+              <button type="button" class="btn btn-outline-secondary" (click)="move(i, -1)" [disabled]="i === 0" aria-label="Move up">
+                <i class="bi bi-arrow-up"></i>
+              </button>
+              <button type="button" class="btn btn-outline-secondary" (click)="move(i, 1)" [disabled]="i === articles.length - 1" aria-label="Move down">
+                <i class="bi bi-arrow-down"></i>
+              </button>
+              <button type="button" class="btn btn-outline-secondary" (click)="toggleStatus(a)">
+                {{ a.status === 'published' ? 'Unpublish' : 'Publish' }}
+              </button>
+              <button type="button" class="btn btn-outline-secondary" (click)="openEditor(a)" aria-label="Edit">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button type="button" class="btn btn-outline-danger" (click)="remove(a)" aria-label="Delete">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (editing) {
+        <form class="editor mt-3" [formGroup]="form" (ngSubmit)="save()" novalidate>
+          <h3 class="h5 mb-3">{{ editing === 'new' ? 'New article' : 'Edit article' }}</h3>
+
+          <div class="mb-3">
+            <label class="form-label" for="art-title">Title</label>
+            <input id="art-title" class="form-control" formControlName="title"
+              [class.is-invalid]="form.controls.title.invalid && form.controls.title.touched" />
+            <div class="invalid-feedback">A title is required.</div>
+          </div>
+
+          <fieldset class="mb-3">
+            <legend class="form-label fs-6">Authors</legend>
+            <div formArrayName="authors">
+              @for (g of authors.controls; track g; let i = $index) {
+                <div class="row g-2 mb-2" [formGroupName]="i">
+                  <div class="col-md-3">
+                    <input class="form-control" formControlName="name" placeholder="Name" [attr.aria-label]="'Author ' + (i + 1) + ' name'" />
+                  </div>
+                  <div class="col-md-3">
+                    <input class="form-control" formControlName="affiliation" placeholder="Affiliation" [attr.aria-label]="'Author ' + (i + 1) + ' affiliation'" />
+                  </div>
+                  <div class="col-md-3">
+                    <input class="form-control" formControlName="email" placeholder="Email" type="email" [attr.aria-label]="'Author ' + (i + 1) + ' email'"
+                      [class.is-invalid]="g.get('email')?.invalid && g.get('email')?.touched" />
+                  </div>
+                  <div class="col-md-2">
+                    <input class="form-control" formControlName="orcid" placeholder="ORCID 0000-0000-0000-0000" [attr.aria-label]="'Author ' + (i + 1) + ' ORCID'"
+                      [class.is-invalid]="g.get('orcid')?.invalid && g.get('orcid')?.touched" />
+                  </div>
+                  <div class="col-md-1">
+                    <button type="button" class="btn btn-outline-danger w-100" (click)="removeAuthor(i)" [attr.aria-label]="'Remove author ' + (i + 1)">
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm" (click)="addAuthor()">
+              <i class="bi bi-plus-lg me-1"></i>Add author
+            </button>
+          </fieldset>
+
+          <div class="mb-3">
+            <label class="form-label" for="art-abstract">Abstract</label>
+            <textarea id="art-abstract" class="form-control" rows="6" formControlName="abstract"></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="art-kw">Keywords <span class="text-muted">(Enter or comma to add)</span></label>
+            <div>
+              @for (k of keywords; track k; let i = $index) {
+                <span class="chip">{{ k }}
+                  <button type="button" (click)="removeKeyword(i)" [attr.aria-label]="'Remove keyword ' + k">&times;</button>
+                </span>
+              }
+            </div>
+            <input id="art-kw" class="form-control" [ngModel]="keywordDraft" (ngModelChange)="keywordDraft = $event"
+              [ngModelOptions]="{ standalone: true }" (keydown)="onKeywordKey($event)" (blur)="addKeywords()" />
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label class="form-label" for="art-subject">Subject area</label>
+              <input id="art-subject" class="form-control" formControlName="subject" />
+            </div>
+            <div class="col-md-2 col-6">
+              <label class="form-label" for="art-ps">Start page</label>
+              <input id="art-ps" class="form-control" type="number" min="1" formControlName="pageStart" />
+            </div>
+            <div class="col-md-2 col-6">
+              <label class="form-label" for="art-pe">End page</label>
+              <input id="art-pe" class="form-control" type="number" min="1" formControlName="pageEnd" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="art-doi">DOI</label>
+              <input id="art-doi" class="form-control" formControlName="doi" placeholder="10.xxxx/…" />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="art-lang">Language</label>
+              <select id="art-lang" class="form-select" formControlName="language">
+                <option value="en">English</option>
+                <option value="hi">Hindi</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="art-status">Status</label>
+              <select id="art-status" class="form-select" formControlName="status">
+                <option value="draft">Draft (hidden)</option>
+                <option value="published">Published</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary" [disabled]="saving">{{ saving ? 'Saving…' : 'Save article' }}</button>
+            <button type="button" class="btn btn-outline-secondary" (click)="closeEditor()" [disabled]="saving">Cancel</button>
+          </div>
+        </form>
+      }
+    }
+  </div>
+</div>

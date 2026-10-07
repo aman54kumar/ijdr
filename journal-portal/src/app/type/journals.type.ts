@@ -20,6 +20,8 @@ export interface iJournal {
   fileSize?: number;
   viewCount?: number; // Real view tracking
   coverUrl?: string; // First-page thumbnail in Storage (journals/covers/{id}.jpg)
+  articleCount?: number; // Maintained by ArticleService (all statuses)
+  articlesStatus?: 'none' | 'draft' | 'published'; // published = at least one published article
   createdAt?: any; // Timestamp
   updatedAt?: any; // Timestamp
 }
@@ -83,5 +85,39 @@ export interface Announcement {
   text: string;
   linkUrl?: string;
   linkLabel?: string;
+  updatedAt?: any;
+}
+
+export interface iArticleAuthor {
+  name: string;
+  affiliation?: string;
+  email?: string;
+  orcid?: string;
+}
+
+/** `articles/{id}`. Public read only when `status === 'published'`. */
+export interface iArticle {
+  id: string;
+  issueId: string; // journals/{id}
+  title: string;
+  authors: iArticleAuthor[];
+  abstract?: string;
+  keywords: string[];
+  subject?: string;
+  pageStart?: number; // page in the issue PDF
+  pageEnd?: number;
+  doi?: string;
+  language?: 'en' | 'hi';
+  status: 'draft' | 'published';
+  source: 'manual' | 'ai';
+  order: number; // order within the issue
+  // Denormalized from the issue for listing and search
+  issueVolume: number;
+  issueNumber: number;
+  issueYear: string;
+  issueTitle: string;
+  searchTokens?: string[];
+  viewCount?: number;
+  createdAt?: any;
   updatedAt?: any;
 }
