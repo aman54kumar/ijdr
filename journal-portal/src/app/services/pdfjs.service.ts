@@ -15,8 +15,10 @@ export class PdfJsService {
 
   load(): Promise<PdfJs> {
     this.lib ??= import('pdfjs-dist').then((m) => {
-      m.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
-      return m;
+      // pdfjs-dist 3.x is CommonJS: depending on the bundler the API sits on `default`.
+      const lib: PdfJs = (m as any).GlobalWorkerOptions ? m : (m as any).default;
+      lib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+      return lib;
     });
     return this.lib;
   }
