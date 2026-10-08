@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { AppCheck, getToken } from '@angular/fire/app-check';
+import { AppCheckService } from './app-check.service';
 import {
   Firestore, Timestamp, arrayUnion, collection, collectionData, doc, orderBy, query, updateDoc,
 } from '@angular/fire/firestore';
@@ -32,19 +32,24 @@ export const SUBMIT_URL = environment.production
 export class SubmissionService {
   private firestore = inject(Firestore);
   private storage = inject(Storage);
-  private appCheck = inject(AppCheck, { optional: true });
+  private appCheck = inject(AppCheckService);
   private audit = inject(AuditService);
 
+  /** Begin loading App Check in the background when the form is shown. */
+  prepare(): void {
+    this.appCheck.warmUp();
+  }
+
   get available(): boolean {
-    return !!this.appCheck;
+    return this.appCheck.enabled;
   }
 
   /** Upload a submission. Resolves with the reference id; rejects with a message fit to show the author. */
   async submit(form: FormData): Promise<string> {
-    if (!this.appCheck) throw new Error('Online submission is not available right now. Please email the editor.');
+    if (!this.appCheck.enabled) throw new Error('Online submission is not available right now. Please email the editor.');
     let token: string;
     try {
-      token = (await getToken(this.appCheck)).token;
+      token = await this.appCheck.token();
     } catch {
       throw new Error('Could not verify this browser. Reload the page and try again.');
     }

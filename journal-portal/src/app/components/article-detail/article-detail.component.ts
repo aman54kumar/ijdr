@@ -8,6 +8,7 @@ import { ArticleService } from '../../services/article.service';
 import { ArticleSeoService } from '../../services/article-seo.service';
 import { ToastService } from '../../services/toast.service';
 import { FirebaseJournalService } from '../../services/firebase-journal.service';
+import { AppCheckService } from '../../services/app-check.service';
 import { AnalyticsEventsService } from '../../services/analytics-events.service';
 import { AiService, AI_OFF, aiErrorMessage } from '../../services/ai.service';
 import { AiSettings, AiSummary, AiTranslation, iArticle } from '../../type/journals.type';
@@ -33,6 +34,7 @@ export class ArticleDetailComponent implements OnDestroy {
   private ai = inject(AiService);
   private analytics = inject(AnalyticsEventsService);
   private journals = inject(FirebaseJournalService);
+  private appCheck = inject(AppCheckService);
   private sub: Subscription;
   private settingsSub?: Subscription;
 
@@ -61,7 +63,11 @@ export class ArticleDetailComponent implements OnDestroy {
   readonly canShare = typeof navigator !== 'undefined' && !!navigator.share;
 
   constructor() {
-    this.settingsSub = this.ai.settings$().subscribe((s) => (this.aiSettings = s));
+    this.settingsSub = this.ai.settings$().subscribe((s) => {
+      this.aiSettings = s;
+      // Only readers who can use an AI feature pay for loading reCAPTCHA.
+      if (s.summaries || s.translation || s.chat) this.appCheck.warmUp();
+    });
     this.sub = this.route.paramMap
       .pipe(
         map((p) => p.get('id') ?? ''),

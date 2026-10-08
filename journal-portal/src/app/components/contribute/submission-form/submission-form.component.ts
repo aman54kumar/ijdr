@@ -16,6 +16,10 @@ export class SubmissionFormComponent {
   private service = inject(SubmissionService);
 
   readonly available = this.service.available;
+
+  constructor() {
+    this.service.prepare();
+  }
   sending = false;
   error = '';
   reference = '';

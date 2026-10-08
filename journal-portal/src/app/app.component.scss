@@ -17,6 +17,9 @@
   flex-direction: column;
   width: 100%;
   overflow-x: hidden;
+  // Keep the footer below the first screen while the page's data loads, so it does not
+  // start in view and jump away (that was a layout shift of ~1.0).
+  min-height: 100vh;
 }
 
 .app-footer {
@@ -30,6 +33,6 @@ html {
 
 // Animation for route transitions
 .main-content {
-  animation: fadeInUp 0.5s ease-out;
+  animation: riseIn 0.4s ease-out;
 }
 

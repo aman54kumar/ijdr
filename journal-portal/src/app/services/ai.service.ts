@@ -1,9 +1,9 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, Injector, inject } from '@angular/core';
 import { Firestore, doc, docData, getDoc, setDoc } from '@angular/fire/firestore';
 import { Functions, httpsCallable } from '@angular/fire/functions';
 import { Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { environment } from '../../environments/environment';
+import { AppCheckService } from './app-check.service';
 import { AiSettings, AiSummary, AiTranslation, ChatReply, SemanticHit } from '../type/journals.type';
 
 export const AI_OFF: AiSettings = { summaries: false, translation: false, chat: false, semanticSearch: false, contactTriage: false };
@@ -40,10 +40,17 @@ export function aiErrorMessage(e: unknown): string {
 @Injectable({ providedIn: 'root' })
 export class AiService {
   private firestore = inject(Firestore);
-  private functions = inject(Functions);
+  private injector = inject(Injector);
+  private appCheck = inject(AppCheckService);
 
   /** Public AI endpoints need App Check; without a configured key they are not offered at all. */
-  readonly appCheckReady = !!environment.recaptchaSiteKey;
+  readonly appCheckReady = this.appCheck.enabled;
+
+  /** Functions is resolved only after App Check is up, so the first call carries a token. */
+  private async fns(): Promise<Functions> {
+    await this.appCheck.ensure();
+    return this.injector.get(Functions);
+  }
 
   settings$(): Observable<AiSettings> {
     return new Observable<AiSettings>((sub) => {
@@ -89,32 +96,32 @@ export class AiService {
   }
 
   async summarize(articleId: string): Promise<AiSummary> {
-    return (await httpsCallable<{ articleId: string }, AiSummary>(this.functions, 'summarizeArticle', { timeout: 120_000 })({ articleId })).data;
+    return (await httpsCallable<{ articleId: string }, AiSummary>(await this.fns(), 'summarizeArticle', { timeout: 120_000 })({ articleId })).data;
   }
 
   async translate(articleId: string): Promise<AiTranslation> {
-    return (await httpsCallable<{ articleId: string; lang: 'hi' }, AiTranslation>(this.functions, 'translateArticle', { timeout: 120_000 })({ articleId, lang: 'hi' })).data;
+    return (await httpsCallable<{ articleId: string; lang: 'hi' }, AiTranslation>(await this.fns(), 'translateArticle', { timeout: 120_000 })({ articleId, lang: 'hi' })).data;
   }
 
   async ask(articleId: string, question: string): Promise<ChatReply> {
-    return (await httpsCallable<{ articleId: string; question: string }, ChatReply>(this.functions, 'askPaper', { timeout: 90_000 })({ articleId, question })).data;
+    return (await httpsCallable<{ articleId: string; question: string }, ChatReply>(await this.fns(), 'askPaper', { timeout: 90_000 })({ articleId, question })).data;
   }
 
   async semanticSearch(query: string): Promise<SemanticHit[]> {
-    return (await httpsCallable<{ query: string }, { hits: SemanticHit[] }>(this.functions, 'semanticSearch', { timeout: 30_000 })({ query })).data.hits;
+    return (await httpsCallable<{ query: string }, { hits: SemanticHit[] }>(await this.fns(), 'semanticSearch', { timeout: 30_000 })({ query })).data.hits;
   }
 
   // ---- admin ----
   async triageContact(id: string): Promise<void> {
-    await httpsCallable(this.functions, 'triageContact', { timeout: 90_000 })({ id });
+    await httpsCallable(await this.fns(), 'triageContact', { timeout: 90_000 })({ id });
   }
 
   async adminGenerate(articleId: string, kind: 'summary' | 'translation'): Promise<void> {
-    await httpsCallable(this.functions, 'adminGenerateAi', { timeout: 180_000 })({ articleId, kind });
+    await httpsCallable(await this.fns(), 'adminGenerateAi', { timeout: 180_000 })({ articleId, kind });
   }
 
   async adminEmbed(issueId?: string): Promise<{ embedded: number; related: number }> {
-    return (await httpsCallable<{ issueId?: string }, { embedded: number; related: number }>(this.functions, 'embedArticles', { timeout: 300_000 })({ issueId })).data;
+    return (await httpsCallable<{ issueId?: string }, { embedded: number; related: number }>(await this.fns(), 'embedArticles', { timeout: 300_000 })({ issueId })).data;
   }
 
   async setSummaryHidden(articleId: string, hidden: boolean): Promise<void> {
