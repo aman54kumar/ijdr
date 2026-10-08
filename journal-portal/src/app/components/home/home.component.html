@@ -1,4 +1,20 @@
 <div class="home">
+  <!-- Attention ribbon: first thing seen on load -->
+  <a class="cfp-ribbon" routerLink="/contribute" fragment="submit">
+    <span class="cfp-ribbon-inner">
+      <span class="cfp-ribbon-badge">
+        <span class="cfp-dot cfp-dot--dark" aria-hidden="true"></span>
+        Call for papers
+      </span>
+      <span class="cfp-ribbon-text">
+        Submissions close <strong>{{ deadline.label }}</strong>&nbsp;<span class="cfp-ribbon-count">({{ deadlineCountdown }})</span>
+      </span>
+      <span class="cfp-ribbon-go">
+        Submit now <i class="bi bi-arrow-right" aria-hidden="true"></i>
+      </span>
+    </span>
+  </a>
+
   <!-- Hero -->
   <section class="hero">
     <div class="container hero-grid">
@@ -15,11 +31,21 @@
             <i class="bi bi-journal-bookmark" aria-hidden="true"></i>
             Browse issues
           </a>
-          <a class="btn-accent-outline btn-lg" routerLink="/contribute">
+          <a class="btn-accent-outline btn-lg" routerLink="/contribute" fragment="submit">
             <i class="bi bi-file-earmark-plus" aria-hidden="true"></i>
             Submit a paper
           </a>
         </div>
+        <ul class="hero-facts" aria-label="Submission at a glance">
+          <li><i class="bi bi-calendar-event" aria-hidden="true"></i>Deadline {{ deadline.label }}</li>
+          <li><i class="bi bi-shield-check" aria-hidden="true"></i>Double-blind review, 4–6 weeks</li>
+          <li><i class="bi bi-file-text" aria-hidden="true"></i>5,000–7,000 words</li>
+          <li>
+            <button type="button" class="hero-share" (click)="shareCallForPapers()">
+              <i class="bi bi-share" aria-hidden="true"></i> Share this call
+            </button>
+          </li>
+        </ul>
       </div>
 
       <div class="hero-issue reveal" style="animation-delay: 0.1s">

@@ -13,6 +13,11 @@ import {
   getJournalHighlightTags,
   type JournalHighlightTag,
 } from '../../utils/journal-issue-tags.util';
+import {
+  describeDaysLeft,
+  getNextSubmissionDeadline,
+  type SubmissionDeadline,
+} from '../../utils/submission-deadline.util';
 
 @Component({
   selector: 'app-home',
@@ -33,6 +38,9 @@ export class HomeComponent implements OnInit {
   stats = { issues: 0, firstYear: '', lastYear: '', views: 0 };
   loadingIssues = true;
   popularViewCutoff = Number.POSITIVE_INFINITY;
+  // Computed once per page load; rolls over automatically after 30 June / 31 December
+  deadline: SubmissionDeadline = getNextSubmissionDeadline();
+  deadlineCountdown = describeDaysLeft(this.deadline.daysLeft);
 
   constructor(
     private firebaseService: FirebaseJournalService,
@@ -128,6 +136,23 @@ export class HomeComponent implements OnInit {
     navigator.clipboard?.writeText(url).then(
       () => this.toast.show('Link copied.', 'success'),
       () => window.prompt('Copy this link:', url)
+    );
+  }
+
+  shareCallForPapers() {
+    const data = {
+      title: 'Call for papers: Indian Journal of Development Research',
+      text: 'IJDR is accepting submissions: double-blind peer review, open access.',
+      url: `${window.location.origin}/contribute`,
+    };
+    if (navigator.share) {
+      // AbortError just means the user closed the share sheet
+      navigator.share(data).catch(() => undefined);
+      return;
+    }
+    navigator.clipboard?.writeText(data.url).then(
+      () => this.toast.show('Link copied. Pass it on to a colleague.', 'success'),
+      () => window.prompt('Copy this link:', data.url)
     );
   }
 
