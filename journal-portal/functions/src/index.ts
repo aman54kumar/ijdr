@@ -15,7 +15,7 @@ import { AiFeature, cleanQuestion, visitorKey } from './ai/pure';
 import type { CallableRequest } from 'firebase-functions/v2/https';
 import { buildDailyStats, yesterday } from './ops/stats';
 import { safeDisplayName, validateFile, validateSubmissionFields } from './ops/submission';
-import { buildContactEmail, buildSubmissionEmail, sendEmail } from './ops/email';
+import { buildContactEmail, buildSubmissionEmail, buildTestEmail, resolveNotifySettings, sendEmail } from './ops/email';
 import { triageMessage } from './ai/service';
 import { dayKey } from './ai/pure';
 import { injectArticleHead } from './article-page';
@@ -548,9 +548,24 @@ export const embedArticles = onCall(
 // ---------------------------------------------------------------------------
 
 const RESEND_API_KEY = defineSecret('RESEND_API_KEY');
-/** Where notification emails go (empty = notifications off). Set in functions/.env. */
+/** Default recipients (comma separated) until an admin saves a list in Admin > Notifications. Set in functions/.env. */
 const NOTIFY_EMAIL_TO = defineString('NOTIFY_EMAIL_TO', { default: '' });
 const NOTIFY_EMAIL_FROM = defineString('NOTIFY_EMAIL_FROM', { default: 'IJDR <onboarding@resend.dev>' });
+
+async function notifySettings() {
+  const snap = await admin.firestore().doc('adminSettings/notifications').get();
+  return resolveNotifySettings(snap.data(), NOTIFY_EMAIL_TO.value());
+}
+
+/** Admin: send a test email to the saved recipients (to check that Resend is working). */
+export const sendTestNotification = onCall({ secrets: [RESEND_API_KEY], memory: '256MiB' }, async (r) => {
+  if (!isAdminCall(r)) throw new HttpsError('permission-denied', 'Admins only.');
+  const { emails } = await notifySettings();
+  if (!emails.length) throw new HttpsError('failed-precondition', 'Add at least one recipient and save first.');
+  const ok = await sendEmail(RESEND_API_KEY.value(), buildTestEmail(NOTIFY_EMAIL_FROM.value(), emails, String(r.auth?.token?.email ?? 'an admin')));
+  if (!ok) throw new HttpsError('internal', 'The email provider rejected the message. Check the Resend key and sender address in the function logs.');
+  return { sentTo: emails.length };
+});
 
 async function snapshotStats(date: string) {
   const db = admin.firestore();
@@ -611,15 +626,15 @@ export const triageContact = onCall(
 export const onContactCreated = onDocumentCreated(
   { document: 'contactSubmissions/{id}', secrets: [RESEND_API_KEY], memory: '256MiB' },
   async (event) => {
-    const to = NOTIFY_EMAIL_TO.value();
+    const cfg = await notifySettings();
     const d = event.data?.data();
-    if (!to || !d) return;
+    if (!cfg.onContact || !cfg.emails.length || !d) return;
     await sendEmail(
       RESEND_API_KEY.value(),
       buildContactEmail(
         { name: String(d['name'] ?? ''), email: String(d['email'] ?? ''), message: String(d['message'] ?? '') },
         NOTIFY_EMAIL_FROM.value(),
-        to,
+        cfg.emails,
         `${SITE_ORIGIN}/admin`
       )
     );
@@ -725,14 +740,14 @@ export const submitManuscript = onRequest(
         updatedAt: now,
       });
 
-      const to = NOTIFY_EMAIL_TO.value();
-      if (to) {
+      const cfg = await notifySettings();
+      if (cfg.onSubmission && cfg.emails.length) {
         await sendEmail(
           RESEND_API_KEY.value(),
           buildSubmissionEmail(
             { id, name: parsed.value.name, email: parsed.value.email, affiliation: parsed.value.affiliation, title: parsed.value.title, keywords: parsed.value.keywords, files: stored },
             NOTIFY_EMAIL_FROM.value(),
-            to,
+            cfg.emails,
             `${SITE_ORIGIN}/admin`
           )
         );

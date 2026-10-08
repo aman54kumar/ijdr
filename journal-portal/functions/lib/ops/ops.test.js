@@ -62,17 +62,31 @@ const good = {
     strict_1.default.equal((0, submission_1.safeDisplayName)('../../etc/passwd\n.pdf'), '.._.._etc_passwd_.pdf');
 });
 (0, node_test_1.default)('emails are plain text with safe headers, and sending is best effort', async () => {
-    const s = (0, email_1.buildSubmissionEmail)({ id: 'S1', name: 'Ann', email: 'a@b.co', affiliation: 'DU', title: 'T\r\nBcc: x@y.z', keywords: ['k'], files: [{ name: 'p.pdf', size: 2048 }] }, 'IJDR <f@x.y>', 'to@x.y', 'https://ijdrpub.in/admin');
+    const s = (0, email_1.buildSubmissionEmail)({ id: 'S1', name: 'Ann', email: 'a@b.co', affiliation: 'DU', title: 'T\r\nBcc: x@y.z', keywords: ['k'], files: [{ name: 'p.pdf', size: 2048 }] }, 'IJDR <f@x.y>', ['to@x.y', 'two@x.y'], 'https://ijdrpub.in/admin');
     strict_1.default.ok(!/[\r\n]/.test(s.subject));
     strict_1.default.ok(s.text.includes('p.pdf (2 KB)'));
-    strict_1.default.equal((0, email_1.buildContactEmail)({ name: 'N', email: 'e@x.y', message: 'm' }, 'f', 't', 'u').replyTo, 'e@x.y');
+    strict_1.default.equal((0, email_1.buildContactEmail)({ name: 'N', email: 'e@x.y', message: 'm' }, 'f', ['t@x.y'], 'u').replyTo, 'e@x.y');
     strict_1.default.equal((0, email_1.oneLine)('a\nb'), 'a b');
     strict_1.default.equal(await (0, email_1.sendEmail)('', s), false);
     let sent;
     const ok = await (0, email_1.sendEmail)('key', s, (async (_u, init) => { sent = JSON.parse(init.body); return { ok: true }; }));
     strict_1.default.ok(ok);
-    strict_1.default.deepEqual(sent.to, ['to@x.y']);
+    strict_1.default.deepEqual(sent.to, ['to@x.y', 'two@x.y']);
+    strict_1.default.equal(await (0, email_1.sendEmail)('key', { ...s, to: [] }), false);
     const fail = await (0, email_1.sendEmail)('key', s, (async () => { throw new Error('net'); }));
     strict_1.default.equal(fail, false);
+});
+(0, node_test_1.default)('recipient lists are parsed, de-duplicated and capped', () => {
+    strict_1.default.deepEqual((0, email_1.parseEmailList)('A@x.co, b@x.co;  a@x.co\nbad, c@@x.co'), ['a@x.co', 'b@x.co']);
+    strict_1.default.deepEqual((0, email_1.parseEmailList)(['one@x.co', 5, 'two@x.co']), ['one@x.co', 'two@x.co']);
+    strict_1.default.deepEqual((0, email_1.parseEmailList)(undefined), []);
+    strict_1.default.equal((0, email_1.parseEmailList)('a@x.co b@x.co c@x.co d@x.co e@x.co f@x.co').length, 5);
+});
+(0, node_test_1.default)('notification settings: saved list wins, env default is the fallback', () => {
+    strict_1.default.deepEqual((0, email_1.resolveNotifySettings)(undefined, 'me@x.co, you@x.co'), { emails: ['me@x.co', 'you@x.co'], onSubmission: true, onContact: true });
+    strict_1.default.deepEqual((0, email_1.resolveNotifySettings)({ emails: ['new@x.co'], onContact: false }, 'me@x.co'), { emails: ['new@x.co'], onSubmission: true, onContact: false });
+    // an admin who saved an empty list has switched notifications off, not fallen back to the default
+    strict_1.default.deepEqual((0, email_1.resolveNotifySettings)({ emails: [] }, 'me@x.co').emails, []);
+    strict_1.default.deepEqual((0, email_1.resolveNotifySettings)({ emails: 'x' }, 'me@x.co').emails, ['me@x.co']);
 });
 //# sourceMappingURL=ops.test.js.map

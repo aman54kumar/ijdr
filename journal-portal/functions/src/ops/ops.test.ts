@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildDailyStats, viewDeltas, yesterday } from './stats';
 import { safeDisplayName, validateFile, validateSubmissionFields } from './submission';
-import { buildContactEmail, buildSubmissionEmail, oneLine, sendEmail } from './email';
+import { buildContactEmail, buildSubmissionEmail, oneLine, parseEmailList, resolveNotifySettings, sendEmail } from './email';
 
 test('daily stats and deltas', () => {
   const d1 = buildDailyStats({
@@ -61,16 +61,32 @@ test('file validation checks name, size and real signature', () => {
 });
 
 test('emails are plain text with safe headers, and sending is best effort', async () => {
-  const s = buildSubmissionEmail({ id: 'S1', name: 'Ann', email: 'a@b.co', affiliation: 'DU', title: 'T\r\nBcc: x@y.z', keywords: ['k'], files: [{ name: 'p.pdf', size: 2048 }] }, 'IJDR <f@x.y>', 'to@x.y', 'https://ijdrpub.in/admin');
+  const s = buildSubmissionEmail({ id: 'S1', name: 'Ann', email: 'a@b.co', affiliation: 'DU', title: 'T\r\nBcc: x@y.z', keywords: ['k'], files: [{ name: 'p.pdf', size: 2048 }] }, 'IJDR <f@x.y>', ['to@x.y', 'two@x.y'], 'https://ijdrpub.in/admin');
   assert.ok(!/[\r\n]/.test(s.subject));
   assert.ok(s.text.includes('p.pdf (2 KB)'));
-  assert.equal(buildContactEmail({ name: 'N', email: 'e@x.y', message: 'm' }, 'f', 't', 'u').replyTo, 'e@x.y');
+  assert.equal(buildContactEmail({ name: 'N', email: 'e@x.y', message: 'm' }, 'f', ['t@x.y'], 'u').replyTo, 'e@x.y');
   assert.equal(oneLine('a\nb'), 'a b');
   assert.equal(await sendEmail('', s), false);
   let sent: any;
   const ok = await sendEmail('key', s, (async (_u: any, init: any) => { sent = JSON.parse(init.body); return { ok: true } as Response; }) as any);
   assert.ok(ok);
-  assert.deepEqual(sent.to, ['to@x.y']);
+  assert.deepEqual(sent.to, ['to@x.y', 'two@x.y']);
+  assert.equal(await sendEmail('key', { ...s, to: [] }), false);
   const fail = await sendEmail('key', s, (async () => { throw new Error('net'); }) as any);
   assert.equal(fail, false);
+});
+
+test('recipient lists are parsed, de-duplicated and capped', () => {
+  assert.deepEqual(parseEmailList('A@x.co, b@x.co;  a@x.co\nbad, c@@x.co'), ['a@x.co', 'b@x.co']);
+  assert.deepEqual(parseEmailList(['one@x.co', 5, 'two@x.co']), ['one@x.co', 'two@x.co']);
+  assert.deepEqual(parseEmailList(undefined), []);
+  assert.equal(parseEmailList('a@x.co b@x.co c@x.co d@x.co e@x.co f@x.co').length, 5);
+});
+
+test('notification settings: saved list wins, env default is the fallback', () => {
+  assert.deepEqual(resolveNotifySettings(undefined, 'me@x.co, you@x.co'), { emails: ['me@x.co', 'you@x.co'], onSubmission: true, onContact: true });
+  assert.deepEqual(resolveNotifySettings({ emails: ['new@x.co'], onContact: false }, 'me@x.co'), { emails: ['new@x.co'], onSubmission: true, onContact: false });
+  // an admin who saved an empty list has switched notifications off, not fallen back to the default
+  assert.deepEqual(resolveNotifySettings({ emails: [] }, 'me@x.co').emails, []);
+  assert.deepEqual(resolveNotifySettings({ emails: 'x' }, 'me@x.co').emails, ['me@x.co']);
 });

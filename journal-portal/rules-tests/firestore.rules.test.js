@@ -25,6 +25,7 @@ beforeEach(async () => {
     await setDoc(doc(db, 'admins/other'), { x: 1 });
     await setDoc(doc(db, 'contactSubmissions/c1'), { name: 'N', email: 'n@x.co', message: 'm', read: false });
     await setDoc(doc(db, 'siteSettings/ai'), { chat: true });
+    await setDoc(doc(db, 'adminSettings/notifications'), { emails: ['a@x.co'] });
     await setDoc(doc(db, 'ingestJobs/j1'), { state: 'done' });
     await setDoc(doc(db, 'ingestStats/2026-10-07'), { count: 1 });
     await setDoc(doc(db, 'aiStats/2026-10-07'), { chat: 1 });
@@ -121,8 +122,8 @@ test('siteSettings: public read, admin write', async () => {
   await assertSucceeds(setDoc(doc(dbs.admin, 'siteSettings/ai'), { chat: false }));
 });
 
-test('admin-only collections: ingestJobs, ingestStats', async () => {
-  for (const path of ['ingestJobs/j1', 'ingestStats/2026-10-07']) {
+test('admin-only collections: ingestJobs, ingestStats, adminSettings', async () => {
+  for (const path of ['ingestJobs/j1', 'ingestStats/2026-10-07', 'adminSettings/notifications']) {
     for (const who of ['anon', 'user']) {
       await assertFails(getDoc(doc(dbs[who], path)));
       await assertFails(setDoc(doc(dbs[who], path), { a: 1 }));

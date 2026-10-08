@@ -10,13 +10,22 @@ const bytes = new Uint8Array([1, 2, 3]);
 
 before(async () => {
   env = await makeEnv();
-  await env.clearStorage();
-  await env.withSecurityRulesDisabled(async (c) => {
-    const s = c.storage(BUCKET);
-    for (const p of ['journals/j1/issue.pdf', 'journals/covers/j1.jpg', 'boardMembers/b1/a.jpg', 'submissions/s1/manuscript.pdf', 'other/x.txt']) {
-      await uploadBytes(ref(s, p), bytes);
+  // The Storage emulator can still be loading its rules right after start-up; retry the seeding.
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await env.clearStorage();
+      await env.withSecurityRulesDisabled(async (c) => {
+        const s = c.storage(BUCKET);
+        for (const p of ['journals/j1/issue.pdf', 'journals/covers/j1.jpg', 'boardMembers/b1/a.jpg', 'submissions/s1/manuscript.pdf', 'other/x.txt']) {
+          await uploadBytes(ref(s, p), bytes);
+        }
+      });
+      break;
+    } catch (e) {
+      if (attempt >= 8) throw e;
+      await new Promise((r) => setTimeout(r, 750));
     }
-  });
+  }
   const c = contexts(env);
   st = { anon: c.anon.storage(BUCKET), user: c.user.storage(BUCKET), admin: c.admin.storage(BUCKET) };
 });

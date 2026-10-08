@@ -116,6 +116,12 @@ service cloud.firestore {
       allow read: if isAdmin();
     }
 
+    // Private admin configuration (e.g. notification recipients). siteSettings is public, so
+    // anything containing email addresses belongs here instead.
+    match /adminSettings/{docId} {
+      allow read, write: if isAdmin();
+    }
+
     match /siteSettings/{docId} {
       allow read: if true;
       allow write: if isAdmin();

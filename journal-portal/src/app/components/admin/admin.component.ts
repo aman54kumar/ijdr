@@ -36,6 +36,7 @@ import { ToastService } from '../../services/toast.service';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { ArticleService } from '../../services/article.service';
 import { AuditService } from '../../services/audit.service';
+import { AdminNotificationsComponent } from './admin-notifications/admin-notifications.component';
 import { AdminSubmissionsComponent } from './admin-submissions/admin-submissions.component';
 import { iJournal } from '../../type/journals.type';
 
@@ -64,6 +65,7 @@ function optionalIssnValidator(): ValidatorFn {
     AdminArticlesComponent,
     AdminAiComponent,
     AdminSubmissionsComponent,
+    AdminNotificationsComponent,
     DragDropModule,
   ],
   templateUrl: './admin.component.html',
@@ -81,7 +83,8 @@ export class AdminComponent implements OnInit {
     | 'announcement'
     | 'articles'
     | 'ai'
-    | 'submissions' = 'journals';
+    | 'submissions'
+    | 'notifications' = 'journals';
 
   journals: FirebaseJournal[] = [];
   selectedJournal: FirebaseJournal | null = null;
@@ -437,6 +440,7 @@ export class AdminComponent implements OnInit {
       | 'articles'
       | 'ai'
       | 'submissions'
+      | 'notifications'
   ) {
     this.currentView = view;
     this.selectedJournal = null;
