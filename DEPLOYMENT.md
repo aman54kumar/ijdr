@@ -170,6 +170,14 @@ firebase functions:secrets:access GEMINI_API_KEY  # verify it exists (prints the
 
 Functions declare it with `defineSecret('GEMINI_API_KEY')` and `secrets: [GEMINI_API_KEY]`. Secret Manager requires the Blaze plan. For local runs, export `GEMINI_API_KEY` in your shell only.
 
+**App Check (Phase 5).** The public AI callables (`summarizeArticle`, `translateArticle`, `askPaper`, `semanticSearch`) use `enforceAppCheck: true`; without App Check they reject every call, and the site hides the features. One-time setup, in the browser (not something to paste into chat):
+
+1. Google reCAPTCHA admin (https://www.google.com/recaptcha/admin) -> create a **reCAPTCHA v3** site for `ijdrpub.in` (add `localhost` for development). Keep the **secret key** to yourself.
+2. Firebase Console -> App Check -> Apps -> your web app -> **reCAPTCHA** -> paste the **secret key**, save.
+3. Put the **site key** (public) in `recaptchaSiteKey` in `src/environments/environment.ts`, `environment.development.ts` and `environment.prod.ts`, then rebuild/redeploy hosting.
+4. For `ng serve`: the dev build prints an App Check *debug token* in the browser console; register it under App Check -> Apps -> Manage debug tokens.
+5. Only after the site works with App Check, switch the features on in Admin -> **AI**. Pre-generate summaries/translations from each article's editor so readers get cached results.
+
 **If a key leaks:** rotate it in Google Cloud Console (IAM -> Service Accounts -> Keys, or Secret Manager), then update the secret and redeploy functions.
 
 ---

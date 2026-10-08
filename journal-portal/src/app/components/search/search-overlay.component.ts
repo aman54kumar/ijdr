@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { A11yModule } from '@angular/cdk/a11y';
 import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { SearchService } from '../../services/search.service';
+import { AiService } from '../../services/ai.service';
 import { SearchResult } from '../../utils/search-rank.util';
 
 const KIND_LABEL: Record<SearchResult['kind'], string> = { article: 'Article', issue: 'Issue', member: 'Board' };
@@ -19,6 +20,8 @@ const KIND_LABEL: Record<SearchResult['kind'], string> = { article: 'Article', i
 export class SearchOverlayComponent implements AfterViewInit, OnDestroy {
   private search = inject(SearchService);
   private router = inject(Router);
+  private ai = inject(AiService);
+  private settingsSub = this.ai.settings$().subscribe((s) => (this.semanticAvailable = s.semanticSearch && this.ai.appCheckReady));
   private input$ = new Subject<string>();
   private sub: Subscription;
   private seq = 0;
@@ -30,6 +33,9 @@ export class SearchOverlayComponent implements AfterViewInit, OnDestroy {
   recent: string[] = this.search.recent();
   active = -1;
   searching = false;
+  semanticAvailable = false;
+  semantic = false;
+  semanticError = '';
   failed = false;
   readonly kindLabel = KIND_LABEL;
 
@@ -43,6 +49,12 @@ export class SearchOverlayComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy() {
     this.sub.unsubscribe();
+    this.settingsSub.unsubscribe();
+  }
+
+  toggleSemantic() {
+    this.semantic = !this.semantic;
+    if (this.q.trim()) this.input$.next(this.q.trim() + ' ');
   }
 
   onInput(v: string) {
@@ -62,7 +74,26 @@ export class SearchOverlayComponent implements AfterViewInit, OnDestroy {
     this.searching = true;
     this.failed = false;
     try {
-      const r = await this.search.search(q);
+      this.semanticError = '';
+      let r: SearchResult[];
+      if (this.semantic && this.semanticAvailable) {
+        try {
+          r = (await this.ai.semanticSearch(q.trim())).map((h) => ({
+            kind: 'article' as const,
+            id: h.id,
+            title: h.title,
+            subtitle: `${h.authors.join(', ')} · ${h.issueYear}`,
+            link: ['/article', h.id],
+            score: h.score,
+          }));
+        } catch {
+          // Fall back to normal search so the box never goes dead.
+          this.semanticError = 'Meaning-based search is unavailable; showing keyword results.';
+          r = await this.search.search(q);
+        }
+      } else {
+        r = await this.search.search(q);
+      }
       if (mine === this.seq) {
         this.results = r;
         this.active = r.length ? 0 : -1;

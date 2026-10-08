@@ -8,6 +8,7 @@ import { FirebaseJournal, FirebaseJournalService } from '../../../services/fireb
 import { ConfirmModalService } from '../../../services/confirm-modal.service';
 import { ToastService } from '../../../services/toast.service';
 import { CoverService } from '../../../services/cover.service';
+import { AiService, aiErrorMessage } from '../../../services/ai.service';
 import { IngestService, ingestErrorMessage } from '../../../services/ingest.service';
 import { iArticle, iJournal, IngestJob } from '../../../type/journals.type';
 
@@ -31,6 +32,7 @@ export class AdminArticlesComponent implements OnInit, OnDestroy {
   private confirmModal = inject(ConfirmModalService);
   private toast = inject(ToastService);
   private ingest = inject(IngestService);
+  private ai = inject(AiService);
   private covers = inject(CoverService);
   private subs = new Subscription();
   private articlesSub?: Subscription;
@@ -44,6 +46,11 @@ export class AdminArticlesComponent implements OnInit, OnDestroy {
   /** Page previews: article id -> data URL, '' while loading, 'error' on failure. */
   previews = new Map<string, string>();
   bulkBusy = false;
+
+  // AI content of the article being edited
+  aiSummary?: { hidden?: boolean; text: string };
+  aiHasTranslation = false;
+  aiBusy = false;
 
   issues: FirebaseJournal[] = [];
   issueId = '';
@@ -152,9 +159,49 @@ export class AdminArticlesComponent implements OnInit, OnDestroy {
       language: article?.language ?? 'en',
       status: article?.status ?? 'draft',
     });
+    this.aiSummary = undefined;
+    this.aiHasTranslation = false;
+    if (article) {
+      void this.loadAiState(article.id);
+    }
     this.keywords = [...(article?.keywords ?? [])];
     this.keywordDraft = '';
     this.form.markAsPristine();
+  }
+
+  private async loadAiState(id: string) {
+    const [s, t] = await Promise.all([this.ai.cachedSummary(id), this.ai.cachedTranslation(id)]);
+    if (this.editing !== 'new' && this.editing?.id === id) {
+      this.aiSummary = s;
+      this.aiHasTranslation = !!t;
+    }
+  }
+
+  async generateAi(kind: 'summary' | 'translation') {
+    if (this.editing === 'new' || !this.editing) return;
+    const id = this.editing.id;
+    this.aiBusy = true;
+    try {
+      await this.ai.adminGenerate(id, kind);
+      this.toast.show(kind === 'summary' ? 'Summary generated.' : 'Hindi translation generated.', 'success');
+      await this.loadAiState(id);
+    } catch (e) {
+      this.toast.show(aiErrorMessage(e), 'danger');
+    } finally {
+      this.aiBusy = false;
+    }
+  }
+
+  async toggleSummaryHidden() {
+    if (this.editing === 'new' || !this.editing || !this.aiSummary) return;
+    const hide = !this.aiSummary.hidden;
+    try {
+      await this.ai.setSummaryHidden(this.editing.id, hide);
+      this.aiSummary = { ...this.aiSummary, hidden: hide };
+      this.toast.show(hide ? 'Summary hidden from readers.' : 'Summary visible again.', 'success');
+    } catch {
+      this.toast.show('Could not change the summary visibility.', 'danger');
+    }
   }
 
   closeEditor() {

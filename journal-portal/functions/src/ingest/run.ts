@@ -65,7 +65,7 @@ function isRetryable(e: unknown): boolean {
   );
 }
 
-function explainGeminiError(e: unknown): IngestError {
+export function explainGeminiError(e: unknown): IngestError {
   const msg = String((e as any)?.message ?? e);
   if (/RESOURCE_EXHAUSTED|\b429\b/.test(msg)) {
     return new IngestError('resource-exhausted', 'Gemini quota or rate limit reached. Wait a while (or until tomorrow for the daily limit) and try again.');
@@ -88,7 +88,7 @@ function explainGeminiError(e: unknown): IngestError {
   return new IngestError('internal', 'Gemini request failed. See the function logs for details.');
 }
 
-async function withBackoff<T>(fn: () => Promise<T>, log: (m: string) => void): Promise<T> {
+export async function withBackoff<T>(fn: () => Promise<T>, log: (m: string) => void): Promise<T> {
   const delays = [5000, 20000, 60000];
   for (let attempt = 0; ; attempt++) {
     try {
@@ -133,7 +133,7 @@ async function acquireLock(db: Firestore, issueId: string, model: string, dailyC
   return jobRef;
 }
 
-function storagePath(journal: FirebaseFirestore.DocumentData, issueId: string): string {
+export function storagePath(journal: FirebaseFirestore.DocumentData, issueId: string): string {
   // Uploads use a fixed object name (see FirebaseJournalService.uploadJournalPDF).
   const fixed = `journals/${issueId}/issue.pdf`;
   const url = journal['pdfUrl'] as string | undefined;

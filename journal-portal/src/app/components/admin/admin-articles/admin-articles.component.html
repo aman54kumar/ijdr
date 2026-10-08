@@ -241,6 +241,31 @@
             </div>
           </div>
 
+          @if (editing !== 'new') {
+            <fieldset class="mb-3 ai-admin">
+              <legend class="form-label fs-6">AI content</legend>
+              <p class="small text-muted mb-2">
+                Summary: {{ aiSummary ? (aiSummary.hidden ? 'generated (hidden)' : 'generated') : 'not generated' }} ·
+                Hindi translation: {{ aiHasTranslation ? 'generated' : 'not generated' }}.
+                Generate before switching a feature on so readers get instant results.
+              </p>
+              <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm" (click)="generateAi('summary')" [disabled]="aiBusy">
+                  {{ aiSummary ? 'Regenerate summary' : 'Generate summary' }}
+                </button>
+                @if (aiSummary) {
+                  <button type="button" class="btn btn-outline-secondary btn-sm" (click)="toggleSummaryHidden()">
+                    {{ aiSummary.hidden ? 'Show summary' : 'Hide summary' }}
+                  </button>
+                }
+                <button type="button" class="btn btn-outline-secondary btn-sm" (click)="generateAi('translation')" [disabled]="aiBusy">
+                  {{ aiHasTranslation ? 'Regenerate Hindi' : 'Generate Hindi' }}
+                </button>
+              </div>
+              @if (aiBusy) { <p class="small text-muted mt-2 mb-0" role="status">Working… this can take a minute.</p> }
+            </fieldset>
+          }
+
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-primary" [disabled]="saving">{{ saving ? 'Saving…' : 'Save article' }}</button>
             <button type="button" class="btn btn-outline-secondary" (click)="closeEditor()" [disabled]="saving">Cancel</button>

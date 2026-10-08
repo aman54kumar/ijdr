@@ -34,6 +34,9 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IngestError = exports.DAILY_INGEST_CAP = exports.MAX_PDF_BYTES = exports.DEFAULT_GEMINI_MODEL = void 0;
+exports.explainGeminiError = explainGeminiError;
+exports.withBackoff = withBackoff;
+exports.storagePath = storagePath;
 exports.runIngest = runIngest;
 const genai_1 = require("@google/genai");
 const firestore_1 = require("firebase-admin/firestore");

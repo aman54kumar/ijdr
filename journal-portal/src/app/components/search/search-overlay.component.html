@@ -16,6 +16,10 @@
       [ngModel]="q"
       (ngModelChange)="onInput($event)"
     />
+    @if (semanticAvailable) {
+      <button type="button" class="esc" [class.on]="semantic" [attr.aria-pressed]="semantic" (click)="toggleSemantic()"
+        title="Match by meaning using AI">AI</button>
+    }
     <button type="button" class="esc" (click)="close()" aria-label="Close search">Esc</button>
   </div>
 
@@ -50,6 +54,7 @@
       <div class="status" role="status" aria-live="polite">
         @if (searching) { Searching… }
         @else if (failed) { Search is unavailable right now. }
+        @else if (semanticError) { {{ semanticError }} }
         @else if (!results.length) { No matches. Press Enter to browse all articles. }
         @else { {{ results.length }} result{{ results.length === 1 ? '' : 's' }} }
       </div>

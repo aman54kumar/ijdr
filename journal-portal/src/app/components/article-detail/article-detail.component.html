@@ -19,7 +19,7 @@
         @if (article.subject) {
           <p class="eyebrow">{{ article.subject }}</p>
         }
-        <h1 class="article-title" [attr.lang]="article.language">{{ article.title }}</h1>
+        <h1 class="article-title" [attr.lang]="hi ? 'hi' : article.language">{{ shownTitle }}</h1>
         <ul class="authors list-unstyled">
           @for (a of article.authors; track a.name) {
             <li>
@@ -44,6 +44,16 @@
             <i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>
             Read PDF{{ article.pageStart ? ' at page ' + article.pageStart : '' }}
           </a>
+          @if (canTranslate) {
+            <div class="btn-group" role="group" aria-label="Language">
+              <button type="button" class="btn" [class.btn-primary]="lang === 'en'" [class.btn-outline-primary]="lang !== 'en'"
+                [attr.aria-pressed]="lang === 'en'" (click)="setLang('en')">English</button>
+              <button type="button" class="btn" [class.btn-primary]="lang === 'hi'" [class.btn-outline-primary]="lang !== 'hi'"
+                [attr.aria-pressed]="lang === 'hi'" [disabled]="translating" (click)="setLang('hi')" lang="hi">
+                {{ translating ? '…' : 'हिन्दी' }}
+              </button>
+            </div>
+          }
           <button type="button" class="btn btn-outline-primary" (click)="citeOpen = !citeOpen" [attr.aria-expanded]="citeOpen" aria-controls="cite-panel">
             <i class="bi bi-quote me-1" aria-hidden="true"></i>Cite
           </button>
@@ -79,10 +89,40 @@
         </section>
       }
 
-      @if (article.abstract) {
+      @if (translateError) {
+        <div class="alert alert-warning py-2" role="status">{{ translateError }}</div>
+      }
+      @if (hi) {
+        <p class="ai-note small text-muted">Machine-translated into Hindi by AI; the English original is authoritative.</p>
+      }
+
+      @if (showSummary || canGenerateSummary) {
+        <section class="ai-box mb-4" aria-labelledby="sum-h">
+          <h2 id="sum-h" class="h5">
+            <i class="bi bi-stars me-1" aria-hidden="true"></i>AI-generated summary
+          </h2>
+          @if (showSummary) {
+            <p [attr.lang]="hi ? 'hi' : 'en'">{{ shownSummary }}</p>
+            @if (shownKeyPoints.length) {
+              <ul [attr.lang]="hi ? 'hi' : 'en'">
+                @for (k of shownKeyPoints; track k) { <li>{{ k }}</li> }
+              </ul>
+            }
+          } @else {
+            <p class="text-muted mb-2">A short plain-language summary written by AI from the article's pages.</p>
+            <button type="button" class="btn btn-sm btn-outline-primary" (click)="generateSummary()" [disabled]="summaryBusy">
+              {{ summaryBusy ? 'Generating… (up to a minute)' : 'Show AI summary' }}
+            </button>
+            @if (summaryError) { <p class="text-danger small mt-2 mb-0" role="alert">{{ summaryError }}</p> }
+          }
+          <p class="small text-muted mt-2 mb-0">AI can make mistakes. This is not a substitute for the article; check the original.</p>
+        </section>
+      }
+
+      @if (shownAbstract) {
         <section class="mb-4" aria-labelledby="abs-h">
           <h2 id="abs-h" class="h5">Abstract</h2>
-          <p class="abstract" [attr.lang]="article.language">{{ article.abstract }}</p>
+          <p class="abstract" [attr.lang]="hi ? 'hi' : article.language">{{ shownAbstract }}</p>
         </section>
       }
 
@@ -99,6 +139,43 @@
 
       <p class="small text-muted">{{ article.viewCount || 0 }} view{{ article.viewCount === 1 ? '' : 's' }}</p>
     </article>
+
+    @if (canChat) {
+      <section class="ai-box mt-4" aria-labelledby="chat-h">
+        <h2 id="chat-h" class="h5"><i class="bi bi-chat-dots me-1" aria-hidden="true"></i>Ask this paper</h2>
+        @if (!chatOpen) {
+          <p class="text-muted">Ask a question and get an answer drawn only from this article's pages, with page references.</p>
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="chatOpen = true">Start asking</button>
+        } @else {
+          <div class="chat-log" aria-live="polite">
+            @for (m of chat; track $index) {
+              <p class="q"><strong>You:</strong> {{ m.q }}</p>
+              @if (m.error) {
+                <p class="text-danger" role="alert">{{ m.error }}</p>
+              } @else if (m.answer) {
+                <p class="a"><strong>AI:</strong> {{ m.answer }}
+                  @if (m.pages?.length) {
+                    <span class="small text-muted"> (see
+                      @for (p of m.pages; track p; let last = $last) {
+                        <a [routerLink]="['/journal', article.issueId]" [queryParams]="{ page: p }">page {{ p }}</a>{{ last ? '' : ', ' }}
+                      })</span>
+                  }
+                </p>
+              } @else {
+                <p class="text-muted">Reading the article…</p>
+              }
+            }
+          </div>
+          <form class="d-flex gap-2" (ngSubmit)="ask()">
+            <label class="visually-hidden" for="ask-q">Your question about this article</label>
+            <input id="ask-q" class="form-control" name="question" [(ngModel)]="question" maxlength="400" autocomplete="off"
+              placeholder="e.g. What data does the study use?" [disabled]="asking" />
+            <button type="submit" class="btn btn-primary" [disabled]="asking || question.trim().length < 3">Ask</button>
+          </form>
+          <p class="small text-muted mt-2 mb-0">AI can make mistakes. Answers come only from this article and are not stored. Questions are sent to Google's Gemini API.</p>
+        }
+      </section>
+    }
 
     @if (related.length) {
       <section class="related mt-5" aria-labelledby="rel-h">

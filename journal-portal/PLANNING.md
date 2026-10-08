@@ -13,7 +13,7 @@ Phased plan to modernize the IJDR portal (live at https://ijdrpub.in) in functio
 | 2 | Content model: articles + admin entry | Done (not deployed; admin UI not exercised against live Firestore) |
 | 3 | Gemini ingest pipeline | Done (deployed; extraction confirmed working by the user, who has doubts about its usefulness) |
 | 4 | Discovery: article pages, search, citations, SEO | Built (not deployed; article page not yet seen with real data) |
-| 5 | AI reader features | Not started |
+| 5 | AI reader features | Built (not deployed; needs App Check key from the user; not run against live Gemini) |
 | 6 | Reader experience: PDF viewer, PWA, performance | Not started |
 | 7 | Admin dashboard, analytics, submissions | Not started |
 
@@ -278,6 +278,19 @@ Also add `articleCount?: number` and `articlesStatus?: 'none'|'draft'|'published
 - Free-tier quota usage is logged and a daily cap exists.
 
 **Out of scope:** user accounts, saved chats, paid models.
+
+**Notes/deviations (built):**
+- Decisions confirmed with the user: Hindi only; public chat included with strict limits; App Check key to be created by the user; Phase 4 and 5 to be deployed together.
+- Functions (`functions/src/index.ts`, logic in `functions/src/ai/`, prompts in `functions/src/prompts/ai.ts`, `ai-v1`): public callables `summarizeArticle`, `translateArticle`, `askPaper`, `semanticSearch` (all `enforceAppCheck: true`, `secrets: GEMINI_API_KEY`); admin callables `adminGenerateAi` (generate/regenerate summary or Hindi, bypasses kill switch and limits) and `embedArticles` (embeddings + related lists). Admin callables do not require App Check.
+- Kill switches: `siteSettings/ai` `{summaries, translation, chat, semanticSearch}`; **missing = all off**. Read by the UI and by every public callable (admins bypass so they can pre-generate). Admin tab **AI** edits them and shows today's usage.
+- Caching: summaries `articles/{id}/ai/summary`, translations `ai/translation_hi`, related `ai/related`, embeddings `ai/embedding` (256 dims, admin-only read). The client reads the cache straight from Firestore, so a second view makes no Gemini call; the function itself also returns the cache before consuming quota. Summary generation is user-initiated ("Show AI summary") rather than automatic, so crawlers cannot burn quota. Admins can regenerate or hide a summary from the article editor.
+- Reading the article: a private cached PDF slice (`articleSlices/` in Storage, deny-all rules) cut with `pdf-lib` from the issue PDF at `pageStart..pageEnd` (max 60 pages) is sent to Gemini, not extracted text. Chat answers must cite pages inside the slice or they are downgraded to "not answerable"; page numbers shown to readers are PDF page indexes and link to `/journal/:id?page=N`. Articles without a page range cannot use chat or page-based summaries (abstract fallback for summary only).
+- Limits (constants in `functions/src/ai/service.ts`): chat 200/day and 15 per visitor, summaries and translations 40/day and 6 per visitor, semantic search 300/day and 40 per visitor. Visitor = salted SHA-256 of the IP (`aiLimits/{day}_{hash}`), counts in `aiStats/{day}`; both collections are not client-writable.
+- Guardrails: delimiters and "data, not instructions" wording in every prompt, question capped at 400 chars, output caps, no chat history stored, visible AI labels and a "can make mistakes" notice, privacy policy section 3A and terms section 8A added.
+- Semantic search is an "AI" toggle in the search overlay (only when enabled), falling back to keyword search on error. Related articles use `ai/related` when present, else the Phase 4 keyword list.
+- Model names: chat/summary use `GEMINI_MODEL`; embeddings use `GEMINI_EMBEDDING_MODEL` (default `gemini-embedding-001`, unverified for the user's key).
+- App Check: `provideAppCheck` is wired from `environment.recaptchaSiteKey` (empty = off, public AI hidden). User steps are in `DEPLOYMENT.md`.
+- Tests: 13 function tests (kill switches, limits keys, question cleaning, chat citation validation, summary validation, cosine/top-k), 58 app specs, Firestore emulator checks for the `ai/*` subcollection and `aiStats` rules (anonymous/admin). **Not verified:** any call to live Gemini from these functions, App Check enforcement, and the reader UI with real data.
 
 ---
 

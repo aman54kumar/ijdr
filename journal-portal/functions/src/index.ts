@@ -4,6 +4,12 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { runIngest, IngestError } from './ingest/run';
 import { buildArticleSeo, iArticle } from './article-seo';
+import {
+  Ctx, answerQuestion, consume, embedAndRelate, generateSummary, generateTranslation, loadArticle,
+  readAiSettings, semanticSearch as runSemanticSearch,
+} from './ai/service';
+import { AiFeature, cleanQuestion, visitorKey } from './ai/pure';
+import type { CallableRequest } from 'firebase-functions/v2/https';
 import { injectArticleHead } from './article-page';
 
 admin.initializeApp();
@@ -387,3 +393,144 @@ export const articlePage = functions.https.onRequest(async (req, res) => {
     res.status(500).send('Error loading article');
   }
 });
+
+// ---------------------------------------------------------------------------
+// Reader-facing AI (Phase 5)
+// ---------------------------------------------------------------------------
+
+const isAdminCall = (r: CallableRequest) => r.auth?.token?.['admin'] === true;
+
+function aiCtx(): Ctx {
+  return {
+    db: admin.firestore(),
+    bucket: admin.storage().bucket(),
+    apiKey: GEMINI_API_KEY.value(),
+    model: process.env['GEMINI_MODEL'],
+    embeddingModel: process.env['GEMINI_EMBEDDING_MODEL'],
+  };
+}
+
+function toHttps(e: unknown): HttpsError {
+  if (e instanceof HttpsError) return e;
+  if (e instanceof IngestError) return new HttpsError(e.code, e.message);
+  console.error('AI function error', e);
+  return new HttpsError('internal', 'Something went wrong. Please try again.');
+}
+
+/** Public-callable wrapper: kill switch, then the handler. Admins bypass the switch (to pre-generate content). */
+async function guarded<T>(
+  r: CallableRequest,
+  feature: AiFeature,
+  run: (ctx: Ctx, visitor: string, admin: boolean) => Promise<T>
+): Promise<T> {
+  try {
+    const ctx = aiCtx();
+    const isAdmin = isAdminCall(r);
+    if (!isAdmin && !(await readAiSettings(ctx.db))[feature]) {
+      throw new HttpsError('failed-precondition', 'This feature is currently turned off.');
+    }
+    return await run(ctx, visitorKey(r.rawRequest?.ip, process.env['GCLOUD_PROJECT'] ?? 'ijdr'), isAdmin);
+  } catch (e) {
+    throw toHttps(e);
+  }
+}
+
+const publicAi = {
+  secrets: [GEMINI_API_KEY],
+  enforceAppCheck: true,
+  timeoutSeconds: 120,
+  memory: '1GiB' as const,
+  maxInstances: 5,
+};
+
+const articleIdOf = (r: CallableRequest): string => {
+  const id = (r.data as { articleId?: unknown } | undefined)?.articleId;
+  if (typeof id !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(id)) {
+    throw new HttpsError('invalid-argument', 'articleId is required.');
+  }
+  return id;
+};
+
+/** Cached plain-language summary; generated on first request, then served from Firestore by the client. */
+export const summarizeArticle = onCall(publicAi, (r) =>
+  guarded(r, 'summaries', async (ctx, visitor, isAdmin) => {
+    const a = await loadArticle(ctx.db, articleIdOf(r), isAdmin);
+    const ref = ctx.db.doc(`articles/${a.id}/ai/summary`);
+    const cached = (await ref.get()).data();
+    if (cached) return { text: cached['text'], keyPoints: cached['keyPoints'], hidden: !!cached['hidden'], cached: true };
+    await consume(ctx.db, 'summaries', visitor, { enforce: !isAdmin });
+    const s = await generateSummary(ctx, a);
+    return { text: s.text, keyPoints: s.keyPoints, hidden: s.hidden, cached: false };
+  })
+);
+
+export const translateArticle = onCall(publicAi, (r) =>
+  guarded(r, 'translation', async (ctx, visitor, isAdmin) => {
+    const lang = (r.data as { lang?: unknown })?.lang;
+    if (lang !== 'hi') throw new HttpsError('invalid-argument', 'Only Hindi (hi) is supported.');
+    const a = await loadArticle(ctx.db, articleIdOf(r), isAdmin);
+    const cached = (await ctx.db.doc(`articles/${a.id}/ai/translation_hi`).get()).data();
+    if (cached) return { ...cached, generatedAt: undefined, cached: true };
+    await consume(ctx.db, 'translation', visitor, { enforce: !isAdmin });
+    return { ...(await generateTranslation(ctx, a, 'hi')), cached: false };
+  })
+);
+
+/** Grounded Q&A on one article's pages. Nothing about the conversation is stored. */
+export const askPaper = onCall({ ...publicAi, timeoutSeconds: 90 }, (r) =>
+  guarded(r, 'chat', async (ctx, visitor, isAdmin) => {
+    const question = cleanQuestion((r.data as { question?: unknown })?.question);
+    if (!question) throw new HttpsError('invalid-argument', 'Please type a question (3 to 400 characters).');
+    const a = await loadArticle(ctx.db, articleIdOf(r), false);
+    await consume(ctx.db, 'chat', visitor, { enforce: !isAdmin });
+    return answerQuestion(ctx, a, question);
+  })
+);
+
+export const semanticSearch = onCall(publicAi, (r) =>
+  guarded(r, 'semanticSearch', async (ctx, visitor, isAdmin) => {
+    const q = cleanQuestion((r.data as { query?: unknown })?.query);
+    if (!q) throw new HttpsError('invalid-argument', 'Enter a search phrase.');
+    await consume(ctx.db, 'semanticSearch', visitor, { enforce: !isAdmin });
+    return { hits: await runSemanticSearch(ctx, q) };
+  })
+);
+
+/** Admin: (re)generate a summary or translation, bypassing the kill switch and limits. */
+export const adminGenerateAi = onCall(
+  { secrets: [GEMINI_API_KEY], timeoutSeconds: 180, memory: '1GiB', maxInstances: 3 },
+  async (r) => {
+    if (!isAdminCall(r)) throw new HttpsError('permission-denied', 'Admins only.');
+    try {
+      const ctx = aiCtx();
+      const kind = (r.data as { kind?: unknown })?.kind;
+      const a = await loadArticle(ctx.db, articleIdOf(r), true);
+      if (kind === 'summary') {
+        await consume(ctx.db, 'summaries', 'admin', { enforce: false });
+        await generateSummary(ctx, a);
+      } else if (kind === 'translation') {
+        await consume(ctx.db, 'translation', 'admin', { enforce: false });
+        await generateTranslation(ctx, a, 'hi');
+      } else {
+        throw new HttpsError('invalid-argument', 'kind must be summary or translation.');
+      }
+      return { ok: true };
+    } catch (e) {
+      throw toHttps(e);
+    }
+  }
+);
+
+/** Admin: compute embeddings for published articles and refresh the related-articles lists. */
+export const embedArticles = onCall(
+  { secrets: [GEMINI_API_KEY], timeoutSeconds: 300, memory: '1GiB', maxInstances: 1 },
+  async (r) => {
+    if (!isAdminCall(r)) throw new HttpsError('permission-denied', 'Admins only.');
+    try {
+      const issueId = (r.data as { issueId?: unknown })?.issueId;
+      return await embedAndRelate(aiCtx(), typeof issueId === 'string' && issueId ? issueId : undefined);
+    } catch (e) {
+      throw toHttps(e);
+    }
+  }
+);

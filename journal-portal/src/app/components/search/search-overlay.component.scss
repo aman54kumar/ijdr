@@ -134,3 +134,9 @@ ul {
   padding: 0.4rem 1rem;
   border-top: 1px solid var(--border);
 }
+
+.esc.on {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}

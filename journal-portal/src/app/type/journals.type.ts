@@ -139,3 +139,44 @@ export interface IngestJob {
   result?: { created: number; kept: number; replaced: number; warnings: string[] } | null;
   usage?: { promptTokens: number | null; outputTokens: number | null; totalTokens: number | null } | null;
 }
+
+/** `siteSettings/ai`: admin kill switches, read by the UI and by the functions. Missing = all off. */
+export interface AiSettings {
+  summaries: boolean;
+  translation: boolean;
+  chat: boolean;
+  semanticSearch: boolean;
+}
+
+/** `articles/{id}/ai/summary` */
+export interface AiSummary {
+  text: string;
+  keyPoints: string[];
+  model?: string;
+  promptVersion?: string;
+  hidden?: boolean;
+  generatedAt?: any;
+}
+
+/** `articles/{id}/ai/translation_hi` */
+export interface AiTranslation {
+  title: string;
+  abstract: string | null;
+  summary: string | null;
+  keyPoints: string[];
+  model?: string;
+}
+
+export interface ChatReply {
+  answerable: boolean;
+  answer: string;
+  pages: number[];
+}
+
+export interface SemanticHit {
+  id: string;
+  title: string;
+  authors: string[];
+  issueYear: string;
+  score: number;
+}

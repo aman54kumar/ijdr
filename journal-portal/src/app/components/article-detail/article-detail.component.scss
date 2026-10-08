@@ -66,3 +66,15 @@
     border-color: var(--link);
   }
 }
+
+.ai-box {
+  padding: 1rem 1.25rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--brand);
+  border-radius: 0.5rem;
+}
+
+.chat-log p {
+  margin-bottom: 0.5rem;
+}

@@ -62,6 +62,14 @@
             <i class="bi bi-file-earmark-text me-1"></i>
             Articles
           </button>
+          <button
+            class="btn btn-outline-success me-2"
+            [class.active]="currentView === 'ai'"
+            (click)="setView('ai')"
+          >
+            <i class="bi bi-stars me-1"></i>
+            AI
+          </button>
           <a routerLink="/" class="btn btn-outline-secondary me-2">
             <i class="bi bi-house me-1"></i>
             View Site
@@ -598,6 +606,10 @@
 
       <div *ngIf="currentView === 'articles'">
         <app-admin-articles></app-admin-articles>
+      </div>
+
+      <div *ngIf="currentView === 'ai'">
+        <app-admin-ai></app-admin-ai>
       </div>
 
       <div *ngIf="currentView === 'messages'">

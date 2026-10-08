@@ -139,6 +139,44 @@
       </div>
 
       <div class="section">
+        <h2>3A. AI-Powered Reader Features</h2>
+        <p>
+          Some article pages offer optional AI features, which an administrator
+          can switch off at any time:
+        </p>
+        <ul>
+          <li>
+            <strong>Summaries and Hindi translation:</strong> the text of a
+            published article (its pages from the published issue PDF, or its
+            abstract) is sent to Google's Gemini API once to produce a summary
+            or translation. The result is stored on our servers and shown to
+            all readers, labelled as AI-generated. Translations may contain
+            errors; the English original is authoritative.
+          </li>
+          <li>
+            <strong>Ask this paper:</strong> the question you type and the
+            pages of the article you are reading are sent to the Gemini API to
+            produce an answer. We do not store your question, the answer or any
+            chat history. To limit abuse we keep a daily usage counter linked to
+            a one-way hash of your network address, not the address itself.
+          </li>
+          <li>
+            <strong>Meaning-based search and related articles:</strong> article
+            titles, abstracts and keywords (and, for search, the phrase you
+            type) are converted to numeric embeddings by the Gemini API.
+          </li>
+          <li>
+            <strong>Google:</strong> under Google's free-tier terms, data sent
+            to the Gemini API may be used by Google to improve its models. Do
+            not type personal or confidential information into the question
+            box. We use Google reCAPTCHA through Firebase App Check to protect
+            these features from automated misuse.
+          </li>
+        </ul>
+        <p>AI can make mistakes; please verify important points in the article.</p>
+      </div>
+
+      <div class="section">
         <h2>4. Data Security</h2>
         <p>
           We implement appropriate technical and organizational measures to

@@ -57,6 +57,19 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Cached AI content (summary, translation, related) of published articles. Written by
+    // functions (Admin SDK); admins may also edit (e.g. hide a summary). Embedding vectors stay admin-only.
+    match /articles/{articleId}/ai/{docId} {
+      allow read: if isAdmin()
+        || (docId != 'embedding'
+            && get(/databases/$(database)/documents/articles/$(articleId)).data.status == 'published');
+      allow write: if isAdmin();
+    }
+
+    match /aiStats/{day} {
+      allow read: if isAdmin();
+    }
+
     // Written by the ingestIssue function (Admin SDK); admins may read and write.
     match /ingestJobs/{issueId} {
       allow read, write: if isAdmin();

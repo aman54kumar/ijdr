@@ -28,6 +28,7 @@ import { User } from '@angular/fire/auth';
 import { AdminManagementComponent } from './admin-management/admin-management.component';
 import { AdminInsightsComponent } from './admin-insights/admin-insights.component';
 import { AdminAnnouncementComponent } from './admin-announcement/admin-announcement.component';
+import { AdminAiComponent } from './admin-ai/admin-ai.component';
 import { AdminArticlesComponent } from './admin-articles/admin-articles.component';
 import { AdminMessagesComponent } from './admin-messages/admin-messages.component';
 import { BoardMember, BoardMemberSection } from '../../type/journals.type';
@@ -59,6 +60,7 @@ function optionalIssnValidator(): ValidatorFn {
     AdminMessagesComponent,
     AdminAnnouncementComponent,
     AdminArticlesComponent,
+    AdminAiComponent,
     DragDropModule,
   ],
   templateUrl: './admin.component.html',
@@ -74,7 +76,8 @@ export class AdminComponent implements OnInit {
     | 'insights'
     | 'messages'
     | 'announcement'
-    | 'articles' = 'journals';
+    | 'articles'
+    | 'ai' = 'journals';
 
   journals: FirebaseJournal[] = [];
   selectedJournal: FirebaseJournal | null = null;
@@ -426,6 +429,7 @@ export class AdminComponent implements OnInit {
       | 'messages'
       | 'announcement'
       | 'articles'
+      | 'ai'
   ) {
     this.currentView = view;
     this.selectedJournal = null;
