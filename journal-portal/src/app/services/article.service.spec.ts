@@ -1,4 +1,5 @@
-import { cleanArticleInput, issueDenorm, summarizeArticles } from './article.service';
+import { iArticle } from '../type/journals.type';
+import { cleanArticleInput, issueDenorm, rankRelated, summarizeArticles } from './article.service';
 
 describe('article.service pure logic', () => {
   it('summarizes counts and status', () => {
@@ -43,5 +44,17 @@ describe('article.service pure logic', () => {
     });
     expect('abstract' in out).toBeFalse();
     expect('pageEnd' in out).toBeFalse();
+  });
+
+  it('ranks related articles by shared keywords and subject', () => {
+    const mk = (id: string, keywords: string[], subject?: string, year = '2024') =>
+      ({ id, keywords, subject, issueYear: year }) as iArticle;
+    const self = mk('self', ['Credit', 'Rural'], 'Econ');
+    const out = rankRelated(
+      self,
+      [mk('self', ['credit']), mk('a', ['credit']), mk('b', ['credit', 'rural']), mk('c', ['other']), mk('d', ['x'], 'Econ')],
+      3
+    );
+    expect(out.map((x) => x.id)).toEqual(['b', 'a', 'd']);
   });
 });

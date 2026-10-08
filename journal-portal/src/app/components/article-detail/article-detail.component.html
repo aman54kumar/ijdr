@@ -1,0 +1,117 @@
+<div class="container article-page">
+  @if (loading) {
+    <p class="text-muted py-5" role="status">Loading article…</p>
+  } @else if (notFound || !article) {
+    <div class="py-5 text-center">
+      <h1 class="h3">Article not found</h1>
+      <p class="text-muted">It may have been moved or is not published yet.</p>
+      <a routerLink="/articles" class="btn btn-primary">Browse all articles</a>
+    </div>
+  } @else {
+    <nav aria-label="Breadcrumb" class="small mb-3">
+      <a routerLink="/articles">Articles</a>
+      <span aria-hidden="true"> / </span>
+      <a [routerLink]="['/journal', article.issueId]">{{ article.issueTitle }}</a>
+    </nav>
+
+    <article>
+      <header class="mb-4">
+        @if (article.subject) {
+          <p class="eyebrow">{{ article.subject }}</p>
+        }
+        <h1 class="article-title" [attr.lang]="article.language">{{ article.title }}</h1>
+        <ul class="authors list-unstyled">
+          @for (a of article.authors; track a.name) {
+            <li>
+              <strong>{{ a.name }}</strong>
+              @if (a.affiliation) { <span class="text-muted">, {{ a.affiliation }}</span> }
+              @if (a.orcid) {
+                <a class="orcid" [href]="'https://orcid.org/' + a.orcid" target="_blank" rel="noopener noreferrer"
+                  [attr.aria-label]="'ORCID of ' + a.name">ORCID</a>
+              }
+            </li>
+          }
+        </ul>
+        <p class="issue-line text-muted">
+          <a [routerLink]="['/journal', article.issueId]">{{ article.issueTitle }}</a>
+          · Vol. {{ article.issueVolume }}, No. {{ article.issueNumber }} · {{ article.issueYear }}
+          @if (pages) { · {{ pages }} }
+          @if (article.doi) { · DOI {{ article.doi }} }
+        </p>
+
+        <div class="actions d-flex flex-wrap gap-2">
+          <a class="btn btn-primary" [routerLink]="['/journal', article.issueId]" [queryParams]="article.pageStart ? { page: article.pageStart } : {}">
+            <i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>
+            Read PDF{{ article.pageStart ? ' at page ' + article.pageStart : '' }}
+          </a>
+          <button type="button" class="btn btn-outline-primary" (click)="citeOpen = !citeOpen" [attr.aria-expanded]="citeOpen" aria-controls="cite-panel">
+            <i class="bi bi-quote me-1" aria-hidden="true"></i>Cite
+          </button>
+          @if (canShare) {
+            <button type="button" class="btn btn-outline-secondary" (click)="share()">
+              <i class="bi bi-share me-1" aria-hidden="true"></i>Share
+            </button>
+          } @else {
+            <button type="button" class="btn btn-outline-secondary" (click)="copyLink()">
+              <i class="bi bi-link-45deg me-1" aria-hidden="true"></i>Copy link
+            </button>
+          }
+        </div>
+      </header>
+
+      @if (citeOpen) {
+        <section id="cite-panel" class="cite-panel mb-4" aria-label="Cite this article">
+          <div class="btn-group mb-3" role="group" aria-label="Citation style">
+            @for (f of formats; track f.id) {
+              <button type="button" class="btn btn-sm" [class.btn-primary]="citeFormat === f.id" [class.btn-outline-primary]="citeFormat !== f.id"
+                [attr.aria-pressed]="citeFormat === f.id" (click)="citeFormat = f.id">{{ f.label }}</button>
+            }
+          </div>
+          @if (citation.html) {
+            <p class="cite-text" [innerHTML]="citation.html"></p>
+          } @else {
+            <pre class="cite-text">{{ citation.text }}</pre>
+          }
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="copyCitation()"><i class="bi bi-clipboard me-1" aria-hidden="true"></i>Copy</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="downloadCitation()"><i class="bi bi-download me-1" aria-hidden="true"></i>Download</button>
+          </div>
+        </section>
+      }
+
+      @if (article.abstract) {
+        <section class="mb-4" aria-labelledby="abs-h">
+          <h2 id="abs-h" class="h5">Abstract</h2>
+          <p class="abstract" [attr.lang]="article.language">{{ article.abstract }}</p>
+        </section>
+      }
+
+      @if (article.keywords.length) {
+        <section class="mb-4" aria-labelledby="kw-h">
+          <h2 id="kw-h" class="h5">Keywords</h2>
+          <ul class="list-inline kw">
+            @for (k of article.keywords; track k) {
+              <li class="list-inline-item"><a class="chip" routerLink="/articles" [queryParams]="{ keyword: k }">{{ k }}</a></li>
+            }
+          </ul>
+        </section>
+      }
+
+      <p class="small text-muted">{{ article.viewCount || 0 }} view{{ article.viewCount === 1 ? '' : 's' }}</p>
+    </article>
+
+    @if (related.length) {
+      <section class="related mt-5" aria-labelledby="rel-h">
+        <h2 id="rel-h" class="h5">Related articles</h2>
+        <ul class="list-unstyled">
+          @for (r of related; track r.id) {
+            <li class="mb-2">
+              <a [routerLink]="['/article', r.id]">{{ r.title }}</a>
+              <div class="small text-muted">{{ r.authors.length ? r.authors[0].name : '' }}{{ r.authors.length > 1 ? ' et al.' : '' }} · {{ r.issueYear }}</div>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  }
+</div>

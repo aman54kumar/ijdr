@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, inject } from '@angular/core';
 import { ThemeService } from '../../../services/theme.service';
+import { SearchService } from '../../../services/search.service';
 import { RouterLink, RouterModule } from '@angular/router';
 
 @Component({
@@ -11,6 +12,7 @@ import { RouterLink, RouterModule } from '@angular/router';
 })
 export class HeaderComponent {
   readonly theme = inject(ThemeService);
+  readonly search = inject(SearchService);
   isNavbarCollapsed = true;
   scrolled = false;
   isDropdownOpen = false;

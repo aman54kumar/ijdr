@@ -14,9 +14,11 @@ import {
   limit,
   writeBatch,
   deleteField,
+  increment,
   Timestamp,
 } from '@angular/fire/firestore';
-import { Observable } from 'rxjs';
+import { Observable, shareReplay } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { iArticle, iJournal } from '../type/journals.type';
 import { buildSearchTokens, normalizeKeywords } from '../utils/article-search.util';
 
@@ -90,6 +92,22 @@ export function cleanArticleInput(input: ArticleInput): ArticleInput {
   return out;
 }
 
+/** Rank candidates by shared keywords (case-insensitive) plus a same-subject bonus; drops the article itself and non-matches. */
+export function rankRelated(article: iArticle, candidates: iArticle[], max: number): iArticle[] {
+  const kws = new Set(article.keywords.map((k) => k.toLowerCase()));
+  return candidates
+    .filter((c) => c.id !== article.id)
+    .map((c) => {
+      const shared = c.keywords.filter((k) => kws.has(k.toLowerCase())).length;
+      const subject = article.subject && c.subject === article.subject ? 1 : 0;
+      return { c, score: shared * 2 + subject };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score || String(b.c.issueYear).localeCompare(String(a.c.issueYear)))
+    .slice(0, max)
+    .map((x) => x.c);
+}
+
 @Injectable({ providedIn: 'root' })
 export class ArticleService {
   private firestore = inject(Firestore);
@@ -149,6 +167,44 @@ export class ArticleService {
       ),
       { idField: 'id' }
     ) as Observable<iArticle[]>;
+  }
+
+  private publishedCorpus$?: Observable<iArticle[]>;
+
+  /**
+   * Every published article, newest first, loaded once per session (the corpus is a few
+   * hundred docs at most). Powers browse filters client-side.
+   */
+  getPublishedCorpus(): Observable<iArticle[]> {
+    this.publishedCorpus$ ??= (
+      collectionData(
+        query(this.col(), where('status', '==', 'published'), orderBy('createdAt', 'desc'), limit(500)),
+        { idField: 'id' }
+      ) as Observable<iArticle[]>
+    ).pipe(shareReplay({ bufferSize: 1, refCount: false }));
+    return this.publishedCorpus$;
+  }
+
+  /** Published articles sharing keywords or the subject with `article`, best match first. */
+  getRelated(article: iArticle, max = 4): Observable<iArticle[]> {
+    const kws = article.keywords.slice(0, 10);
+    if (!kws.length) {
+      return new Observable((s) => {
+        s.next([]);
+        s.complete();
+      });
+    }
+    return (
+      collectionData(
+        query(this.col(), where('status', '==', 'published'), where('keywords', 'array-contains-any', kws), limit(20)),
+        { idField: 'id' }
+      ) as Observable<iArticle[]>
+    ).pipe(map((list) => rankRelated(article, list, max)));
+  }
+
+  /** Public view-count bump (rules allow +1 on viewCount only). */
+  async incrementViewCount(id: string): Promise<void> {
+    await updateDoc(doc(this.firestore, 'articles', id), { viewCount: increment(1) });
   }
 
   async createArticle(issue: iJournal, input: ArticleInput): Promise<string> {

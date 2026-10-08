@@ -153,9 +153,10 @@
           <button
             type="button"
             class="icon-btn"
-            aria-label="Search (coming soon)"
-            title="Search (coming soon)"
-            disabled
+            aria-label="Search (press / or Ctrl+K)"
+            title="Search (/ or Ctrl+K)"
+            aria-haspopup="dialog"
+            (click)="search.open(); closeNavbar()"
           >
             <i class="bi bi-search" aria-hidden="true"></i>
           </button>

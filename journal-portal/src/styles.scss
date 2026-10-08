@@ -646,3 +646,8 @@ section {
 
   i { color: var(--accent-light); margin-right: 0.5rem; }
 }
+
+/* Search overlay (CDK) */
+.search-backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}

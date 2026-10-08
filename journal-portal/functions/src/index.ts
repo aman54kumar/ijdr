@@ -3,6 +3,8 @@ import * as admin from 'firebase-admin';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { runIngest, IngestError } from './ingest/run';
+import { buildArticleSeo, iArticle } from './article-seo';
+import { injectArticleHead } from './article-page';
 
 admin.initializeApp();
 
@@ -12,6 +14,7 @@ const SITE_ORIGIN =
 const STATIC_PATHS = [
   '/',
   '/journals',
+  '/articles',
   '/about',
   '/editorial-board',
   '/advisory-board',
@@ -146,6 +149,11 @@ export const sitemap = functions.https.onRequest(async (req, res) => {
 
   try {
     const snap = await admin.firestore().collection('journals').get();
+    const articleSnap = await admin
+      .firestore()
+      .collection('articles')
+      .where('status', '==', 'published')
+      .get();
     const urls: { loc: string; changefreq: string; priority: string }[] = [];
 
     for (const p of STATIC_PATHS) {
@@ -158,6 +166,14 @@ export const sitemap = functions.https.onRequest(async (req, res) => {
         loc: `${SITE_ORIGIN}/journal/${doc.id}`,
         changefreq: 'monthly',
         priority: '0.7',
+      });
+    }
+
+    for (const doc of articleSnap.docs) {
+      urls.push({
+        loc: `${SITE_ORIGIN}/article/${doc.id}`,
+        changefreq: 'yearly',
+        priority: '0.6',
       });
     }
 
@@ -223,14 +239,38 @@ export const rssFeed = functions.https.onRequest(async (req, res) => {
       );
     }
 
-    const channelTitle = 'Indian Journal of Development Research — New issues';
+    const articleSnap = await admin
+      .firestore()
+      .collection('articles')
+      .where('status', '==', 'published')
+      .orderBy('createdAt', 'desc')
+      .limit(30)
+      .get();
+    for (const doc of articleSnap.docs) {
+      const d = doc.data();
+      const link = `${SITE_ORIGIN}/article/${doc.id}`;
+      const authors = ((d.authors as { name: string }[]) || []).map((a) => a.name).join(', ');
+      const desc =
+        (d.abstract as string) ||
+        `${authors ? `By ${authors}. ` : ''}${d.issueTitle ?? 'Indian Journal of Development Research'}`;
+      const created = d.createdAt?.toDate?.()?.toUTCString?.() || new Date().toUTCString();
+      items.push(
+        `<item><title>${xmlEscape(String(d.title))}</title>` +
+          `<link>${xmlEscape(link)}</link>` +
+          `<guid>${xmlEscape(link)}</guid>` +
+          `<pubDate>${xmlEscape(created)}</pubDate>` +
+          `<description>${xmlEscape(desc)}</description></item>`
+      );
+    }
+
+    const channelTitle = 'Indian Journal of Development Research — New issues and articles';
     const body =
       `<?xml version="1.0" encoding="UTF-8"?>` +
       `<rss version="2.0"><channel>` +
       `<title>${xmlEscape(channelTitle)}</title>` +
       `<link>${xmlEscape(SITE_ORIGIN)}</link>` +
       `<description>${xmlEscape(
-        'New issues of IJDR (IJDRpub.in)'
+        'New issues and articles of IJDR (ijdrpub.in)'
       )}</description>` +
       `<language>en-in</language>` +
       items.join('') +
@@ -292,3 +332,58 @@ export const ingestIssue = onCall(
     }
   }
 );
+
+// ---------------------------------------------------------------------------
+// Article pages for crawlers (Phase 4)
+// ---------------------------------------------------------------------------
+
+let shellCache: { html: string; at: number } | undefined;
+const SHELL_TTL_MS = 5 * 60 * 1000;
+
+async function loadShell(): Promise<string> {
+  if (shellCache && Date.now() - shellCache.at < SHELL_TTL_MS) {
+    return shellCache.html;
+  }
+  // /index.html is served by Hosting directly (it is not rewritten to this function).
+  const r = await fetch(`${SITE_ORIGIN}/index.html`);
+  if (!r.ok) {
+    throw new Error(`index.html fetch failed: ${r.status}`);
+  }
+  const html = await r.text();
+  shellCache = { html, at: Date.now() };
+  return html;
+}
+
+/**
+ * Hosting rewrites /article/** here. Returns the SPA shell with the article's head tags
+ * (Scholar, Open Graph, canonical, JSON-LD) already in the HTML, so crawlers need no JavaScript.
+ */
+export const articlePage = functions.https.onRequest(async (req, res) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    res.status(405).send('Method Not Allowed');
+    return;
+  }
+  try {
+    const id = decodeURIComponent(req.path.split('/').filter(Boolean).pop() ?? '');
+    const shell = await loadShell();
+    const snap = id && /^[A-Za-z0-9_-]{1,128}$/.test(id)
+      ? await admin.firestore().collection('articles').doc(id).get()
+      : undefined;
+    const data = snap?.exists ? snap.data() : undefined;
+
+    res.set('Content-Type', 'text/html; charset=utf-8');
+    if (!data || data.status !== 'published') {
+      // Unknown or unpublished: let the SPA render its own "not found" view, but tell crawlers it is a 404.
+      res.set('Cache-Control', 'public, max-age=60');
+      res.status(404).send(shell);
+      return;
+    }
+    const article = { id: snap!.id, ...data } as unknown as iArticle;
+    const html = injectArticleHead(shell, article, buildArticleSeo(article, SITE_ORIGIN));
+    res.set('Cache-Control', 'public, max-age=300, s-maxage=600');
+    res.status(200).send(html);
+  } catch (e) {
+    console.error('articlePage error', e);
+    res.status(500).send('Error loading article');
+  }
+});

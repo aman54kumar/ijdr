@@ -6,12 +6,14 @@ import {
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl, Title, Meta } from '@angular/platform-browser';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ArticleService } from '../../services/article.service';
 import { CommonModule } from '@angular/common';
 import { FirebaseJournalService } from '../../services/firebase-journal.service';
 import { ToastService } from '../../services/toast.service';
-import { iJournal } from '../../type/journals.type';
+import { iArticle, iJournal } from '../../type/journals.type';
 import { take } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { publicPdfDisplayUrl } from '../../utils/public-pdf-url.util';
 
@@ -23,7 +25,7 @@ import { publicPdfDisplayUrl } from '../../utils/public-pdf-url.util';
 @Component({
   selector: 'app-pdf-viewer',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   template: `
     <div class="pdf-viewer-container">
       <div class="pdf-header bg-white shadow-sm border-bottom">
@@ -55,6 +57,21 @@ import { publicPdfDisplayUrl } from '../../utils/public-pdf-url.util';
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div *ngIf="articles.length" class="bg-body border-bottom">
+        <div class="container py-2">
+          <details class="issue-articles">
+            <summary>Articles in this issue ({{ articles.length }})</summary>
+            <ol class="mt-2 mb-1">
+              <li *ngFor="let a of articles" class="mb-1">
+                <a [routerLink]="['/article', a.id]">{{ a.title }}</a>
+                <span class="text-muted small" *ngIf="a.authors.length"> · {{ a.authors[0].name }}{{ a.authors.length > 1 ? ' et al.' : '' }}</span>
+                <a *ngIf="a.pageStart" class="small ms-2" [routerLink]="['/journal', journal?.id]" [queryParams]="{ page: a.pageStart }">Open at page {{ a.pageStart }}</a>
+              </li>
+            </ol>
+          </details>
         </div>
       </div>
 
@@ -131,6 +148,10 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
   iframeEmbedUrl: SafeResourceUrl | null = null;
   /** Same-origin /pdf/{id} in production so downloads use a neutral filename on mobile. */
   pdfTabUrl: string | null = null;
+  /** Published articles of this issue (for "Open at page N" links). */
+  articles: iArticle[] = [];
+  private pdfDisplayUrl: string | null = null;
+  private subs = new Subscription();
 
   private document = inject(DOCUMENT);
 
@@ -141,13 +162,22 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
     private toast: ToastService,
     private title: Title,
     private meta: Meta,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private articleService: ArticleService
   ) {}
 
   ngOnInit() {
     const journalId = this.route.snapshot.paramMap.get('id');
     if (journalId) {
       this.loadJournal(journalId);
+      this.subs.add(
+        this.articleService.getPublishedArticlesByIssue(journalId).subscribe({
+          next: (a) => (this.articles = a),
+          error: () => (this.articles = []),
+        })
+      );
+      // ?page=N deep links (also when only the page changes while the viewer stays open)
+      this.subs.add(this.route.queryParamMap.subscribe(() => this.applyPage()));
     } else {
       this.error = 'No journal ID provided';
       this.loading = false;
@@ -155,6 +185,7 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.subs.unsubscribe();
     this.title.setTitle('IJDR - Indian Journal of Development Research');
     this.removeCanonicalLink();
   }
@@ -272,8 +303,8 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
     try {
       const displayUrl = publicPdfDisplayUrl(journalId, storageDownloadUrl);
       this.pdfTabUrl = displayUrl;
-      this.iframeEmbedUrl =
-        this.sanitizer.bypassSecurityTrustResourceUrl(displayUrl);
+      this.pdfDisplayUrl = displayUrl;
+      this.applyPage();
       // Spinner hides on iframe (load); safety timeout if load never fires (some PDF plugins)
       setTimeout(() => {
         if (this.loading) {
@@ -284,6 +315,16 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
       this.error = 'Failed to load PDF file. Please try again.';
       this.loading = false;
     }
+  }
+
+  /** Point the embedded viewer at the requested page (`#page=N` is understood by browser PDF viewers). */
+  private applyPage() {
+    if (!this.pdfDisplayUrl) {
+      return;
+    }
+    const page = parseInt(this.route.snapshot.queryParamMap.get('page') ?? '', 10);
+    const url = page > 0 ? `${this.pdfDisplayUrl}#page=${page}` : this.pdfDisplayUrl;
+    this.iframeEmbedUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
   }
 
   goBack() {

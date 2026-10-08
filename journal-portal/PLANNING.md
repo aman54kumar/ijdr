@@ -11,8 +11,8 @@ Phased plan to modernize the IJDR portal (live at https://ijdrpub.in) in functio
 | 0 | Repo hygiene and safety | Done (3 user follow-ups deferred, see notes) |
 | 1 | Design foundation and UI polish | Done (covers backfilled; not deployed) |
 | 2 | Content model: articles + admin entry | Done (not deployed; admin UI not exercised against live Firestore) |
-| 3 | Gemini ingest pipeline | Built (not deployed; not yet run against a real issue) |
-| 4 | Discovery: article pages, search, citations, SEO | Not started |
+| 3 | Gemini ingest pipeline | Done (deployed; extraction confirmed working by the user, who has doubts about its usefulness) |
+| 4 | Discovery: article pages, search, citations, SEO | Built (not deployed; article page not yet seen with real data) |
 | 5 | AI reader features | Not started |
 | 6 | Reader experience: PDF viewer, PWA, performance | Not started |
 | 7 | Admin dashboard, analytics, submissions | Not started |
@@ -240,6 +240,18 @@ Also add `articleCount?: number` and `articlesStatus?: 'none'|'draft'|'published
 - Sitemap contains articles; `/rss.xml` includes new articles.
 
 **Out of scope:** AI summaries, translation, semantic search (Phase 5).
+
+**Notes/deviations (built):**
+- Routes `/articles` (browse; filters year/issue/subject/author/keyword/q all in the URL) and `/article/:id` (detail, Cite menu, share/copy link, related, view count). `/journal/:id` lists the issue's published articles and honours `?page=N` (iframe `#page=N`).
+- Cite: `utils/citation.util.ts` (APA 7, MLA 9, Chicago author-date style bibliography entry, BibTeX, RIS; copy and download). Names are split heuristically (last word = family name, honorifics dropped); check unusual names. **Known limitation:** `pageStart/pageEnd` are PDF-file page indexes (Phase 3 converts printed pages with the offset), so citation page ranges are right only for issues whose printed numbering equals file numbering. Fix when needed by also storing printed pages.
+- Search: overlay (CDK overlay, `/` or Ctrl/Cmd+K or header icon, arrow keys, recent searches). Articles are fetched with `searchTokens` `array-contains-any` (whole tokens, cheap reads); issues and board members are loaded once per session and matched locally; prefix matches are ranked on the returned set. No match -> Enter opens `/articles?q=`.
+- Browse loads all published articles once per session (limit 500) and filters client-side. Cost is about one read per article per visitor session; revisit with server-side filters/pagination if the corpus grows past a few hundred.
+- Rules: public may bump `viewCount` by exactly 1 on published articles (like issues). Verified in the emulator with anonymous/user/admin cases.
+- SEO decision (task 6): a **Cloud Function `articlePage`** (Hosting rewrite `/article/**`) returns the built `index.html` with the article's title, canonical, Open Graph, Scholar `citation_*` tags and JSON-LD already in the HTML (plus a `<noscript>` summary); unpublished/unknown ids get a 404 status with the SPA shell. Chosen over build-time prerendering because the content lives in Firestore and changes without a rebuild. The client applies the same tags (`ArticleSeoService`). The two copies of the tag builder (`src/app/utils/article-seo.util.ts` and `functions/src/article-seo.ts`) must be kept in sync. `citation_pdf_url` points to the whole-issue PDF (`/pdf/{issueId}`), since there is no per-article PDF.
+- Sitemap now lists `/articles` and published articles; the RSS feed includes the latest 30 published articles besides issues.
+- Not done / unverified: Google Rich Results test and Scholar indexing (need a deploy and real published articles); Lighthouse. Search for board members/issues was checked in the browser; article detail was covered by unit tests only.
+- Tests: 56 app specs (citation, SEO, filter, ranking, related ranking, browse component), 6 function tests (validator, head injection/escaping).
+- Deploy order: indexes (none new), rules, functions (`articlePage`, `sitemap`, `rssFeed`), then hosting (rewrite + app).
 
 ---
 

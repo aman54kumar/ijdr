@@ -16,6 +16,8 @@ import { TermsOfServiceComponent } from './components/legal/terms-of-service/ter
 import { CopyrightComponent } from './components/legal/copyright/copyright.component';
 import { OpenAccessComponent } from './components/legal/open-access/open-access.component';
 import { AccessibilityComponent } from './components/legal/accessibility/accessibility.component';
+import { ArticlesComponent } from './components/articles/articles.component';
+import { ArticleDetailComponent } from './components/article-detail/article-detail.component';
 import { AuthGuard } from './guards/auth.guard';
 import { DEFAULT_SEO, RouteSeoData } from './route-seo.data';
 
@@ -37,6 +39,16 @@ export const routes: Routes = [
     }),
   },
   { path: 'journal/:id', component: PdfViewerComponent },
+  {
+    path: 'articles',
+    component: ArticlesComponent,
+    data: seo({
+      title: 'Articles | IJDR',
+      description:
+        'Browse research articles from the Indian Journal of Development Research by year, issue, author, keyword and subject.',
+    }),
+  },
+  { path: 'article/:id', component: ArticleDetailComponent },
   {
     path: 'about',
     component: AboutComponent,

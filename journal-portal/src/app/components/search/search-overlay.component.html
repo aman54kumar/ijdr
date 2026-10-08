@@ -1,0 +1,60 @@
+<div class="search-box" role="dialog" aria-modal="true" aria-label="Search the journal" cdkTrapFocus (keydown)="onKey($event)">
+  <div class="input-row">
+    <i class="bi bi-search" aria-hidden="true"></i>
+    <input
+      #box
+      type="text"
+      role="combobox"
+      aria-expanded="true"
+      aria-controls="search-results"
+      aria-autocomplete="list"
+      [attr.aria-activedescendant]="active >= 0 ? 'sr-' + active : null"
+      autocomplete="off"
+      spellcheck="false"
+      placeholder="Search articles, issues and editors"
+      aria-label="Search"
+      [ngModel]="q"
+      (ngModelChange)="onInput($event)"
+    />
+    <button type="button" class="esc" (click)="close()" aria-label="Close search">Esc</button>
+  </div>
+
+  <div class="body">
+    @if (!q.trim()) {
+      @if (recent.length) {
+        <div class="group-head">
+          <span>Recent</span>
+          <button type="button" class="link" (click)="clearRecent()">Clear</button>
+        </div>
+        <ul class="recent">
+          @for (r of recent; track r) {
+            <li><button type="button" (click)="pickRecent(r)"><i class="bi bi-clock-history" aria-hidden="true"></i> {{ r }}</button></li>
+          }
+        </ul>
+      } @else {
+        <p class="hint">Type a title, an author or a keyword.</p>
+      }
+    } @else {
+      <ul id="search-results" role="listbox" aria-label="Search results">
+        @for (r of results; track r.kind + r.id; let i = $index) {
+          <li role="option" [id]="'sr-' + i" [class.active]="i === active" [attr.aria-selected]="i === active"
+            (mouseenter)="active = i" (click)="go(r)">
+            <span class="kind kind-{{ r.kind }}">{{ kindLabel[r.kind] }}</span>
+            <span class="text">
+              <span class="t">{{ r.title }}</span>
+              <span class="s">{{ r.subtitle }}</span>
+            </span>
+          </li>
+        }
+      </ul>
+      <div class="status" role="status" aria-live="polite">
+        @if (searching) { Searching… }
+        @else if (failed) { Search is unavailable right now. }
+        @else if (!results.length) { No matches. Press Enter to browse all articles. }
+        @else { {{ results.length }} result{{ results.length === 1 ? '' : 's' }} }
+      </div>
+    }
+  </div>
+
+  <div class="foot" aria-hidden="true">↑↓ to move · Enter to open · Esc to close</div>
+</div>

@@ -1,0 +1,86 @@
+<div class="container articles-page">
+  <h1 class="page-h1">Articles</h1>
+  <p class="text-muted">Browse the research articles published in the Indian Journal of Development Research.</p>
+
+  <form class="filters row g-2 mb-3" (ngSubmit)="set('q', qDraft)" role="search" aria-label="Filter articles">
+    <div class="col-12 col-lg-4">
+      <label class="visually-hidden" for="f-q">Search titles, authors and keywords</label>
+      <div class="input-group">
+        <input id="f-q" class="form-control" type="search" [(ngModel)]="qDraft" name="q" placeholder="Search titles, authors, keywords" />
+        <button class="btn btn-primary" type="submit">Search</button>
+      </div>
+    </div>
+    <div class="col-6 col-lg-2">
+      <label class="visually-hidden" for="f-year">Year</label>
+      <select id="f-year" class="form-select" [ngModel]="filters.year ?? ''" name="year" (ngModelChange)="set('year', $event)">
+        <option value="">All years</option>
+        @for (y of facets.years; track y) { <option [value]="y">{{ y }}</option> }
+      </select>
+    </div>
+    <div class="col-6 col-lg-2">
+      <label class="visually-hidden" for="f-issue">Issue</label>
+      <select id="f-issue" class="form-select" [ngModel]="filters.issue ?? ''" name="issue" (ngModelChange)="set('issue', $event)">
+        <option value="">All issues</option>
+        @for (i of facets.issues; track i.id) { <option [value]="i.id">{{ i.label }}</option> }
+      </select>
+    </div>
+    <div class="col-6 col-lg-2">
+      <label class="visually-hidden" for="f-subject">Subject</label>
+      <select id="f-subject" class="form-select" [ngModel]="filters.subject ?? ''" name="subject" (ngModelChange)="set('subject', $event)">
+        <option value="">All subjects</option>
+        @for (s of facets.subjects; track s) { <option [value]="s">{{ s }}</option> }
+      </select>
+    </div>
+    <div class="col-6 col-lg-2">
+      <label class="visually-hidden" for="f-author">Author</label>
+      <select id="f-author" class="form-select" [ngModel]="filters.author ?? ''" name="author" (ngModelChange)="set('author', $event)">
+        <option value="">All authors</option>
+        @for (a of facets.authors; track a) { <option [value]="a">{{ a }}</option> }
+      </select>
+    </div>
+  </form>
+
+  @if (active.length) {
+    <div class="active mb-3" aria-label="Active filters">
+      @for (f of active; track f.key) {
+        <button type="button" class="chip" (click)="set(f.key, undefined)" [attr.aria-label]="'Remove filter ' + f.key + ': ' + f.label">
+          {{ f.key }}: {{ f.label }} <span aria-hidden="true">&times;</span>
+        </button>
+      }
+      <button type="button" class="btn btn-link btn-sm" (click)="clearAll()">Clear all</button>
+    </div>
+  }
+
+  @if (loading) {
+    <p class="text-muted" role="status">Loading articles…</p>
+  } @else if (failed) {
+    <div class="alert alert-warning">Articles could not be loaded. Please try again later.</div>
+  } @else if (!all.length) {
+    <p class="text-muted">No articles have been published yet. In the meantime you can <a routerLink="/journals">read the full issues</a>.</p>
+  } @else {
+    <p class="text-muted small" role="status" aria-live="polite">{{ results.length }} article{{ results.length === 1 ? '' : 's' }}</p>
+    <ul class="list-unstyled results">
+      @for (a of results.slice(0, shown); track a.id) {
+        <li class="result">
+          <h2 class="h5"><a [routerLink]="['/article', a.id]">{{ a.title }}</a></h2>
+          <div class="text-muted small">
+            {{ authorLine(a) }} · {{ a.issueTitle }} (Vol. {{ a.issueVolume }}, No. {{ a.issueNumber }}, {{ a.issueYear }})
+            @if (a.pageStart) { · p. {{ a.pageStart }} }
+          </div>
+          @if (a.keywords.length) {
+            <div class="mt-1">
+              @for (k of a.keywords.slice(0, 5); track k) {
+                <a class="chip" routerLink="/articles" [queryParams]="{ keyword: k }">{{ k }}</a>
+              }
+            </div>
+          }
+        </li>
+      } @empty {
+        <li class="text-muted">No articles match these filters.</li>
+      }
+    </ul>
+    @if (results.length > shown) {
+      <button type="button" class="btn btn-outline-primary" (click)="more()">Show more</button>
+    }
+  }
+</div>

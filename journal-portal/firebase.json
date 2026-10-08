@@ -12,6 +12,10 @@
         "function": "getPdf"
       },
       {
+        "source": "/article/**",
+        "function": "articlePage"
+      },
+      {
         "source": "/sitemap.xml",
         "function": "sitemap"
       },
