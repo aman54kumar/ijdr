@@ -7,6 +7,7 @@ import { environment } from '../../../environments/environment';
 import { ArticleService } from '../../services/article.service';
 import { ArticleSeoService } from '../../services/article-seo.service';
 import { ToastService } from '../../services/toast.service';
+import { FirebaseJournalService } from '../../services/firebase-journal.service';
 import { AnalyticsEventsService } from '../../services/analytics-events.service';
 import { AiService, AI_OFF, aiErrorMessage } from '../../services/ai.service';
 import { AiSettings, AiSummary, AiTranslation, iArticle } from '../../type/journals.type';
@@ -31,6 +32,7 @@ export class ArticleDetailComponent implements OnDestroy {
   private toast = inject(ToastService);
   private ai = inject(AiService);
   private analytics = inject(AnalyticsEventsService);
+  private journals = inject(FirebaseJournalService);
   private sub: Subscription;
   private settingsSub?: Subscription;
 
@@ -233,7 +235,8 @@ export class ArticleDetailComponent implements OnDestroy {
     }
   }
 
-  private countView(id: string) {
+  private async countView(id: string) {
+    if (!(await this.journals.isCountableViewer())) return;
     const key = `ijdr_viewed_article_${id}`;
     try {
       if (sessionStorage.getItem(key)) return;

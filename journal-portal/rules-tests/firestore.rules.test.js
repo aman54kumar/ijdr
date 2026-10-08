@@ -17,6 +17,7 @@ beforeEach(async () => {
   await env.withSecurityRulesDisabled(async (c) => {
     const db = c.firestore();
     await setDoc(doc(db, 'journals/j1'), { title: 'J', viewCount: 1 });
+    await setDoc(doc(db, 'journals/legacy'), { title: 'Old issue without a counter' });
     await setDoc(doc(db, 'articles/pub'), { title: 'P', status: 'published', viewCount: 2, keywords: ['a'], issueId: 'j1' });
     await setDoc(doc(db, 'articles/dr'), { title: 'D', status: 'draft', issueId: 'j1' });
     for (const a of ['pub', 'dr']) for (const d of ['summary', 'related', 'embedding']) await setDoc(doc(db, `articles/${a}/ai/${d}`), { x: 1 });
@@ -46,8 +47,14 @@ test('journals: public read, admin write, public +1 view only', async () => {
     await assertFails(deleteDoc(doc(dbs[who], 'journals/j1')));
     await assertFails(updateDoc(doc(dbs[who], 'journals/j1'), { title: 'hack' }));
     await assertFails(updateDoc(doc(dbs[who], 'journals/j1'), { viewCount: increment(5), updatedAt: Timestamp.now() }));
-    await assertSucceeds(updateDoc(doc(dbs[who], 'journals/j1'), { viewCount: increment(1), updatedAt: Timestamp.now() }));
+    await assertSucceeds(updateDoc(doc(dbs[who], 'journals/j1'), { viewCount: increment(1) })); // current clients
+    await assertSucceeds(updateDoc(doc(dbs[who], 'journals/j1'), { viewCount: increment(1), updatedAt: Timestamp.now() })); // older clients
+    await assertFails(updateDoc(doc(dbs[who], 'journals/j1'), { viewCount: increment(1), updatedAt: 'not a timestamp' }));
+    await assertFails(updateDoc(doc(dbs[who], 'journals/j1'), { viewCount: increment(1), description: 'x' }));
+    await assertFails(updateDoc(doc(dbs[who], 'journals/j1'), { viewCount: 0 })); // cannot reset
   }
+  // a legacy issue with no viewCount or updatedAt can still be counted
+  await assertSucceeds(updateDoc(doc(dbs.anon, 'journals/legacy'), { viewCount: increment(1) }));
   await assertSucceeds(setDoc(doc(dbs.admin, 'journals/new'), { title: 'x' }));
   await assertSucceeds(deleteDoc(doc(dbs.admin, 'journals/new')));
 });

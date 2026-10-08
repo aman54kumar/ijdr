@@ -183,7 +183,7 @@ export class PdfModalComponent implements OnInit, OnDestroy {
     this.loadSub = sub;
     sub.add(
       this.firebaseService.getJournalById(id).pipe(take(1)).subscribe({
-        next: (j) => {
+        next: async (j) => {
           if (!j?.id || !j.pdfUrl) {
             this.error = 'PDF not available for this journal';
             return;
@@ -191,7 +191,7 @@ export class PdfModalComponent implements OnInit, OnDestroy {
           this.journal = { ...(this.journal as iJournal), ...(j as iJournal), id: j.id };
           this.loaded = true;
           this.analytics.log('journal_open', { journal_id: j.id });
-          if (this.firebaseService.consumeJournalViewSlot(j.id)) {
+          if ((await this.firebaseService.isCountableViewer()) && this.firebaseService.consumeJournalViewSlot(j.id)) {
             void this.firebaseService.incrementViewCount(j.id).catch(() => {
               this.firebaseService.clearJournalViewDedupe(j.id!);
               this.toast.show('Could not record this view.', 'warning');

@@ -124,7 +124,7 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
         .getJournalById(journalId)
         .pipe(take(1))
         .subscribe({
-          next: (journal) => {
+          next: async (journal) => {
             const jid = journal?.id;
             if (!journal || !journal.pdfUrl || !jid) {
               this.error = 'Journal or PDF not found';
@@ -133,7 +133,7 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
             this.journal = { ...journal, id: jid, edition: journal.edition || 'January-June', viewCount: journal.viewCount || 0 } as iJournal;
             this.applySeo(journal as iJournal, jid);
             this.analytics.log('journal_open', { journal_id: jid });
-            if (this.firebaseService.consumeJournalViewSlot(jid)) {
+            if ((await this.firebaseService.isCountableViewer()) && this.firebaseService.consumeJournalViewSlot(jid)) {
               void this.firebaseService.incrementViewCount(jid).catch((err) => {
                 console.error('View count increment failed:', err);
                 this.firebaseService.clearJournalViewDedupe(jid);

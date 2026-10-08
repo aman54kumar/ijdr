@@ -16,6 +16,7 @@ import {
   where,
   increment,
 } from '@angular/fire/firestore';
+import { Auth } from '@angular/fire/auth';
 import {
   Storage,
   ref,
@@ -61,7 +62,22 @@ export class FirebaseJournalService {
    */
   private readonly journalViewDedupeMemory = new Set<string>();
 
+  private auth = inject(Auth, { optional: true });
+
   constructor(private firestore: Firestore, private storage: Storage) {}
+
+  /**
+   * Views by signed-in users (only editors have accounts) are not counted, so testing and
+   * editing do not inflate the numbers. Waits for the saved sign-in to be restored first.
+   */
+  async isCountableViewer(): Promise<boolean> {
+    try {
+      await this.auth?.authStateReady?.();
+    } catch {
+      /* treat as signed out */
+    }
+    return !this.auth?.currentUser;
+  }
 
   /**
    * Reserve a one-time view slot for this journal in this browser session.
@@ -301,10 +317,8 @@ export class FirebaseJournalService {
   /** Bump viewCount by 1. Caller should handle errors (e.g. toast) — do not swallow permission failures. */
   async incrementViewCount(journalId: string): Promise<void> {
     const journalRef = doc(this.firestore, 'journals', journalId);
-    await updateDoc(journalRef, {
-      viewCount: increment(1),
-      updatedAt: Timestamp.now(),
-    });
+    // Only the counter changes: `updatedAt` means "the issue was edited" (it feeds the RSS feed).
+    await updateDoc(journalRef, { viewCount: increment(1) });
   }
 
   /** Decode storage object path from a Firebase download URL (for deleteObject). */
