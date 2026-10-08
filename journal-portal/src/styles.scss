@@ -657,10 +657,3 @@ section {
 .search-backdrop {
   background: rgba(0, 0, 0, 0.5);
 }
-
-/* Override bootstrap-icons' font-display: block so text is never held back by the icon font. */
-@font-face {
-  font-display: swap;
-  font-family: 'bootstrap-icons';
-  src: url('../node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff2') format('woff2');
-}

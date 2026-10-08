@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "css:purge": "node scripts/purge-vendor-css.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:rules": "firebase emulators:exec --only firestore,storage --project demo-ijdr \"node --test rules-tests/*.test.js\"",
@@ -45,6 +46,7 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
+    "purgecss": "^8.0.0",
     "typescript": "~5.7.2"
   }
 }
