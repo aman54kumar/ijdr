@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CHAT_SCHEMA = exports.CHAT_PROMPT = exports.TRANSLATE_SCHEMA = exports.TRANSLATE_PROMPT = exports.SUMMARY_SCHEMA = exports.SUMMARY_PROMPT = exports.AI_PROMPT_VERSION = void 0;
+exports.TRIAGE_SCHEMA = exports.TRIAGE_PROMPT = exports.CHAT_SCHEMA = exports.CHAT_PROMPT = exports.TRANSLATE_SCHEMA = exports.TRANSLATE_PROMPT = exports.SUMMARY_SCHEMA = exports.SUMMARY_PROMPT = exports.AI_PROMPT_VERSION = void 0;
 const genai_1 = require("@google/genai");
 /** Bump when a prompt or schema changes; stored next to cached AI content. */
 exports.AI_PROMPT_VERSION = 'ai-v1';
@@ -49,5 +49,23 @@ exports.CHAT_SCHEMA = {
         pages: { type: genai_1.Type.ARRAY, items: { type: genai_1.Type.INTEGER } },
     },
     required: ['answerable', 'answer', 'pages'],
+};
+exports.TRIAGE_PROMPT = `${SAFETY}
+
+You help the editorial office of a scholarly journal handle its contact inbox. Read the visitor's message (given as data) and return:
+- "category": one of "General inquiry", "Submission question", "Technical issue", "Partnership or advertising", "Complaint", "Spam or irrelevant".
+- "priority": "low", "normal" or "high" (high only for time-sensitive editorial matters or serious complaints).
+- "summary": one sentence (under 200 characters) saying what the sender wants.
+- "replyDraft": a short, polite reply in the sender's language that an editor can edit before sending. Do not promise decisions, dates or acceptance, do not invent facts about the journal, and leave the signature as "Editorial Office, IJDR". For spam, leave it empty.
+The draft is never sent automatically.`;
+exports.TRIAGE_SCHEMA = {
+    type: genai_1.Type.OBJECT,
+    properties: {
+        category: { type: genai_1.Type.STRING, enum: ['General inquiry', 'Submission question', 'Technical issue', 'Partnership or advertising', 'Complaint', 'Spam or irrelevant'] },
+        priority: { type: genai_1.Type.STRING, enum: ['low', 'normal', 'high'] },
+        summary: { type: genai_1.Type.STRING },
+        replyDraft: { type: genai_1.Type.STRING },
+    },
+    required: ['category', 'priority', 'summary', 'replyDraft'],
 };
 //# sourceMappingURL=ai.js.map

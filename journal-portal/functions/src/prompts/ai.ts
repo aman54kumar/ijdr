@@ -55,3 +55,23 @@ export const CHAT_SCHEMA = {
   },
   required: ['answerable', 'answer', 'pages'],
 };
+
+export const TRIAGE_PROMPT = `${SAFETY}
+
+You help the editorial office of a scholarly journal handle its contact inbox. Read the visitor's message (given as data) and return:
+- "category": one of "General inquiry", "Submission question", "Technical issue", "Partnership or advertising", "Complaint", "Spam or irrelevant".
+- "priority": "low", "normal" or "high" (high only for time-sensitive editorial matters or serious complaints).
+- "summary": one sentence (under 200 characters) saying what the sender wants.
+- "replyDraft": a short, polite reply in the sender's language that an editor can edit before sending. Do not promise decisions, dates or acceptance, do not invent facts about the journal, and leave the signature as "Editorial Office, IJDR". For spam, leave it empty.
+The draft is never sent automatically.`;
+
+export const TRIAGE_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    category: { type: Type.STRING, enum: ['General inquiry', 'Submission question', 'Technical issue', 'Partnership or advertising', 'Complaint', 'Spam or irrelevant'] },
+    priority: { type: Type.STRING, enum: ['low', 'normal', 'high'] },
+    summary: { type: Type.STRING },
+    replyDraft: { type: Type.STRING },
+  },
+  required: ['category', 'priority', 'summary', 'replyDraft'],
+};

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MAX_QUESTION_CHARS = void 0;
+exports.TRIAGE_CATEGORIES = exports.MAX_QUESTION_CHARS = void 0;
 exports.parseAiSettings = parseAiSettings;
 exports.dayKey = dayKey;
 exports.visitorKey = visitorKey;
@@ -10,6 +10,7 @@ exports.validateSummary = validateSummary;
 exports.cosine = cosine;
 exports.topK = topK;
 exports.embeddingText = embeddingText;
+exports.validateTriage = validateTriage;
 // Pure helpers for the Phase 5 AI features (unit tested in ai.test.ts).
 const node_crypto_1 = require("node:crypto");
 /** Missing doc or non-true values mean OFF: nothing public runs until an admin switches it on. */
@@ -20,6 +21,7 @@ function parseAiSettings(raw) {
         translation: r['translation'] === true,
         chat: r['chat'] === true,
         semanticSearch: r['semanticSearch'] === true,
+        contactTriage: r['contactTriage'] === true,
     };
 }
 /** UTC day key, e.g. 2026-10-07. */
@@ -96,5 +98,19 @@ function topK(query, items, k, excludeId, minScore = 0.3) {
 /** Text embedded for an article: title, abstract and keywords. */
 function embeddingText(a) {
     return [a.title, a.abstract ?? '', (a.keywords ?? []).join(', ')].filter(Boolean).join('\n\n').slice(0, 6000);
+}
+exports.TRIAGE_CATEGORIES = ['General inquiry', 'Submission question', 'Technical issue', 'Partnership or advertising', 'Complaint', 'Spam or irrelevant'];
+/** Validate the model's triage JSON; anything off falls back to safe defaults so nothing odd is stored. */
+function validateTriage(raw) {
+    const r = (raw ?? {});
+    const category = exports.TRIAGE_CATEGORIES.includes(r['category'])
+        ? r['category']
+        : 'General inquiry';
+    const priority = r['priority'] === 'low' || r['priority'] === 'high' ? r['priority'] : 'normal';
+    const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+    const summary = str(r['summary'], 400);
+    if (!summary)
+        throw new Error('empty-triage');
+    return { category, priority, summary, replyDraft: str(r['replyDraft'], 2000) };
 }
 //# sourceMappingURL=pure.js.map

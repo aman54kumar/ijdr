@@ -1,7 +1,10 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { defineSecret } from 'firebase-functions/params';
+import { onCall, onRequest, HttpsError } from 'firebase-functions/v2/https';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+import Busboy from 'busboy';
+import { defineSecret, defineString } from 'firebase-functions/params';
 import { runIngest, IngestError } from './ingest/run';
 import { buildArticleSeo, iArticle } from './article-seo';
 import {
@@ -10,6 +13,11 @@ import {
 } from './ai/service';
 import { AiFeature, cleanQuestion, visitorKey } from './ai/pure';
 import type { CallableRequest } from 'firebase-functions/v2/https';
+import { buildDailyStats, yesterday } from './ops/stats';
+import { safeDisplayName, validateFile, validateSubmissionFields } from './ops/submission';
+import { buildContactEmail, buildSubmissionEmail, sendEmail } from './ops/email';
+import { triageMessage } from './ai/service';
+import { dayKey } from './ai/pure';
 import { injectArticleHead } from './article-page';
 
 admin.initializeApp();
@@ -531,6 +539,208 @@ export const embedArticles = onCall(
       return await embedAndRelate(aiCtx(), typeof issueId === 'string' && issueId ? issueId : undefined);
     } catch (e) {
       throw toHttps(e);
+    }
+  }
+);
+
+// ---------------------------------------------------------------------------
+// Admin tooling, submissions and notifications (Phase 7)
+// ---------------------------------------------------------------------------
+
+const RESEND_API_KEY = defineSecret('RESEND_API_KEY');
+/** Where notification emails go (empty = notifications off). Set in functions/.env. */
+const NOTIFY_EMAIL_TO = defineString('NOTIFY_EMAIL_TO', { default: '' });
+const NOTIFY_EMAIL_FROM = defineString('NOTIFY_EMAIL_FROM', { default: 'IJDR <onboarding@resend.dev>' });
+
+async function snapshotStats(date: string) {
+  const db = admin.firestore();
+  const [journals, articles, contacts, subs, ai] = await Promise.all([
+    db.collection('journals').select('title', 'viewCount').get(),
+    db.collection('articles').select('title', 'viewCount', 'status').get(),
+    db.collection('contactSubmissions').count().get(),
+    db.collection('submissions').count().get(),
+    db.doc(`aiStats/${date}`).get(),
+  ]);
+  const stats = buildDailyStats({
+    date,
+    journals: journals.docs.map((d) => ({ id: d.id, title: String(d.get('title') ?? ''), viewCount: d.get('viewCount') })),
+    articles: articles.docs.map((d) => ({ id: d.id, title: String(d.get('title') ?? ''), viewCount: d.get('viewCount'), status: d.get('status') })),
+    contacts: contacts.data().count,
+    submissions: subs.data().count,
+    ai: (ai.data() ?? {}) as Record<string, unknown>,
+  });
+  await db.doc(`statsDaily/${date}`).set({ ...stats, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+  return stats;
+}
+
+/** End-of-day snapshot of the cumulative counters, labelled with the day that just ended. */
+export const scheduledStatsRollup = onSchedule({ schedule: '10 0 * * *', timeZone: 'UTC', memory: '256MiB' }, async () => {
+  await snapshotStats(yesterday());
+});
+
+/** Admin: take a snapshot for today now (so the dashboard has data before the first scheduled run). */
+export const rollupStatsNow = onCall({ memory: '256MiB' }, async (r) => {
+  if (!isAdminCall(r)) throw new HttpsError('permission-denied', 'Admins only.');
+  const s = await snapshotStats(dayKey());
+  return { date: s.date };
+});
+
+/** Admin: classify a contact message and draft a reply (stored on the message; never sent). */
+export const triageContact = onCall(
+  { secrets: [GEMINI_API_KEY], timeoutSeconds: 90, memory: '512MiB', maxInstances: 2 },
+  async (r) => {
+    if (!isAdminCall(r)) throw new HttpsError('permission-denied', 'Admins only.');
+    try {
+      const ctx = aiCtx();
+      if (!(await readAiSettings(ctx.db)).contactTriage) {
+        throw new HttpsError('failed-precondition', 'Message triage is switched off (Admin > AI).');
+      }
+      const id = (r.data as { id?: unknown })?.id;
+      if (typeof id !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(id)) {
+        throw new HttpsError('invalid-argument', 'Message id is required.');
+      }
+      await consume(ctx.db, 'contactTriage', 'admin', { enforce: true });
+      return await triageMessage(ctx, id);
+    } catch (e) {
+      throw toHttps(e);
+    }
+  }
+);
+
+/** Email the editorial office when a contact message arrives (only when NOTIFY_EMAIL_TO is set). */
+export const onContactCreated = onDocumentCreated(
+  { document: 'contactSubmissions/{id}', secrets: [RESEND_API_KEY], memory: '256MiB' },
+  async (event) => {
+    const to = NOTIFY_EMAIL_TO.value();
+    const d = event.data?.data();
+    if (!to || !d) return;
+    await sendEmail(
+      RESEND_API_KEY.value(),
+      buildContactEmail(
+        { name: String(d['name'] ?? ''), email: String(d['email'] ?? ''), message: String(d['message'] ?? '') },
+        NOTIFY_EMAIL_FROM.value(),
+        to,
+        `${SITE_ORIGIN}/admin`
+      )
+    );
+  }
+);
+
+const SUBMISSION_ORIGINS = ['https://ijdrpub.in', 'https://www.ijdrpub.in', 'https://ijdr-e41d4.web.app', 'http://localhost:4200'];
+const MAX_SUBMISSIONS_PER_VISITOR_DAY = 3;
+const MAX_SUBMISSIONS_PER_DAY = 30;
+
+/**
+ * Manuscript submissions (multipart POST, same-origin via the /api/submit rewrite). Requires an
+ * App Check token. Files are validated (type, size, real signature) and stored privately under
+ * submissions/{id}/; the record is created with the Admin SDK, so clients can never write it.
+ */
+export const submitManuscript = onRequest(
+  { secrets: [RESEND_API_KEY], timeoutSeconds: 300, memory: '1GiB', maxInstances: 5, cors: SUBMISSION_ORIGINS },
+  async (req, res) => {
+    const fail = (status: number, message: string | string[]) => {
+      res.status(status).json({ error: Array.isArray(message) ? message.join(' ') : message });
+    };
+    if (req.method !== 'POST') return fail(405, 'Method not allowed.');
+    if (!String(req.headers['content-type'] ?? '').startsWith('multipart/form-data')) return fail(400, 'Expected a form upload.');
+    try {
+      const token = req.header('X-Firebase-AppCheck');
+      if (!token) return fail(401, 'Could not verify this browser. Reload the page and try again.');
+      try {
+        await admin.appCheck().verifyToken(token);
+      } catch {
+        return fail(401, 'Could not verify this browser. Reload the page and try again.');
+      }
+
+      const db = admin.firestore();
+      const day = dayKey();
+      const visitor = visitorKey(req.ip, process.env['GCLOUD_PROJECT'] ?? 'ijdr');
+      const vRef = db.doc(`submissionLimits/${day}_${visitor}`);
+      const allRef = db.doc(`submissionLimits/${day}_all`);
+      const allowed = await db.runTransaction(async (tx) => {
+        const [v, all] = await Promise.all([tx.get(vRef), tx.get(allRef)]);
+        const mine = (v.data()?.['count'] as number | undefined) ?? 0;
+        const total = (all.data()?.['count'] as number | undefined) ?? 0;
+        if (mine >= MAX_SUBMISSIONS_PER_VISITOR_DAY || total >= MAX_SUBMISSIONS_PER_DAY) return false;
+        tx.set(vRef, { count: mine + 1 }, { merge: true });
+        tx.set(allRef, { count: total + 1 }, { merge: true });
+        return true;
+      });
+      if (!allowed) return fail(429, 'The daily submission limit was reached. Please try again tomorrow or email the editor.');
+
+      const fields: Record<string, string> = {};
+      const files: Record<string, { name: string; data: Buffer; truncated: boolean }> = {};
+      await new Promise<void>((resolve, reject) => {
+        const bb = Busboy({ headers: req.headers, limits: { files: 2, fileSize: 15 * 1024 * 1024 + 1, fields: 20, fieldSize: 10_000 } });
+        bb.on('field', (name, value) => {
+          fields[name] = value;
+        });
+        bb.on('file', (name, stream, info) => {
+          if (name !== 'manuscript' && name !== 'coverLetter') {
+            stream.resume();
+            return;
+          }
+          const chunks: Buffer[] = [];
+          let truncated = false;
+          stream.on('data', (c: Buffer) => chunks.push(c));
+          stream.on('limit', () => (truncated = true));
+          stream.on('end', () => {
+            files[name] = { name: info.filename ?? 'file', data: Buffer.concat(chunks), truncated };
+          });
+        });
+        bb.on('error', reject);
+        bb.on('close', resolve);
+        bb.end(req.rawBody);
+      });
+
+      const parsed = validateSubmissionFields(fields);
+      const errors: string[] = parsed.ok ? [] : [...parsed.errors];
+      const stored: { kind: 'manuscript' | 'coverLetter'; path: string; name: string; size: number; contentType: string }[] = [];
+      const id = db.collection('submissions').doc().id;
+      const toStore: { kind: 'manuscript' | 'coverLetter'; ext: string; contentType: string; data: Buffer; name: string }[] = [];
+      if (!files['manuscript']) errors.push('The manuscript file is required.');
+      for (const kind of ['manuscript', 'coverLetter'] as const) {
+        const f = files[kind];
+        if (!f) continue;
+        const v = f.truncated ? ({ ok: false, error: `The ${kind === 'manuscript' ? 'manuscript' : 'cover letter'} file is too large.` } as const) : validateFile(kind, f.name, f.data);
+        if (!v.ok) errors.push(v.error);
+        else toStore.push({ kind, ext: v.ext, contentType: v.contentType, data: f.data, name: safeDisplayName(f.name) });
+      }
+      if (errors.length || !parsed.ok) return fail(400, errors);
+
+      const bucket = admin.storage().bucket();
+      for (const f of toStore) {
+        const path = `submissions/${id}/${f.kind}.${f.ext}`;
+        await bucket.file(path).save(f.data, { contentType: f.contentType, resumable: false });
+        stored.push({ kind: f.kind, path, name: f.name, size: f.data.length, contentType: f.contentType });
+      }
+      const now = admin.firestore.Timestamp.now();
+      await db.doc(`submissions/${id}`).set({
+        ...parsed.value,
+        status: 'received',
+        files: stored,
+        history: [{ status: 'received', at: now, by: 'system' }],
+        notes: [],
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      const to = NOTIFY_EMAIL_TO.value();
+      if (to) {
+        await sendEmail(
+          RESEND_API_KEY.value(),
+          buildSubmissionEmail(
+            { id, name: parsed.value.name, email: parsed.value.email, affiliation: parsed.value.affiliation, title: parsed.value.title, keywords: parsed.value.keywords, files: stored },
+            NOTIFY_EMAIL_FROM.value(),
+            to,
+            `${SITE_ORIGIN}/admin`
+          )
+        );
+      }
+      res.status(200).json({ id });
+    } catch (e) {
+      console.error('submitManuscript error', e);
+      fail(500, 'Something went wrong while saving your submission. Please try again or email the editor.');
     }
   }
 );

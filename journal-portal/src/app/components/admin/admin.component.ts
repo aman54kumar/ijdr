@@ -35,6 +35,8 @@ import { BoardMember, BoardMemberSection } from '../../type/journals.type';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { ArticleService } from '../../services/article.service';
+import { AuditService } from '../../services/audit.service';
+import { AdminSubmissionsComponent } from './admin-submissions/admin-submissions.component';
 import { iJournal } from '../../type/journals.type';
 
 /** ISSN is optional in the UI; only validate format when non-empty. */
@@ -61,6 +63,7 @@ function optionalIssnValidator(): ValidatorFn {
     AdminAnnouncementComponent,
     AdminArticlesComponent,
     AdminAiComponent,
+    AdminSubmissionsComponent,
     DragDropModule,
   ],
   templateUrl: './admin.component.html',
@@ -77,7 +80,8 @@ export class AdminComponent implements OnInit {
     | 'messages'
     | 'announcement'
     | 'articles'
-    | 'ai' = 'journals';
+    | 'ai'
+    | 'submissions' = 'journals';
 
   journals: FirebaseJournal[] = [];
   selectedJournal: FirebaseJournal | null = null;
@@ -113,7 +117,8 @@ export class AdminComponent implements OnInit {
     private toast: ToastService,
     private confirmModal: ConfirmModalService,
     private covers: CoverService,
-    private articleService: ArticleService
+    private articleService: ArticleService,
+    private audit: AuditService
   ) {
     this.journalForm = this.fb.group({
       title: ['', Validators.required],
@@ -395,6 +400,7 @@ export class AdminComponent implements OnInit {
     try {
       await this.articleService.deleteIssueArticles(journal.id!);
       await this.firebaseService.deleteJournal(journal.id!);
+      void this.audit.log({ action: 'issue.delete', targetType: 'issue', targetId: journal.id!, title: journal.title });
       this.loadJournals();
       this.toast.show('Journal deleted successfully!', 'success');
     } catch (error) {
@@ -430,6 +436,7 @@ export class AdminComponent implements OnInit {
       | 'announcement'
       | 'articles'
       | 'ai'
+      | 'submissions'
   ) {
     this.currentView = view;
     this.selectedJournal = null;

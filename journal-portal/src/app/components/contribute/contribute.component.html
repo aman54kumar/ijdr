@@ -162,9 +162,10 @@
               <h3 class="info-title">Who to email</h3>
             </div>
             <p class="info-text mb-0">
-              <strong>New manuscripts:</strong> send to
-              <a href="mailto:dr.vijaylal18@gmail.com">dr.vijaylal18&#64;gmail.com</a>
-              using the button below.
+              <strong>New manuscripts:</strong> use the
+              <a routerLink="/contribute" fragment="submit">online submission form</a> below, or,
+              if that does not work for you, send them to
+              <a href="mailto:dr.vijaylal18@gmail.com">dr.vijaylal18&#64;gmail.com</a>.
               <strong>General editorial correspondence</strong> (including
               questions not tied to a new submission) may go to the chief
               editor at
@@ -177,6 +178,8 @@
           </div>
         </div>
       </div>
+
+      <app-submission-form></app-submission-form>
 
       <!-- Call to Action -->
       <div class="row mt-5">
@@ -193,7 +196,8 @@
               </p>
               <div class="cta-actions">
                 <a
-                  href="mailto:dr.vijaylal18@gmail.com"
+                  routerLink="/contribute"
+                  fragment="submit"
                   class="btn-accent btn-lg"
                 >
                   <i class="bi bi-file-earmark-plus"></i>

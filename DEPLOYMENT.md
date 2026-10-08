@@ -178,9 +178,28 @@ Functions declare it with `defineSecret('GEMINI_API_KEY')` and `secrets: [GEMINI
 4. For `ng serve`: the dev build prints an App Check *debug token* in the browser console; register it under App Check -> Apps -> Manage debug tokens.
 5. Only after the site works with App Check, switch the features on in Admin -> **AI**. Pre-generate summaries/translations from each article's editor so readers get cached results.
 
+**Email notifications (Phase 7, Resend).** `submitManuscript` and `onContactCreated` email the editorial office through Resend; nothing is sent unless `NOTIFY_EMAIL_TO` is set. Setup:
+
+1. Create a Resend account and an API key. Store it as a secret (prompts for the value; do not paste it into chat or a file): `firebase functions:secrets:set RESEND_API_KEY` (**the secret must exist before the functions deploy**, even if you leave notifications off; you can store a placeholder and replace it later).
+2. In `journal-portal/functions/.env` (gitignored) add `NOTIFY_EMAIL_TO=you@example.org` and, once you have verified a sending domain in Resend, `NOTIFY_EMAIL_FROM=IJDR <noreply@your-domain>`. Until then the default sender `onboarding@resend.dev` only delivers to the email address of your own Resend account.
+3. Notifications are best effort: a Resend failure never blocks a submission or a contact message.
+
 **If a key leaks:** rotate it in Google Cloud Console (IAM -> Service Accounts -> Keys, or Secret Manager), then update the secret and redeploy functions.
 
 ---
+
+## Operations (Phase 7)
+
+**Scheduled stats.** `scheduledStatsRollup` runs daily at 00:10 UTC (Cloud Scheduler is enabled automatically on the first deploy) and writes `statsDaily/{yyyy-mm-dd}`. Admin -> Insights has a "Take a snapshot now" button for the first data point; trends need two days of snapshots.
+
+**Rules tests and CI.** `npm run test:rules` (in `journal-portal`) starts the Firestore and Storage emulators (needs Java) and checks every collection and storage path for anonymous, signed-in non-admin and admin users. `.github/workflows/ci.yml` runs the app build and unit tests, the functions tests and the rules tests on every push and pull request. Keep the tests in step with `firestore.rules` and `storage.rules`.
+
+**Billing alert checklist (Blaze plan).**
+- [ ] Google Cloud Console -> Billing -> Budgets & alerts: create a monthly budget (e.g. USD 5) with alerts at 50%, 90% and 100%, sent to at least two people.
+- [ ] Optional: connect the budget to Pub/Sub to disable billing automatically if exceeded (understand that this takes the site offline).
+- [ ] Check Firebase Console -> Usage monthly: Firestore reads, Storage egress, Functions invocations.
+- [ ] Gemini free-tier quota and the in-app daily caps (`functions/src/ai/service.ts`, `ingest/run.ts`) are the guard against AI cost; review them if you move to a paid Gemini plan.
+- [ ] In Firebase Console -> App Check, review request metrics before considering enforcement for Firestore and Storage.
 
 ## 6. Quick checklist (copy before a release)
 

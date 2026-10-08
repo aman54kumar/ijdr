@@ -1,0 +1,92 @@
+<section id="submit" class="submission container" aria-labelledby="submit-h">
+  <h2 id="submit-h" class="h3">Submit your manuscript online</h2>
+
+  @if (reference) {
+    <div class="alert alert-success" role="status">
+      <h3 class="h5">Thank you, your manuscript was received.</h3>
+      <p class="mb-1">Your reference is <strong class="ref">{{ reference }}</strong>. Please quote it in any correspondence.</p>
+      <p class="mb-0">The editorial office will contact you at the email address you gave.</p>
+    </div>
+  } @else if (!available) {
+    <div class="alert alert-info" role="status">
+      Online submission is not available at the moment. Please email your manuscript to the editor (see
+      <a routerLink="/contact">Contact</a>).
+    </div>
+  } @else {
+    <p class="text-muted">
+      Your files are stored privately and are visible only to the editorial team. They are never published, never sent to AI
+      tools, and used only to handle your submission. See the <a routerLink="/legal/privacy">Privacy Policy</a>.
+    </p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label" for="s-name">Corresponding author *</label>
+        <input id="s-name" class="form-control" formControlName="name" autocomplete="name" [class.is-invalid]="invalid('name')" />
+        <div class="invalid-feedback">Please enter your name.</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="s-email">Email *</label>
+        <input id="s-email" type="email" class="form-control" formControlName="email" autocomplete="email" [class.is-invalid]="invalid('email')" />
+        <div class="invalid-feedback">Please enter a valid email address.</div>
+      </div>
+      <div class="col-md-8">
+        <label class="form-label" for="s-aff">Affiliation *</label>
+        <input id="s-aff" class="form-control" formControlName="affiliation" autocomplete="organization" [class.is-invalid]="invalid('affiliation')" />
+        <div class="invalid-feedback">Please enter your institution.</div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="s-phone">Mobile (optional)</label>
+        <input id="s-phone" type="tel" class="form-control" formControlName="phone" autocomplete="tel" />
+      </div>
+      <div class="col-12">
+        <label class="form-label" for="s-title">Manuscript title *</label>
+        <input id="s-title" class="form-control" formControlName="title" [class.is-invalid]="invalid('title')" />
+        <div class="invalid-feedback">Please enter the title.</div>
+      </div>
+      <div class="col-12">
+        <label class="form-label" for="s-abs">Abstract * <span class="text-muted">(at least 100 characters)</span></label>
+        <textarea id="s-abs" rows="6" class="form-control" formControlName="abstract" [class.is-invalid]="invalid('abstract')"></textarea>
+        <div class="invalid-feedback">The abstract must be at least 100 characters.</div>
+      </div>
+      <div class="col-12">
+        <label class="form-label" for="s-kw">Keywords * <span class="text-muted">(at least two, separated by commas)</span></label>
+        <input id="s-kw" class="form-control" formControlName="keywords" [class.is-invalid]="invalid('keywords')" />
+        <div class="invalid-feedback">Give at least two keywords.</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="s-file">Manuscript file * <span class="text-muted">(PDF, DOC or DOCX, up to 15 MB)</span></label>
+        <input id="s-file" type="file" class="form-control" accept=".pdf,.doc,.docx" (change)="onFile('manuscript', $event)"
+          [class.is-invalid]="!!manuscriptError" [attr.aria-describedby]="manuscriptError ? 's-file-err' : null" />
+        @if (manuscriptError) { <div id="s-file-err" class="invalid-feedback d-block">{{ manuscriptError }}</div> }
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="s-cover">Cover letter <span class="text-muted">(optional, up to 5 MB)</span></label>
+        <input id="s-cover" type="file" class="form-control" accept=".pdf,.doc,.docx" (change)="onFile('coverLetter', $event)" [class.is-invalid]="!!coverError" />
+        @if (coverError) { <div class="invalid-feedback d-block">{{ coverError }}</div> }
+      </div>
+      <div class="col-12">
+        <label class="form-label" for="s-note">Note to the editor (optional)</label>
+        <textarea id="s-note" rows="3" class="form-control" formControlName="note"></textarea>
+      </div>
+      <div class="col-12">
+        <div class="form-check">
+          <input id="s-consent" type="checkbox" class="form-check-input" formControlName="consent" [class.is-invalid]="invalid('consent')" />
+          <label class="form-check-label" for="s-consent">
+            I declare that this is my original work, that it is not under consideration elsewhere, and that all authors agree to this submission. *
+          </label>
+        </div>
+      </div>
+
+      @if (error) {
+        <div class="col-12"><div class="alert alert-danger mb-0" role="alert">{{ error }}</div></div>
+      }
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary btn-lg" [disabled]="sending">
+          @if (sending) { <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Uploading… }
+          @else { Submit manuscript }
+        </button>
+        @if (sending) { <span class="ms-2 text-muted" role="status">Please keep this page open until it finishes.</span> }
+      </div>
+    </form>
+  }
+</section>

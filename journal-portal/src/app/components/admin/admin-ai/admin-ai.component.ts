@@ -27,6 +27,7 @@ export class AdminAiComponent implements OnInit {
     { key: 'summaries', label: 'AI summaries', help: 'Readers can generate a plain-language summary (cached after the first time).', cap: '40/day' },
     { key: 'translation', label: 'Hindi translation', help: 'Readers can switch an article\'s title, abstract and summary to Hindi.', cap: '40/day' },
     { key: 'chat', label: 'Ask this paper', help: 'Readers can ask questions answered from one article\'s pages.', cap: '200/day, 15 per visitor' },
+    { key: 'contactTriage', label: 'Contact message triage', help: 'Admins can ask AI to categorise a contact message and draft a reply (never sent automatically). Message text, which may include names and emails, goes to Google\'s Gemini API.', cap: '100/day' },
     { key: 'semanticSearch', label: 'Semantic search', help: 'Meaning-based search (needs article embeddings, below).', cap: '300/day, 40 per visitor' },
   ];
 

@@ -16,6 +16,13 @@
         "function": "getPdf"
       },
       {
+        "source": "/api/submit",
+        "function": {
+          "functionId": "submitManuscript",
+          "region": "us-central1"
+        }
+      },
+      {
         "source": "/article/**",
         "function": "articlePage"
       },
@@ -97,5 +104,17 @@
   },
   "storage": {
     "rules": "storage.rules"
+  },
+  "emulators": {
+    "firestore": {
+      "port": 8080
+    },
+    "storage": {
+      "port": 9199
+    },
+    "ui": {
+      "enabled": false
+    },
+    "singleProjectMode": false
   }
 }

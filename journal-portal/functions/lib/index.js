@@ -32,16 +32,27 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.embedArticles = exports.adminGenerateAi = exports.semanticSearch = exports.askPaper = exports.translateArticle = exports.summarizeArticle = exports.articlePage = exports.ingestIssue = exports.rssFeed = exports.sitemap = exports.getPdf = void 0;
+exports.submitManuscript = exports.onContactCreated = exports.triageContact = exports.rollupStatsNow = exports.scheduledStatsRollup = exports.embedArticles = exports.adminGenerateAi = exports.semanticSearch = exports.askPaper = exports.translateArticle = exports.summarizeArticle = exports.articlePage = exports.ingestIssue = exports.rssFeed = exports.sitemap = exports.getPdf = void 0;
 const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
+const scheduler_1 = require("firebase-functions/v2/scheduler");
+const firestore_1 = require("firebase-functions/v2/firestore");
+const busboy_1 = __importDefault(require("busboy"));
 const params_1 = require("firebase-functions/params");
 const run_1 = require("./ingest/run");
 const article_seo_1 = require("./article-seo");
 const service_1 = require("./ai/service");
 const pure_1 = require("./ai/pure");
+const stats_1 = require("./ops/stats");
+const submission_1 = require("./ops/submission");
+const email_1 = require("./ops/email");
+const service_2 = require("./ai/service");
+const pure_2 = require("./ai/pure");
 const article_page_1 = require("./article-page");
 admin.initializeApp();
 const SITE_ORIGIN = process.env.SITEMAP_SITE_ORIGIN || 'https://ijdrpub.in';
@@ -483,6 +494,185 @@ exports.embedArticles = (0, https_1.onCall)({ secrets: [GEMINI_API_KEY], timeout
     }
     catch (e) {
         throw toHttps(e);
+    }
+});
+// ---------------------------------------------------------------------------
+// Admin tooling, submissions and notifications (Phase 7)
+// ---------------------------------------------------------------------------
+const RESEND_API_KEY = (0, params_1.defineSecret)('RESEND_API_KEY');
+/** Where notification emails go (empty = notifications off). Set in functions/.env. */
+const NOTIFY_EMAIL_TO = (0, params_1.defineString)('NOTIFY_EMAIL_TO', { default: '' });
+const NOTIFY_EMAIL_FROM = (0, params_1.defineString)('NOTIFY_EMAIL_FROM', { default: 'IJDR <onboarding@resend.dev>' });
+async function snapshotStats(date) {
+    const db = admin.firestore();
+    const [journals, articles, contacts, subs, ai] = await Promise.all([
+        db.collection('journals').select('title', 'viewCount').get(),
+        db.collection('articles').select('title', 'viewCount', 'status').get(),
+        db.collection('contactSubmissions').count().get(),
+        db.collection('submissions').count().get(),
+        db.doc(`aiStats/${date}`).get(),
+    ]);
+    const stats = (0, stats_1.buildDailyStats)({
+        date,
+        journals: journals.docs.map((d) => ({ id: d.id, title: String(d.get('title') ?? ''), viewCount: d.get('viewCount') })),
+        articles: articles.docs.map((d) => ({ id: d.id, title: String(d.get('title') ?? ''), viewCount: d.get('viewCount'), status: d.get('status') })),
+        contacts: contacts.data().count,
+        submissions: subs.data().count,
+        ai: (ai.data() ?? {}),
+    });
+    await db.doc(`statsDaily/${date}`).set({ ...stats, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+    return stats;
+}
+/** End-of-day snapshot of the cumulative counters, labelled with the day that just ended. */
+exports.scheduledStatsRollup = (0, scheduler_1.onSchedule)({ schedule: '10 0 * * *', timeZone: 'UTC', memory: '256MiB' }, async () => {
+    await snapshotStats((0, stats_1.yesterday)());
+});
+/** Admin: take a snapshot for today now (so the dashboard has data before the first scheduled run). */
+exports.rollupStatsNow = (0, https_1.onCall)({ memory: '256MiB' }, async (r) => {
+    if (!isAdminCall(r))
+        throw new https_1.HttpsError('permission-denied', 'Admins only.');
+    const s = await snapshotStats((0, pure_2.dayKey)());
+    return { date: s.date };
+});
+/** Admin: classify a contact message and draft a reply (stored on the message; never sent). */
+exports.triageContact = (0, https_1.onCall)({ secrets: [GEMINI_API_KEY], timeoutSeconds: 90, memory: '512MiB', maxInstances: 2 }, async (r) => {
+    if (!isAdminCall(r))
+        throw new https_1.HttpsError('permission-denied', 'Admins only.');
+    try {
+        const ctx = aiCtx();
+        if (!(await (0, service_1.readAiSettings)(ctx.db)).contactTriage) {
+            throw new https_1.HttpsError('failed-precondition', 'Message triage is switched off (Admin > AI).');
+        }
+        const id = r.data?.id;
+        if (typeof id !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(id)) {
+            throw new https_1.HttpsError('invalid-argument', 'Message id is required.');
+        }
+        await (0, service_1.consume)(ctx.db, 'contactTriage', 'admin', { enforce: true });
+        return await (0, service_2.triageMessage)(ctx, id);
+    }
+    catch (e) {
+        throw toHttps(e);
+    }
+});
+/** Email the editorial office when a contact message arrives (only when NOTIFY_EMAIL_TO is set). */
+exports.onContactCreated = (0, firestore_1.onDocumentCreated)({ document: 'contactSubmissions/{id}', secrets: [RESEND_API_KEY], memory: '256MiB' }, async (event) => {
+    const to = NOTIFY_EMAIL_TO.value();
+    const d = event.data?.data();
+    if (!to || !d)
+        return;
+    await (0, email_1.sendEmail)(RESEND_API_KEY.value(), (0, email_1.buildContactEmail)({ name: String(d['name'] ?? ''), email: String(d['email'] ?? ''), message: String(d['message'] ?? '') }, NOTIFY_EMAIL_FROM.value(), to, `${SITE_ORIGIN}/admin`));
+});
+const SUBMISSION_ORIGINS = ['https://ijdrpub.in', 'https://www.ijdrpub.in', 'https://ijdr-e41d4.web.app', 'http://localhost:4200'];
+const MAX_SUBMISSIONS_PER_VISITOR_DAY = 3;
+const MAX_SUBMISSIONS_PER_DAY = 30;
+/**
+ * Manuscript submissions (multipart POST, same-origin via the /api/submit rewrite). Requires an
+ * App Check token. Files are validated (type, size, real signature) and stored privately under
+ * submissions/{id}/; the record is created with the Admin SDK, so clients can never write it.
+ */
+exports.submitManuscript = (0, https_1.onRequest)({ secrets: [RESEND_API_KEY], timeoutSeconds: 300, memory: '1GiB', maxInstances: 5, cors: SUBMISSION_ORIGINS }, async (req, res) => {
+    const fail = (status, message) => {
+        res.status(status).json({ error: Array.isArray(message) ? message.join(' ') : message });
+    };
+    if (req.method !== 'POST')
+        return fail(405, 'Method not allowed.');
+    if (!String(req.headers['content-type'] ?? '').startsWith('multipart/form-data'))
+        return fail(400, 'Expected a form upload.');
+    try {
+        const token = req.header('X-Firebase-AppCheck');
+        if (!token)
+            return fail(401, 'Could not verify this browser. Reload the page and try again.');
+        try {
+            await admin.appCheck().verifyToken(token);
+        }
+        catch {
+            return fail(401, 'Could not verify this browser. Reload the page and try again.');
+        }
+        const db = admin.firestore();
+        const day = (0, pure_2.dayKey)();
+        const visitor = (0, pure_1.visitorKey)(req.ip, process.env['GCLOUD_PROJECT'] ?? 'ijdr');
+        const vRef = db.doc(`submissionLimits/${day}_${visitor}`);
+        const allRef = db.doc(`submissionLimits/${day}_all`);
+        const allowed = await db.runTransaction(async (tx) => {
+            const [v, all] = await Promise.all([tx.get(vRef), tx.get(allRef)]);
+            const mine = v.data()?.['count'] ?? 0;
+            const total = all.data()?.['count'] ?? 0;
+            if (mine >= MAX_SUBMISSIONS_PER_VISITOR_DAY || total >= MAX_SUBMISSIONS_PER_DAY)
+                return false;
+            tx.set(vRef, { count: mine + 1 }, { merge: true });
+            tx.set(allRef, { count: total + 1 }, { merge: true });
+            return true;
+        });
+        if (!allowed)
+            return fail(429, 'The daily submission limit was reached. Please try again tomorrow or email the editor.');
+        const fields = {};
+        const files = {};
+        await new Promise((resolve, reject) => {
+            const bb = (0, busboy_1.default)({ headers: req.headers, limits: { files: 2, fileSize: 15 * 1024 * 1024 + 1, fields: 20, fieldSize: 10_000 } });
+            bb.on('field', (name, value) => {
+                fields[name] = value;
+            });
+            bb.on('file', (name, stream, info) => {
+                if (name !== 'manuscript' && name !== 'coverLetter') {
+                    stream.resume();
+                    return;
+                }
+                const chunks = [];
+                let truncated = false;
+                stream.on('data', (c) => chunks.push(c));
+                stream.on('limit', () => (truncated = true));
+                stream.on('end', () => {
+                    files[name] = { name: info.filename ?? 'file', data: Buffer.concat(chunks), truncated };
+                });
+            });
+            bb.on('error', reject);
+            bb.on('close', resolve);
+            bb.end(req.rawBody);
+        });
+        const parsed = (0, submission_1.validateSubmissionFields)(fields);
+        const errors = parsed.ok ? [] : [...parsed.errors];
+        const stored = [];
+        const id = db.collection('submissions').doc().id;
+        const toStore = [];
+        if (!files['manuscript'])
+            errors.push('The manuscript file is required.');
+        for (const kind of ['manuscript', 'coverLetter']) {
+            const f = files[kind];
+            if (!f)
+                continue;
+            const v = f.truncated ? { ok: false, error: `The ${kind === 'manuscript' ? 'manuscript' : 'cover letter'} file is too large.` } : (0, submission_1.validateFile)(kind, f.name, f.data);
+            if (!v.ok)
+                errors.push(v.error);
+            else
+                toStore.push({ kind, ext: v.ext, contentType: v.contentType, data: f.data, name: (0, submission_1.safeDisplayName)(f.name) });
+        }
+        if (errors.length || !parsed.ok)
+            return fail(400, errors);
+        const bucket = admin.storage().bucket();
+        for (const f of toStore) {
+            const path = `submissions/${id}/${f.kind}.${f.ext}`;
+            await bucket.file(path).save(f.data, { contentType: f.contentType, resumable: false });
+            stored.push({ kind: f.kind, path, name: f.name, size: f.data.length, contentType: f.contentType });
+        }
+        const now = admin.firestore.Timestamp.now();
+        await db.doc(`submissions/${id}`).set({
+            ...parsed.value,
+            status: 'received',
+            files: stored,
+            history: [{ status: 'received', at: now, by: 'system' }],
+            notes: [],
+            createdAt: now,
+            updatedAt: now,
+        });
+        const to = NOTIFY_EMAIL_TO.value();
+        if (to) {
+            await (0, email_1.sendEmail)(RESEND_API_KEY.value(), (0, email_1.buildSubmissionEmail)({ id, name: parsed.value.name, email: parsed.value.email, affiliation: parsed.value.affiliation, title: parsed.value.title, keywords: parsed.value.keywords, files: stored }, NOTIFY_EMAIL_FROM.value(), to, `${SITE_ORIGIN}/admin`));
+        }
+        res.status(200).json({ id });
+    }
+    catch (e) {
+        console.error('submitManuscript error', e);
+        fail(500, 'Something went wrong while saving your submission. Please try again or email the editor.');
     }
 });
 //# sourceMappingURL=index.js.map

@@ -1,44 +1,57 @@
 <div class="messages-panel">
   <h2 class="mb-3">Contact messages</h2>
-  <p class="text-muted small mb-4">
-    Submissions from the website contact form (Firestore). Mark as read when handled.
+  <p class="text-muted small mb-3">
+    Messages from the website contact form. Mark them handled when you have replied.
+    @if (triageOn) { AI triage is on: drafts are suggestions only and are never sent automatically. }
   </p>
 
-  <div *ngIf="loading" class="text-center py-4">
-    <div class="spinner-border text-primary" role="status"></div>
+  <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+    <div class="btn-group btn-group-sm" role="group" aria-label="Filter messages">
+      <button type="button" class="btn" [class.btn-primary]="filter === 'new'" [class.btn-outline-primary]="filter !== 'new'" (click)="filter = 'new'">New ({{ count('new') }})</button>
+      <button type="button" class="btn" [class.btn-primary]="filter === 'handled'" [class.btn-outline-primary]="filter !== 'handled'" (click)="filter = 'handled'">Handled ({{ count('handled') }})</button>
+      <button type="button" class="btn" [class.btn-primary]="filter === 'all'" [class.btn-outline-primary]="filter !== 'all'" (click)="filter = 'all'">All ({{ messages.length }})</button>
+    </div>
+    <label class="visually-hidden" for="msg-q">Search messages</label>
+    <input id="msg-q" type="search" class="form-control form-control-sm w-auto" placeholder="Search name, email, text" [(ngModel)]="q" />
   </div>
 
-  <div *ngIf="!loading && messages.length === 0" class="alert alert-secondary">
-    No messages yet.
-  </div>
+  <div *ngIf="loading" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>
+  <div *ngIf="!loading && shown.length === 0" class="alert alert-secondary">No messages{{ messages.length ? ' match this filter' : ' yet' }}.</div>
 
-  <div *ngIf="!loading && messages.length > 0" class="list-group">
-    <div
-      *ngFor="let m of messages"
-      class="list-group-item"
-      [class.list-group-item-light]="m.read"
-    >
+  <div *ngIf="!loading && shown.length > 0" class="list-group">
+    <div *ngFor="let m of shown" class="list-group-item" [class.list-group-item-light]="status(m) === 'handled'">
       <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
         <div>
           <strong>{{ m.name }}</strong>
-          <span class="text-muted ms-2">&lt;{{ m.email }}&gt;</span>
+          <a class="text-muted ms-2" [href]="'mailto:' + m.email">&lt;{{ m.email }}&gt;</a>
         </div>
-        <div class="d-flex align-items-center gap-2">
-          <small class="text-muted" *ngIf="m.createdAt?.toDate">{{
-            m.createdAt!.toDate() | date : 'medium'
-          }}</small>
-          <span class="badge bg-secondary" *ngIf="m.read">Read</span>
-          <button
-            *ngIf="!m.read"
-            type="button"
-            class="btn btn-sm btn-outline-primary"
-            (click)="markRead(m)"
-          >
-            Mark read
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <small class="text-muted" *ngIf="m.createdAt?.toDate">{{ m.createdAt!.toDate() | date: 'medium' }}</small>
+          <span class="badge" [class.bg-secondary]="status(m) === 'handled'" [class.bg-primary]="status(m) === 'new'">{{ status(m) === 'handled' ? 'Handled' : 'New' }}</span>
+          <button *ngIf="triageOn && !m.triage" type="button" class="btn btn-sm btn-outline-secondary" (click)="triage(m)" [disabled]="triaging.has(m.id)">
+            {{ triaging.has(m.id) ? 'Analysing…' : 'AI triage' }}
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="toggleHandled(m)">
+            {{ status(m) === 'handled' ? 'Reopen' : 'Mark handled' }}
           </button>
         </div>
       </div>
       <p class="mb-0 mt-2 small message-body">{{ m.message }}</p>
+
+      <div *ngIf="m.triage as t" class="triage mt-3 p-2 border rounded small">
+        <div class="mb-1">
+          <span class="badge text-bg-info">AI</span>
+          <strong class="ms-2">{{ t.category }}</strong>
+          <span class="badge ms-2" [class.text-bg-danger]="t.priority === 'high'" [class.text-bg-secondary]="t.priority !== 'high'">{{ t.priority }} priority</span>
+        </div>
+        <div>{{ t.summary }}</div>
+        <details *ngIf="t.replyDraft" class="mt-1">
+          <summary>Suggested reply (not sent)</summary>
+          <p class="message-body mb-1 mt-1">{{ t.replyDraft }}</p>
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="copyDraft(m)">Copy draft</button>
+        </details>
+        <div class="text-muted mt-1">AI-generated; check before using.</div>
+      </div>
     </div>
   </div>
 </div>

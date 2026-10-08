@@ -21,6 +21,7 @@ import { Observable, shareReplay } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { iArticle, iJournal } from '../type/journals.type';
 import { buildSearchTokens, normalizeKeywords } from '../utils/article-search.util';
+import { AuditService } from './audit.service';
 
 /** Fields the admin edits; everything else is derived by the service. */
 export type ArticleInput = Pick<
@@ -111,6 +112,7 @@ export function rankRelated(article: iArticle, candidates: iArticle[], max: numb
 @Injectable({ providedIn: 'root' })
 export class ArticleService {
   private firestore = inject(Firestore);
+  private audit = inject(AuditService);
 
   private col() {
     return collection(this.firestore, 'articles');
@@ -252,6 +254,12 @@ export class ArticleService {
       updatedAt: Timestamp.now(),
     });
     await this.refreshIssueSummary(article.issueId);
+    await this.audit.log({
+      action: status === 'published' ? 'article.publish' : 'article.unpublish',
+      targetType: 'article',
+      targetId: article.id,
+      title: article.title,
+    });
   }
 
   /** Set the status of several articles at once (review screen: publish accepted). */
@@ -265,6 +273,13 @@ export class ArticleService {
     }
     if (articles.length) {
       await this.refreshIssueSummary(articles[0].issueId);
+      await this.audit.log({
+        action: status === 'published' ? 'article.publish' : 'article.unpublish',
+        targetType: 'article',
+        targetId: articles[0].id,
+        title: `${articles.length} articles`,
+        detail: 'bulk',
+      });
     }
   }
 
@@ -278,6 +293,13 @@ export class ArticleService {
     }
     if (articles.length) {
       await this.refreshIssueSummary(articles[0].issueId);
+      await this.audit.log({
+        action: 'article.delete',
+        targetType: 'article',
+        targetId: articles[0].id,
+        title: `${articles.length} drafts`,
+        detail: 'bulk reject',
+      });
     }
   }
 
@@ -286,6 +308,7 @@ export class ArticleService {
     batch.delete(doc(this.firestore, 'articles', article.id));
     await batch.commit();
     await this.refreshIssueSummary(article.issueId);
+    await this.audit.log({ action: 'article.delete', targetType: 'article', targetId: article.id, title: article.title });
   }
 
   /** Persist a new order (`articles` is already in the desired sequence). */

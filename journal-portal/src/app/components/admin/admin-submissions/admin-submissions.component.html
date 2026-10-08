@@ -1,0 +1,95 @@
+<div class="card">
+  <div class="card-body">
+    <h2 class="h4 mb-1">Manuscript submissions</h2>
+    <p class="text-muted small">
+      Received through the online form. Files are private to admins. Nothing here is sent to AI tools.
+    </p>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+      <div class="btn-group btn-group-sm" role="group" aria-label="Filter by status">
+        <button type="button" class="btn" [class.btn-primary]="filter === 'all'" [class.btn-outline-primary]="filter !== 'all'" (click)="filter = 'all'">All ({{ all.length }})</button>
+        @for (s of statuses; track s[0]) {
+          <button type="button" class="btn" [class.btn-primary]="filter === s[0]" [class.btn-outline-primary]="filter !== s[0]" (click)="filter = s[0]">
+            {{ s[1] }} ({{ count(s[0]) }})
+          </button>
+        }
+      </div>
+      <label class="visually-hidden" for="sub-q">Search submissions</label>
+      <input id="sub-q" type="search" class="form-control form-control-sm w-auto" placeholder="Search title, author, keyword" [(ngModel)]="q" />
+    </div>
+
+    @if (loading) {
+      <p>Loading…</p>
+    } @else if (failed) {
+      <div class="alert alert-warning">Could not load submissions.</div>
+    } @else if (!shown.length) {
+      <p class="text-muted">No submissions{{ all.length ? ' match this filter' : ' yet' }}.</p>
+    }
+
+    @for (s of shown; track s.id) {
+      <div class="border rounded mb-2">
+        <button type="button" class="btn w-100 text-start d-flex justify-content-between gap-3 align-items-start p-3" (click)="toggle(s)"
+          [attr.aria-expanded]="openId === s.id">
+          <span>
+            <strong>{{ s.title }}</strong><br />
+            <small class="text-muted">{{ s.name }} · {{ s.affiliation }} · {{ s.createdAt?.toDate?.() | date: 'mediumDate' }}</small>
+          </span>
+          <span class="badge" [ngClass]="{
+            'text-bg-secondary': s.status === 'received', 'text-bg-info': s.status === 'under_review',
+            'text-bg-warning': s.status === 'revision', 'text-bg-success': s.status === 'accepted', 'text-bg-danger': s.status === 'rejected' }">
+            {{ labels[s.status] }}
+          </span>
+        </button>
+
+        @if (openId === s.id) {
+          <div class="p-3 border-top">
+            <dl class="row small mb-3">
+              <dt class="col-sm-3">Author</dt><dd class="col-sm-9">{{ s.name }} &lt;<a [href]="'mailto:' + s.email">{{ s.email }}</a>&gt;@if (s.phone) { · {{ s.phone }} }</dd>
+              <dt class="col-sm-3">Keywords</dt><dd class="col-sm-9">{{ s.keywords.join(', ') }}</dd>
+              <dt class="col-sm-3">Reference</dt><dd class="col-sm-9"><code>{{ s.id }}</code></dd>
+              @if (s.note) { <dt class="col-sm-3">Note</dt><dd class="col-sm-9">{{ s.note }}</dd> }
+            </dl>
+            <h3 class="h6">Abstract</h3>
+            <p class="small" style="white-space: pre-line">{{ s.abstract }}</p>
+
+            <h3 class="h6">Files</h3>
+            <ul class="list-unstyled small">
+              @for (f of s.files; track f.path) {
+                <li>
+                  <button type="button" class="btn btn-sm btn-outline-secondary me-2" (click)="download(f)">
+                    <i class="bi bi-download me-1" aria-hidden="true"></i>{{ f.kind === 'manuscript' ? 'Manuscript' : 'Cover letter' }}
+                  </button>{{ f.name }} ({{ size(f.size) }})
+                </li>
+              }
+            </ul>
+
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+              <label class="form-label mb-0" [for]="'st-' + s.id">Status</label>
+              <select [id]="'st-' + s.id" class="form-select form-select-sm w-auto" [ngModel]="s.status" [disabled]="busy"
+                (ngModelChange)="setStatus(s, $event)">
+                @for (st of statuses; track st[0]) { <option [value]="st[0]">{{ st[1] }}</option> }
+              </select>
+            </div>
+
+            <h3 class="h6">Internal notes</h3>
+            @for (n of s.notes; track $index) {
+              <p class="small mb-1"><span class="text-muted">{{ n.at?.toDate?.() | date: 'short' }} · {{ n.by }}:</span> {{ n.text }}</p>
+            }
+            <form class="d-flex gap-2 mt-2" (ngSubmit)="addNote(s)">
+              <label class="visually-hidden" [for]="'nt-' + s.id">Add a note</label>
+              <input [id]="'nt-' + s.id" class="form-control form-control-sm" name="note" [(ngModel)]="noteDraft" placeholder="Add a note (visible to admins only)" maxlength="2000" />
+              <button type="submit" class="btn btn-sm btn-outline-primary" [disabled]="!noteDraft.trim()">Add</button>
+            </form>
+
+            <h3 class="h6 mt-3">History</h3>
+            <ul class="small text-muted mb-0">
+              @for (h of s.history; track $index) {
+                <li>{{ h.at?.toDate?.() | date: 'medium' }}: {{ labels[h.status] }} ({{ h.by }})</li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

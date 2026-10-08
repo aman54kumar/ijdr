@@ -94,6 +94,28 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // Manuscript submissions are created by the submitManuscript function (Admin SDK) only;
+    // clients can never write them. Admins read them and move them through the workflow.
+    match /submissions/{id} {
+      allow read, update: if isAdmin();
+      allow create, delete: if false;
+    }
+
+    // Append-only record of admin actions: admins create entries (as themselves) and read them.
+    match /auditLog/{id} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+        && request.resource.data.actorUid == request.auth.uid
+        && request.resource.data.action is string
+        && request.resource.data.at is timestamp;
+      allow update, delete: if false;
+    }
+
+    // Daily rollups are written by a scheduled function.
+    match /statsDaily/{day} {
+      allow read: if isAdmin();
+    }
+
     match /siteSettings/{docId} {
       allow read: if true;
       allow write: if isAdmin();

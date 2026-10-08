@@ -10,6 +10,7 @@ exports.generateTranslation = generateTranslation;
 exports.answerQuestion = answerQuestion;
 exports.embedAndRelate = embedAndRelate;
 exports.semanticSearch = semanticSearch;
+exports.triageMessage = triageMessage;
 const genai_1 = require("@google/genai");
 const firestore_1 = require("firebase-admin/firestore");
 const pdf_lib_1 = require("pdf-lib");
@@ -26,6 +27,7 @@ exports.LIMITS = {
     translation: { perVisitor: 6, daily: 40 },
     chat: { perVisitor: 15, daily: 200 },
     semanticSearch: { perVisitor: 40, daily: 300 },
+    contactTriage: { perVisitor: 1000, daily: 100 },
 };
 const model = (c) => c.model || run_1.DEFAULT_GEMINI_MODEL;
 async function readAiSettings(db) {
@@ -279,5 +281,24 @@ async function semanticSearch(c, query) {
         }
     });
     return hits;
+}
+// ---- Contact triage (admin only) -----------------------------------------
+async function triageMessage(c, id) {
+    const ref = c.db.doc(`contactSubmissions/${id}`);
+    const snap = await ref.get();
+    const d = snap.data();
+    if (!d)
+        throw new run_1.IngestError('not-found', 'Message not found.');
+    const message = String(d['message'] ?? '').slice(0, 4000);
+    const raw = await generateJson(c, [{ text: `${ai_1.TRIAGE_PROMPT}\n\nSender name (data): ${String(d['name'] ?? '').slice(0, 200)}\nMessage (data):\n\"\"\"${message}\"\"\"` }], ai_1.TRIAGE_SCHEMA, 900);
+    let t;
+    try {
+        t = (0, pure_1.validateTriage)(raw);
+    }
+    catch {
+        throw new run_1.IngestError('internal', 'The AI could not triage this message.');
+    }
+    await ref.update({ triage: { ...t, model: model(c), promptVersion: ai_1.AI_PROMPT_VERSION, generatedAt: firestore_1.FieldValue.serverTimestamp() } });
+    return t;
 }
 //# sourceMappingURL=service.js.map

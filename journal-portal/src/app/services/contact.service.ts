@@ -18,8 +18,20 @@ export interface ContactSubmission {
   email: string;
   message: string;
   read: boolean;
+  /** Missing on older messages: derived from `read`. */
+  status?: 'new' | 'handled';
+  triage?: {
+    category: string;
+    priority: 'low' | 'normal' | 'high';
+    summary: string;
+    replyDraft: string;
+    model?: string;
+  };
   createdAt: Timestamp;
 }
+
+export const contactStatus = (m: Pick<ContactSubmission, 'status' | 'read'>): 'new' | 'handled' =>
+  m.status ?? (m.read ? 'handled' : 'new');
 
 @Injectable({
   providedIn: 'root',
@@ -49,8 +61,13 @@ export class ContactService {
   }
 
   async markAsRead(id: string): Promise<void> {
+    await this.setStatus(id, 'handled');
+  }
+
+  async setStatus(id: string, status: 'new' | 'handled'): Promise<void> {
     await updateDoc(doc(this.firestore, 'contactSubmissions', id), {
-      read: true,
+      status,
+      read: status === 'handled',
     });
   }
 }

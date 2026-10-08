@@ -7,8 +7,8 @@ const node_test_1 = __importDefault(require("node:test"));
 const strict_1 = __importDefault(require("node:assert/strict"));
 const pure_1 = require("./pure");
 (0, node_test_1.default)('kill switches default to off', () => {
-    strict_1.default.deepEqual((0, pure_1.parseAiSettings)(undefined), { summaries: false, translation: false, chat: false, semanticSearch: false });
-    strict_1.default.deepEqual((0, pure_1.parseAiSettings)({ chat: true, summaries: 'yes' }), { summaries: false, translation: false, chat: true, semanticSearch: false });
+    strict_1.default.deepEqual((0, pure_1.parseAiSettings)(undefined), { summaries: false, translation: false, chat: false, semanticSearch: false, contactTriage: false });
+    strict_1.default.deepEqual((0, pure_1.parseAiSettings)({ chat: true, summaries: 'yes' }), { summaries: false, translation: false, chat: true, semanticSearch: false, contactTriage: false });
 });
 (0, node_test_1.default)('day and visitor keys', () => {
     strict_1.default.equal((0, pure_1.dayKey)(new Date('2026-10-07T23:59:59Z')), '2026-10-07');
@@ -52,5 +52,14 @@ const pure_1 = require("./pure");
 (0, node_test_1.default)('embedding text', () => {
     strict_1.default.equal((0, pure_1.embeddingText)({ title: 'T', abstract: 'A', keywords: ['k1', 'k2'] }), 'T\n\nA\n\nk1, k2');
     strict_1.default.equal((0, pure_1.embeddingText)({ title: 'T' }), 'T');
+});
+(0, node_test_1.default)('triage validation falls back safely', () => {
+    const t = (0, pure_1.validateTriage)({ category: 'Complaint', priority: 'high', summary: ' Angry ', replyDraft: 'Dear...' });
+    strict_1.default.deepEqual(t, { category: 'Complaint', priority: 'high', summary: 'Angry', replyDraft: 'Dear...' });
+    const odd = (0, pure_1.validateTriage)({ category: 'Made up', priority: 'urgent!!', summary: 's' });
+    strict_1.default.equal(odd.category, 'General inquiry');
+    strict_1.default.equal(odd.priority, 'normal');
+    strict_1.default.equal(odd.replyDraft, '');
+    strict_1.default.throws(() => (0, pure_1.validateTriage)({ summary: '' }));
 });
 //# sourceMappingURL=ai.test.js.map

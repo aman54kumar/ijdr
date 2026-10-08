@@ -11,6 +11,12 @@ service firebase.storage {
       allow write, delete: if isAdmin();
     }
 
+    // Manuscripts: written only by the submitManuscript function; admins may read.
+    match /submissions/{path=**} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     match /boardMembers/{path=**} {
       allow read: if true;
       allow write, delete: if isAdmin();

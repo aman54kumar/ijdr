@@ -6,6 +6,8 @@ export interface AiSettings {
   translation: boolean;
   chat: boolean;
   semanticSearch: boolean;
+  /** Admin-only triage of contact messages (sends message text to Gemini). */
+  contactTriage: boolean;
 }
 
 export type AiFeature = keyof AiSettings;
@@ -18,6 +20,7 @@ export function parseAiSettings(raw: unknown): AiSettings {
     translation: r['translation'] === true,
     chat: r['chat'] === true,
     semanticSearch: r['semanticSearch'] === true,
+    contactTriage: r['contactTriage'] === true,
   };
 }
 
@@ -119,4 +122,26 @@ export function topK(
 /** Text embedded for an article: title, abstract and keywords. */
 export function embeddingText(a: { title: string; abstract?: string; keywords?: string[] }): string {
   return [a.title, a.abstract ?? '', (a.keywords ?? []).join(', ')].filter(Boolean).join('\n\n').slice(0, 6000);
+}
+
+export const TRIAGE_CATEGORIES = ['General inquiry', 'Submission question', 'Technical issue', 'Partnership or advertising', 'Complaint', 'Spam or irrelevant'] as const;
+
+export interface Triage {
+  category: (typeof TRIAGE_CATEGORIES)[number];
+  priority: 'low' | 'normal' | 'high';
+  summary: string;
+  replyDraft: string;
+}
+
+/** Validate the model's triage JSON; anything off falls back to safe defaults so nothing odd is stored. */
+export function validateTriage(raw: unknown): Triage {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const category = (TRIAGE_CATEGORIES as readonly string[]).includes(r['category'] as string)
+    ? (r['category'] as Triage['category'])
+    : 'General inquiry';
+  const priority = r['priority'] === 'low' || r['priority'] === 'high' ? r['priority'] : 'normal';
+  const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+  const summary = str(r['summary'], 400);
+  if (!summary) throw new Error('empty-triage');
+  return { category, priority, summary, replyDraft: str(r['replyDraft'], 2000) };
 }

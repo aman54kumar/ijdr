@@ -146,6 +146,7 @@ export interface AiSettings {
   translation: boolean;
   chat: boolean;
   semanticSearch: boolean;
+  contactTriage: boolean;
 }
 
 /** `articles/{id}/ai/summary` */
@@ -179,4 +180,55 @@ export interface SemanticHit {
   authors: string[];
   issueYear: string;
   score: number;
+}
+
+export type SubmissionStatus = 'received' | 'under_review' | 'revision' | 'accepted' | 'rejected';
+
+export const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
+  received: 'Received',
+  under_review: 'Under review',
+  revision: 'Revision requested',
+  accepted: 'Accepted',
+  rejected: 'Rejected',
+};
+
+/** `submissions/{id}` (admin only; created by the submitManuscript function). */
+export interface Submission {
+  id: string;
+  name: string;
+  email: string;
+  affiliation: string;
+  phone?: string;
+  title: string;
+  abstract: string;
+  keywords: string[];
+  note?: string;
+  status: SubmissionStatus;
+  files: { kind: 'manuscript' | 'coverLetter'; path: string; name: string; size: number; contentType: string }[];
+  history: { status: SubmissionStatus; at: any; by: string }[];
+  notes: { text: string; at: any; by: string }[];
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+/** `auditLog/{id}` */
+export interface AuditEntry {
+  id?: string;
+  action: string; // e.g. article.publish, article.delete, issue.delete, submission.status
+  targetType: 'article' | 'issue' | 'submission';
+  targetId: string;
+  title?: string;
+  detail?: string;
+  actorUid: string;
+  actorEmail?: string;
+  at: any;
+}
+
+/** `statsDaily/{yyyy-mm-dd}` */
+export interface DailyStats {
+  date: string;
+  issues: Record<string, { title: string; views: number }>;
+  articles: Record<string, { title: string; views: number }>;
+  totals: { issueViews: number; articleViews: number; contacts: number; submissions: number; articlesPublished: number };
+  ai: Record<string, number>;
 }

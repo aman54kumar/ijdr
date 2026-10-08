@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  portal:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: journal-portal
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            journal-portal/package-lock.json
+            journal-portal/functions/package-lock.json
+      - uses: actions/setup-java@v4 # the Firestore/Storage emulators need Java
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - run: npm ci
+      - run: npm ci
+        working-directory: journal-portal/functions
+
+      # The real config files are gitignored; CI builds with placeholders.
+      - name: Create placeholder environment files
+        run: |
+          cp src/environments/firebase-config.example.ts src/environments/firebase-config.ts
+          for f in environment environment.development environment.prod; do
+            prod=false; [ "$f" = "environment.prod" ] && prod=true
+            printf "export const environment = {\n  production: %s,\n  recaptchaSiteKey: '',\n  siteUrl: 'https://example.test',\n};\n" "$prod" > "src/environments/$f.ts"
+          done
+
+      - name: Build app (production)
+        run: npm run build -- --configuration=production
+      - name: Unit tests (app)
+        run: npx ng test --watch=false --browsers=ChromeHeadlessCI
+      - name: Build and test functions
+        run: npm test
+        working-directory: journal-portal/functions
+      - run: npm install -g firebase-tools
+      - name: Firestore and Storage rules tests (emulator)
+        run: npm run test:rules

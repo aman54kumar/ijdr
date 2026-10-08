@@ -3,12 +3,12 @@ import type { Bucket } from '@google-cloud/storage';
 import { FieldValue, type Firestore } from 'firebase-admin/firestore';
 import { PDFDocument } from 'pdf-lib';
 import {
-  AI_PROMPT_VERSION, CHAT_PROMPT, CHAT_SCHEMA, SUMMARY_PROMPT, SUMMARY_SCHEMA, TRANSLATE_PROMPT, TRANSLATE_SCHEMA,
+  AI_PROMPT_VERSION, CHAT_PROMPT, CHAT_SCHEMA, SUMMARY_PROMPT, SUMMARY_SCHEMA, TRANSLATE_PROMPT, TRANSLATE_SCHEMA, TRIAGE_PROMPT, TRIAGE_SCHEMA,
 } from '../prompts/ai';
 import { DEFAULT_GEMINI_MODEL, IngestError, explainGeminiError, storagePath, withBackoff } from '../ingest/run';
 import {
   AiFeature, AiSettings, dayKey, embeddingText, parseAiSettings, topK, validateChat, validateSummary,
-  type ChatAnswer, type SummaryContent,
+  validateTriage, type ChatAnswer, type SummaryContent, type Triage,
 } from './pure';
 
 export const DEFAULT_EMBEDDING_MODEL = 'gemini-embedding-001';
@@ -22,6 +22,7 @@ export const LIMITS: Record<AiFeature, { perVisitor: number; daily: number }> = 
   translation: { perVisitor: 6, daily: 40 },
   chat: { perVisitor: 15, daily: 200 },
   semanticSearch: { perVisitor: 40, daily: 300 },
+  contactTriage: { perVisitor: 1000, daily: 100 },
 };
 
 export interface Ctx {
@@ -353,4 +354,28 @@ export async function semanticSearch(c: Ctx, query: string): Promise<SemanticHit
     }
   });
   return hits;
+}
+
+// ---- Contact triage (admin only) -----------------------------------------
+
+export async function triageMessage(c: Ctx, id: string): Promise<Triage> {
+  const ref = c.db.doc(`contactSubmissions/${id}`);
+  const snap = await ref.get();
+  const d = snap.data();
+  if (!d) throw new IngestError('not-found', 'Message not found.');
+  const message = String(d['message'] ?? '').slice(0, 4000);
+  const raw = await generateJson(
+    c,
+    [{ text: `${TRIAGE_PROMPT}\n\nSender name (data): ${String(d['name'] ?? '').slice(0, 200)}\nMessage (data):\n\"\"\"${message}\"\"\"` }],
+    TRIAGE_SCHEMA,
+    900
+  );
+  let t: Triage;
+  try {
+    t = validateTriage(raw);
+  } catch {
+    throw new IngestError('internal', 'The AI could not triage this message.');
+  }
+  await ref.update({ triage: { ...t, model: model(c), promptVersion: AI_PROMPT_VERSION, generatedAt: FieldValue.serverTimestamp() } });
+  return t;
 }

@@ -6,7 +6,7 @@ import { catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { AiSettings, AiSummary, AiTranslation, ChatReply, SemanticHit } from '../type/journals.type';
 
-export const AI_OFF: AiSettings = { summaries: false, translation: false, chat: false, semanticSearch: false };
+export const AI_OFF: AiSettings = { summaries: false, translation: false, chat: false, semanticSearch: false, contactTriage: false };
 
 /** Normalise `siteSettings/ai`: anything but `true` is off. */
 export function parseAiSettings(raw: unknown): AiSettings {
@@ -16,6 +16,7 @@ export function parseAiSettings(raw: unknown): AiSettings {
     translation: r['translation'] === true,
     chat: r['chat'] === true,
     semanticSearch: r['semanticSearch'] === true,
+    contactTriage: r['contactTriage'] === true,
   };
 }
 
@@ -104,6 +105,10 @@ export class AiService {
   }
 
   // ---- admin ----
+  async triageContact(id: string): Promise<void> {
+    await httpsCallable(this.functions, 'triageContact', { timeout: 90_000 })({ id });
+  }
+
   async adminGenerate(articleId: string, kind: 'summary' | 'translation'): Promise<void> {
     await httpsCallable(this.functions, 'adminGenerateAi', { timeout: 180_000 })({ articleId, kind });
   }

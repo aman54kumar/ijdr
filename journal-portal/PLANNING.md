@@ -15,7 +15,7 @@ Phased plan to modernize the IJDR portal (live at https://ijdrpub.in) in functio
 | 4 | Discovery: article pages, search, citations, SEO | Deployed |
 | 5 | AI reader features | Deployed with Phase 4 (App Check key set; AI switches are off until an admin enables them) |
 | 6 | Reader experience: PDF viewer, PWA, performance | Built (not deployed; Lighthouse, PWA install and CSP not yet checked on the live site) |
-| 7 | Admin dashboard, analytics, submissions | Not started |
+| 7 | Admin dashboard, analytics, submissions | Built (not deployed together with Phase 6; end-to-end submission, email and rollup not yet run live) |
 
 ## Ground rules (apply to every phase)
 
@@ -344,6 +344,15 @@ Also add `articleCount?: number` and `articlesStatus?: 'none'|'draft'|'published
 - A submitted manuscript is stored privately, visible only to admins, with a working status workflow.
 - Rules tests run in CI and cover each collection for anonymous / non-admin / admin.
 - Contact triage (if enabled) never sends anything automatically.
+
+**Notes/deviations (built):**
+- Decisions confirmed with the user: Resend for email (user stores `RESEND_API_KEY`), contact triage included but **off by default** (switch in Admin -> AI), **no Gemini pre-check of manuscripts** (unpublished manuscripts never go to AI), Phase 6 and 7 deployed together.
+- **Stats rollup:** `scheduledStatsRollup` (daily 00:10 UTC) writes `statsDaily/{yyyy-mm-dd}` (**deviation:** a flat collection, because `stats/daily/{date}` is not a valid Firestore document path). It stores cumulative per-issue and per-article view counters plus totals (published articles, contact messages, submissions, AI usage); daily views are differences between snapshots. `rollupStatsNow` (admin callable) takes a snapshot on demand. **Searches are not in the rollup**: they are only logged to Google Analytics (no PII), so the dashboard cannot show them. Insights shows two SVG sparklines, top issues/articles for the period, the existing all-time table, and the audit log.
+- **Contact inbox:** status new/handled (kept in sync with the old `read` flag, so existing messages still work), filter and search, optional AI triage (`triageContact`, admin-only, switch `siteSettings/ai.contactTriage`, 100/day) storing `triage {category, priority, summary, replyDraft}` on the message; the draft can be copied but is never sent. `onContactCreated` emails the office through Resend when `NOTIFY_EMAIL_TO` is set.
+- **Submissions:** `/contribute` has an online form (name, email, affiliation, title, abstract >= 100 chars, >= 2 keywords, manuscript PDF/DOC/DOCX <= 15 MB, optional cover letter <= 5 MB, declaration). **Design deviation from "signed upload":** a single multipart POST to the `submitManuscript` function (Hosting rewrite `/api/submit`) that verifies an App Check token, rate-limits (3/visitor/day, 30/day), checks file type, size and real file signature, stores files at `submissions/{id}/manuscript.ext` (Admin SDK) and creates `submissions/{id}`. This avoids IAM setup for signed URLs and cross-service Storage rules. Firestore rules: clients can never create or delete submissions; admins read and update. Storage rules: admins read, nobody writes from a client. Admin tab **Submissions**: status filter and search, details, file download, status workflow (received, under review, revision, accepted, rejected) with history, internal notes.
+- **Audit log:** `auditLog` (append-only; admin read; create only as yourself): article publish/unpublish/delete (single and bulk), issue delete, submission status changes. Written from the client after the action succeeds (best effort; a failed log write is only a console warning), so it is a convenience record, not a tamper-proof one.
+- **Ops:** `npm run test:rules` (15 emulator tests: every collection and storage path for anonymous / signed-in non-admin / admin), `.github/workflows/ci.yml` (app build + unit tests, functions tests, rules tests), billing alert checklist and Resend/secret steps in `DEPLOYMENT.md`, privacy policy sections 3B. `@firebase/rules-unit-testing@4` is pinned because v5 needs firebase 12.
+- Tests: 70 app specs, 18 function tests, 15 rules tests. **Not verified:** a real submission upload end to end (needs the deploy and an App Check token from a real browser), Resend delivery, the scheduled rollup, the admin Submissions/Insights/Messages screens against live data, and the CI workflow itself (never run on GitHub).
 
 ---
 

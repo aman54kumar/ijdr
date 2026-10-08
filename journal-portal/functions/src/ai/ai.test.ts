@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  cleanQuestion, cosine, dayKey, embeddingText, parseAiSettings, topK, validateChat, validateSummary, visitorKey,
+  cleanQuestion, validateTriage, cosine, dayKey, embeddingText, parseAiSettings, topK, validateChat, validateSummary, visitorKey,
 } from './pure';
 
 test('kill switches default to off', () => {
-  assert.deepEqual(parseAiSettings(undefined), { summaries: false, translation: false, chat: false, semanticSearch: false });
-  assert.deepEqual(parseAiSettings({ chat: true, summaries: 'yes' }), { summaries: false, translation: false, chat: true, semanticSearch: false });
+  assert.deepEqual(parseAiSettings(undefined), { summaries: false, translation: false, chat: false, semanticSearch: false, contactTriage: false });
+  assert.deepEqual(parseAiSettings({ chat: true, summaries: 'yes' }), { summaries: false, translation: false, chat: true, semanticSearch: false, contactTriage: false });
 });
 
 test('day and visitor keys', () => {
@@ -56,4 +56,14 @@ test('similarity ranking', () => {
 test('embedding text', () => {
   assert.equal(embeddingText({ title: 'T', abstract: 'A', keywords: ['k1', 'k2'] }), 'T\n\nA\n\nk1, k2');
   assert.equal(embeddingText({ title: 'T' }), 'T');
+});
+
+test('triage validation falls back safely', () => {
+  const t = validateTriage({ category: 'Complaint', priority: 'high', summary: ' Angry ', replyDraft: 'Dear...' });
+  assert.deepEqual(t, { category: 'Complaint', priority: 'high', summary: 'Angry', replyDraft: 'Dear...' });
+  const odd = validateTriage({ category: 'Made up', priority: 'urgent!!', summary: 's' });
+  assert.equal(odd.category, 'General inquiry');
+  assert.equal(odd.priority, 'normal');
+  assert.equal(odd.replyDraft, '');
+  assert.throws(() => validateTriage({ summary: '' }));
 });

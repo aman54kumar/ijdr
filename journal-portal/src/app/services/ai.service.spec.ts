@@ -2,12 +2,13 @@ import { aiErrorMessage, parseAiSettings } from './ai.service';
 
 describe('ai.service helpers', () => {
   it('treats missing or non-true settings as off', () => {
-    expect(parseAiSettings(undefined)).toEqual({ summaries: false, translation: false, chat: false, semanticSearch: false });
+    expect(parseAiSettings(undefined)).toEqual({ summaries: false, translation: false, chat: false, semanticSearch: false, contactTriage: false });
     expect(parseAiSettings({ chat: true, summaries: 'true', translation: 1 })).toEqual({
       summaries: false,
       translation: false,
       chat: true,
       semanticSearch: false,
+      contactTriage: false,
     });
   });
 
