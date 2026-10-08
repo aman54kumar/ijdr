@@ -11,6 +11,8 @@
       font-size: 1.5rem;
       font-weight: 600;
       margin: 0;
+      // The global h1 colour is forced with !important; the header is always dark blue.
+      color: #fff !important;
     }
 
     .admin-nav {
@@ -19,21 +21,24 @@
       flex-wrap: wrap;
       align-items: center;
 
+      // !important: global .btn-outline-* rules force a dark link colour that is
+      // unreadable on the dark blue header (Journals, View Site).
       .btn {
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        color: #fff !important;
         transition: all 0.3s ease;
 
-        &:hover {
-          background-color: rgba(255, 255, 255, 0.1);
-          border-color: rgba(255, 255, 255, 0.3);
-          color: white;
+        &:hover,
+        &:focus-visible {
+          background-color: rgba(255, 255, 255, 0.12);
+          border-color: rgba(255, 255, 255, 0.55);
+          color: #fff !important;
         }
 
         &.active {
-          background-color: rgba(255, 255, 255, 0.2);
-          border-color: rgba(255, 255, 255, 0.4);
-          color: white;
+          background-color: rgba(255, 255, 255, 0.22);
+          border-color: rgba(255, 255, 255, 0.6);
+          color: #fff !important;
         }
       }
 
