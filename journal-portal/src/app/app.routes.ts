@@ -1,23 +1,4 @@
 import { Routes } from '@angular/router';
-import { JournalsComponent } from './components/journals/journals.component';
-import { HomeComponent } from './components/home/home.component';
-import { AdminComponent } from './components/admin/admin.component';
-import { LoginComponent } from './components/auth/login/login.component';
-import { PageNotFoundComponent } from './components/page-not-found/page-not-found.component';
-import { EditorialBoardComponent } from './components/editorial-board/editorial-board.component';
-import { ContributeComponent } from './components/contribute/contribute.component';
-import { PdfViewerComponent } from './components/pdf-viewer/pdf-viewer.component';
-import { AboutComponent } from './components/about/about.component';
-import { AdvisoryBoardComponent } from './components/advisory-board/advisory-board.component';
-import { PublisherComponent } from './components/publisher/publisher.component';
-import { ContactComponent } from './components/contact/contact.component';
-import { PrivacyPolicyComponent } from './components/legal/privacy-policy/privacy-policy.component';
-import { TermsOfServiceComponent } from './components/legal/terms-of-service/terms-of-service.component';
-import { CopyrightComponent } from './components/legal/copyright/copyright.component';
-import { OpenAccessComponent } from './components/legal/open-access/open-access.component';
-import { AccessibilityComponent } from './components/legal/accessibility/accessibility.component';
-import { ArticlesComponent } from './components/articles/articles.component';
-import { ArticleDetailComponent } from './components/article-detail/article-detail.component';
 import { AuthGuard } from './guards/auth.guard';
 import { DEFAULT_SEO, RouteSeoData } from './route-seo.data';
 
@@ -28,30 +9,30 @@ const seo = (
 });
 
 export const routes: Routes = [
-  { path: '', component: HomeComponent, data: seo({ title: DEFAULT_SEO.title }) },
+  { path: '', loadComponent: () => import('./components/home/home.component').then((m) => m.HomeComponent), data: seo({ title: DEFAULT_SEO.title }) },
   {
     path: 'journals',
-    component: JournalsComponent,
+    loadComponent: () => import('./components/journals/journals.component').then((m) => m.JournalsComponent),
     data: seo({
       title: 'Journal issues | IJDR',
       description:
         'Browse volumes and issues of the Indian Journal of Development Research. View and download peer-reviewed journal PDFs.',
     }),
   },
-  { path: 'journal/:id', component: PdfViewerComponent },
+  { path: 'journal/:id', loadComponent: () => import('./components/pdf-viewer/pdf-viewer.component').then((m) => m.PdfViewerComponent) },
   {
     path: 'articles',
-    component: ArticlesComponent,
+    loadComponent: () => import('./components/articles/articles.component').then((m) => m.ArticlesComponent),
     data: seo({
       title: 'Articles | IJDR',
       description:
         'Browse research articles from the Indian Journal of Development Research by year, issue, author, keyword and subject.',
     }),
   },
-  { path: 'article/:id', component: ArticleDetailComponent },
+  { path: 'article/:id', loadComponent: () => import('./components/article-detail/article-detail.component').then((m) => m.ArticleDetailComponent) },
   {
     path: 'about',
-    component: AboutComponent,
+    loadComponent: () => import('./components/about/about.component').then((m) => m.AboutComponent),
     data: seo({
       title: 'About IJDR',
       description:
@@ -60,7 +41,7 @@ export const routes: Routes = [
   },
   {
     path: 'editorial-board',
-    component: EditorialBoardComponent,
+    loadComponent: () => import('./components/editorial-board/editorial-board.component').then((m) => m.EditorialBoardComponent),
     data: seo({
       title: 'Editorial board | IJDR',
       description:
@@ -69,7 +50,7 @@ export const routes: Routes = [
   },
   {
     path: 'advisory-board',
-    component: AdvisoryBoardComponent,
+    loadComponent: () => import('./components/advisory-board/advisory-board.component').then((m) => m.AdvisoryBoardComponent),
     data: seo({
       title: 'Advisory board | IJDR',
       description:
@@ -78,7 +59,7 @@ export const routes: Routes = [
   },
   {
     path: 'publisher',
-    component: PublisherComponent,
+    loadComponent: () => import('./components/publisher/publisher.component').then((m) => m.PublisherComponent),
     data: seo({
       title: 'Publisher | IJDR',
       description:
@@ -87,7 +68,7 @@ export const routes: Routes = [
   },
   {
     path: 'contact',
-    component: ContactComponent,
+    loadComponent: () => import('./components/contact/contact.component').then((m) => m.ContactComponent),
     data: seo({
       title: 'Contact | IJDR',
       description:
@@ -96,7 +77,7 @@ export const routes: Routes = [
   },
   {
     path: 'contribute',
-    component: ContributeComponent,
+    loadComponent: () => import('./components/contribute/contribute.component').then((m) => m.ContributeComponent),
     data: seo({
       title: 'Contributor guidelines | IJDR',
       description:
@@ -105,7 +86,7 @@ export const routes: Routes = [
   },
   {
     path: 'login',
-    component: LoginComponent,
+    loadComponent: () => import('./components/auth/login/login.component').then((m) => m.LoginComponent),
     data: seo({
       title: 'Admin sign in | IJDR',
       description: 'Sign in to the IJDR journal administration portal.',
@@ -113,7 +94,7 @@ export const routes: Routes = [
   },
   {
     path: 'admin',
-    component: AdminComponent,
+    loadComponent: () => import('./components/admin/admin.component').then((m) => m.AdminComponent),
     canActivate: [AuthGuard],
     data: seo({
       title: 'Admin | IJDR',
@@ -122,7 +103,7 @@ export const routes: Routes = [
   },
   {
     path: 'legal/privacy',
-    component: PrivacyPolicyComponent,
+    loadComponent: () => import('./components/legal/privacy-policy/privacy-policy.component').then((m) => m.PrivacyPolicyComponent),
     data: seo({
       title: 'Privacy policy | IJDR',
       description: 'Privacy policy for the Indian Journal of Development Research website.',
@@ -130,7 +111,7 @@ export const routes: Routes = [
   },
   {
     path: 'legal/terms',
-    component: TermsOfServiceComponent,
+    loadComponent: () => import('./components/legal/terms-of-service/terms-of-service.component').then((m) => m.TermsOfServiceComponent),
     data: seo({
       title: 'Terms of service | IJDR',
       description: 'Terms of service for using the Indian Journal of Development Research website.',
@@ -138,7 +119,7 @@ export const routes: Routes = [
   },
   {
     path: 'legal/copyright',
-    component: CopyrightComponent,
+    loadComponent: () => import('./components/legal/copyright/copyright.component').then((m) => m.CopyrightComponent),
     data: seo({
       title: 'Copyright | IJDR',
       description: 'Copyright information for the Indian Journal of Development Research.',
@@ -146,7 +127,7 @@ export const routes: Routes = [
   },
   {
     path: 'legal/open-access',
-    component: OpenAccessComponent,
+    loadComponent: () => import('./components/legal/open-access/open-access.component').then((m) => m.OpenAccessComponent),
     data: seo({
       title: 'Open access | IJDR',
       description: 'Open access policy of the Indian Journal of Development Research.',
@@ -154,7 +135,7 @@ export const routes: Routes = [
   },
   {
     path: 'legal/accessibility',
-    component: AccessibilityComponent,
+    loadComponent: () => import('./components/legal/accessibility/accessibility.component').then((m) => m.AccessibilityComponent),
     data: seo({
       title: 'Accessibility | IJDR',
       description: 'Accessibility statement for the Indian Journal of Development Research website.',
@@ -162,7 +143,7 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    component: PageNotFoundComponent,
+    loadComponent: () => import('./components/page-not-found/page-not-found.component').then((m) => m.PageNotFoundComponent),
     data: seo({
       title: 'Page not found | IJDR',
       description: 'The requested page could not be found.',

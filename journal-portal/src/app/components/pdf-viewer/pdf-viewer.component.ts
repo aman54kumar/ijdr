@@ -1,333 +1,176 @@
-import {
-  Component,
-  OnInit,
-  OnDestroy,
-  inject,
-} from '@angular/core';
-import { DOCUMENT } from '@angular/common';
-import { DomSanitizer, SafeResourceUrl, Title, Meta } from '@angular/platform-browser';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { CommonModule, DOCUMENT } from '@angular/common';
+import { Title, Meta } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { ArticleService } from '../../services/article.service';
-import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
+import { take } from 'rxjs/operators';
 import { FirebaseJournalService } from '../../services/firebase-journal.service';
+import { ArticleService } from '../../services/article.service';
+import { AnalyticsEventsService } from '../../services/analytics-events.service';
 import { ToastService } from '../../services/toast.service';
 import { iArticle, iJournal } from '../../type/journals.type';
-import { take } from 'rxjs/operators';
-import { Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { publicPdfDisplayUrl } from '../../utils/public-pdf-url.util';
+import { PdfReaderComponent } from '../pdf-reader/pdf-reader.component';
 
-/**
- * Full-issue page at /journal/:id. Uses a native iframe with the Storage download URL so the
- * browser can stream the PDF (fast on shared links). Avoids getBlob + PDF.js which downloaded
- * the entire file before showing anything.
- */
+/** Full-issue page at /journal/:id, built on the shared PDF reader. `?page=N` deep-links to a page. */
 @Component({
   selector: 'app-pdf-viewer',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, PdfReaderComponent],
   template: `
-    <div class="pdf-viewer-container">
-      <div class="pdf-header bg-white shadow-sm border-bottom">
-        <div class="container">
-          <div class="d-flex justify-content-between align-items-center py-3">
-            <div class="pdf-info">
-              <h4 class="mb-0" *ngIf="journal">{{ journal.title }}</h4>
-              <small class="text-muted" *ngIf="journal">
-                Volume {{ journal.volume }}, Issue {{ journal.number }} •
-                {{ journal.year }}
-              </small>
-            </div>
-            <div class="pdf-controls">
-              <a
-                *ngIf="iframeEmbedUrl && pdfTabUrl"
-                class="btn btn-outline-primary btn-sm me-2"
-                [href]="pdfTabUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <i class="bi bi-box-arrow-up-right me-1"></i>Open in new tab
-              </a>
-              <button
-                type="button"
-                class="btn btn-outline-primary btn-sm"
-                (click)="goBack()"
-              >
-                <i class="bi bi-arrow-left"></i> Back
-              </button>
-            </div>
+    <div class="viewer-page">
+      <div class="viewer-head">
+        <div class="container-fluid d-flex flex-wrap justify-content-between align-items-center gap-2 py-2">
+          <div>
+            <h1 class="h5 mb-0" *ngIf="journal">{{ journal.title }}</h1>
+            <small class="text-muted" *ngIf="journal">Volume {{ journal.volume }}, Issue {{ journal.number }} • {{ journal.year }}</small>
           </div>
-        </div>
-      </div>
-
-      <div *ngIf="articles.length" class="bg-body border-bottom">
-        <div class="container py-2">
-          <details class="issue-articles">
-            <summary>Articles in this issue ({{ articles.length }})</summary>
-            <ol class="mt-2 mb-1">
-              <li *ngFor="let a of articles" class="mb-1">
-                <a [routerLink]="['/article', a.id]">{{ a.title }}</a>
-                <span class="text-muted small" *ngIf="a.authors.length"> · {{ a.authors[0].name }}{{ a.authors.length > 1 ? ' et al.' : '' }}</span>
-                <a *ngIf="a.pageStart" class="small ms-2" [routerLink]="['/journal', journal?.id]" [queryParams]="{ page: a.pageStart }">Open at page {{ a.pageStart }}</a>
-              </li>
-            </ol>
-          </details>
+          <div class="d-flex gap-2 align-items-center">
+            <a *ngIf="articles.length" routerLink="/articles" [queryParams]="{ issue: journal?.id }" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-list-ul me-1"></i>{{ articles.length }} articles
+            </a>
+            <button type="button" class="btn btn-outline-primary btn-sm" (click)="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
+          </div>
         </div>
       </div>
 
       <div *ngIf="error" class="text-center py-5">
-        <div class="alert alert-danger mx-auto" style="max-width: 500px;">
-          <i class="bi bi-exclamation-triangle"></i>
-          {{ error }}
+        <div class="alert alert-danger mx-auto" style="max-width: 500px">
+          <i class="bi bi-exclamation-triangle"></i> {{ error }}
         </div>
-        <button class="btn btn-primary" (click)="goBack()">Go Back</button>
+        <button class="btn btn-primary" (click)="goBack()">Go back</button>
       </div>
 
-      <div *ngIf="!error" class="position-relative pdf-content-area">
-        <div
-          *ngIf="loading"
-          class="text-center py-5 position-absolute top-0 start-0 w-100 pdf-loading-overlay"
-        >
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading PDF...</span>
-          </div>
-          <p class="mt-2">Loading PDF...</p>
-        </div>
-
-        <div *ngIf="iframeEmbedUrl" class="pdf-content">
-          <iframe
-            class="pdf-iframe-viewer w-100 border rounded shadow-sm"
-            [src]="iframeEmbedUrl"
-            title="Journal PDF"
-            (load)="onIframeLoaded()"
-          ></iframe>
-        </div>
-      </div>
+      <app-pdf-reader *ngIf="journal && !error" [journal]="journal" [articles]="articles" [page]="page" (pageChange)="onPageChange($event)"></app-pdf-reader>
+      <p *ngIf="!journal && !error" class="text-center text-muted py-5" role="status">Loading…</p>
     </div>
   `,
   styles: [
     `
-      .pdf-viewer-container {
+      .viewer-page {
+        background: var(--surface-2);
         min-height: 100vh;
-        background-color: var(--surface-2);
       }
-
-      .pdf-header {
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-      }
-
-      .pdf-content {
-        padding: 20px;
-        min-height: calc(100vh - 80px);
-      }
-
-      .pdf-iframe-viewer {
-        min-height: calc(100vh - 140px);
-        border: 1px solid var(--border) !important;
-        background: #fff;
-      }
-
-      .pdf-content-area {
-        min-height: calc(100vh - 100px);
-      }
-
-      .pdf-loading-overlay {
-        z-index: 2;
-        pointer-events: none;
-        background: rgba(248, 249, 250, 0.85);
+      .viewer-head {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        color: var(--text);
       }
     `,
   ],
 })
 export class PdfViewerComponent implements OnInit, OnDestroy {
   journal: iJournal | null = null;
-  loading = true;
   error: string | null = null;
-  iframeEmbedUrl: SafeResourceUrl | null = null;
-  /** Same-origin /pdf/{id} in production so downloads use a neutral filename on mobile. */
-  pdfTabUrl: string | null = null;
-  /** Published articles of this issue (for "Open at page N" links). */
   articles: iArticle[] = [];
-  private pdfDisplayUrl: string | null = null;
-  private subs = new Subscription();
+  page: number | null = null;
 
   private document = inject(DOCUMENT);
+  private subs = new Subscription();
+  private urlTimer?: ReturnType<typeof setTimeout>;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private firebaseService: FirebaseJournalService,
+    private articleService: ArticleService,
+    private analytics: AnalyticsEventsService,
     private toast: ToastService,
     private title: Title,
-    private meta: Meta,
-    private sanitizer: DomSanitizer,
-    private articleService: ArticleService
+    private meta: Meta
   ) {}
 
   ngOnInit() {
     const journalId = this.route.snapshot.paramMap.get('id');
-    if (journalId) {
-      this.loadJournal(journalId);
-      this.subs.add(
-        this.articleService.getPublishedArticlesByIssue(journalId).subscribe({
-          next: (a) => (this.articles = a),
-          error: () => (this.articles = []),
-        })
-      );
-      // ?page=N deep links (also when only the page changes while the viewer stays open)
-      this.subs.add(this.route.queryParamMap.subscribe(() => this.applyPage()));
-    } else {
+    if (!journalId) {
       this.error = 'No journal ID provided';
-      this.loading = false;
+      return;
     }
+    this.subs.add(
+      this.route.queryParamMap.subscribe((q) => {
+        const p = parseInt(q.get('page') ?? '', 10);
+        this.page = p > 0 ? p : null;
+      })
+    );
+    this.loadJournal(journalId);
+    this.subs.add(
+      this.articleService.getPublishedArticlesByIssue(journalId).subscribe({
+        next: (a) => (this.articles = a),
+        error: () => (this.articles = []),
+      })
+    );
   }
 
   ngOnDestroy() {
     this.subs.unsubscribe();
+    clearTimeout(this.urlTimer);
     this.title.setTitle('IJDR - Indian Journal of Development Research');
-    this.removeCanonicalLink();
-  }
-
-  onIframeLoaded() {
-    this.loading = false;
-  }
-
-  private setCanonicalLink(href: string) {
-    const head = this.document.head;
-    let link = head.querySelector(
-      'link[rel="canonical"]'
-    ) as HTMLLinkElement | null;
-    if (!link) {
-      link = this.document.createElement('link');
-      link.setAttribute('rel', 'canonical');
-      head.appendChild(link);
-    }
-    link.setAttribute('href', href);
-  }
-
-  private removeCanonicalLink() {
     this.document.head.querySelector('link[rel="canonical"]')?.remove();
   }
 
-  private loadJournal(journalId: string) {
-    try {
-      this.loading = true;
-      this.error = null;
-      this.iframeEmbedUrl = null;
-      this.pdfTabUrl = null;
+  /** Keep `?page=N` in the address bar so the current page can be shared. */
+  onPageChange(p: number) {
+    clearTimeout(this.urlTimer);
+    this.urlTimer = setTimeout(() => {
+      if (this.route.snapshot.queryParamMap.get('page') !== String(p)) {
+        void this.router.navigate([], { relativeTo: this.route, queryParams: { page: p }, queryParamsHandling: 'merge', replaceUrl: true });
+      }
+    }, 600);
+  }
 
+  private loadJournal(journalId: string) {
+    this.subs.add(
       this.firebaseService
         .getJournalById(journalId)
         .pipe(take(1))
         .subscribe({
           next: (journal) => {
             const jid = journal?.id;
-            if (journal && journal.pdfUrl && jid) {
-              this.journal = {
-                id: jid,
-                title: journal.title,
-                edition: journal.edition || 'January-June',
-                volume: journal.volume,
-                number: journal.number,
-                year: journal.year,
-                description: journal.description,
-                ssn: journal.ssn,
-                pdfUrl: journal.pdfUrl,
-                pdfFileName: journal.pdfFileName,
-                fileSize: journal.fileSize,
-                viewCount: journal.viewCount || 0,
-                createdAt: journal.createdAt,
-                updatedAt: journal.updatedAt,
-              } as iJournal;
-
-              const issueTitle = `${journal.title} · Vol. ${journal.volume}, No. ${journal.number} (${journal.year})`;
-              this.title.setTitle(`${issueTitle} | IJDR`);
-              const desc =
-                journal.description?.trim() ||
-                `Read this issue of the Indian Journal of Development Research: ${issueTitle}.`;
-              this.meta.updateTag({ name: 'description', content: desc });
-
-              const canonicalUrl = `${environment.siteUrl}/journal/${jid}`;
-              this.setCanonicalLink(canonicalUrl);
-
-              this.meta.updateTag({ property: 'og:type', content: 'article' });
-              this.meta.updateTag({ property: 'og:title', content: issueTitle });
-              this.meta.updateTag({ property: 'og:description', content: desc });
-              this.meta.updateTag({ property: 'og:url', content: canonicalUrl });
-              this.meta.updateTag({
-                property: 'og:site_name',
-                content: 'Indian Journal of Development Research',
-              });
-
-              this.meta.updateTag({
-                name: 'twitter:card',
-                content: 'summary_large_image',
-              });
-              this.meta.updateTag({ name: 'twitter:title', content: issueTitle });
-              this.meta.updateTag({
-                name: 'twitter:description',
-                content: desc,
-              });
-
-              if (this.firebaseService.consumeJournalViewSlot(jid)) {
-                void this.firebaseService.incrementViewCount(jid).catch((err) => {
-                  console.error('View count increment failed:', err);
-                  this.firebaseService.clearJournalViewDedupe(jid);
-                  this.toast.show(
-                    'Could not record this view. If counts never update, deploy latest firestore.rules and check Firebase Console → App Check is not enforcing Firestore without a web provider.',
-                    'warning'
-                  );
-                });
-              }
-
-              this.loadPDF(jid, journal.pdfUrl);
-            } else {
+            if (!journal || !journal.pdfUrl || !jid) {
               this.error = 'Journal or PDF not found';
-              this.loading = false;
+              return;
+            }
+            this.journal = { ...journal, id: jid, edition: journal.edition || 'January-June', viewCount: journal.viewCount || 0 } as iJournal;
+            this.applySeo(journal as iJournal, jid);
+            this.analytics.log('journal_open', { journal_id: jid });
+            if (this.firebaseService.consumeJournalViewSlot(jid)) {
+              void this.firebaseService.incrementViewCount(jid).catch((err) => {
+                console.error('View count increment failed:', err);
+                this.firebaseService.clearJournalViewDedupe(jid);
+                this.toast.show('Could not record this view.', 'warning');
+              });
             }
           },
-          error: () => {
-            this.error = 'Failed to load journal details';
-            this.loading = false;
-          },
-        });
-    } catch {
-      this.error = 'Failed to load journal';
-      this.loading = false;
-    }
+          error: () => (this.error = 'Failed to load journal details'),
+        })
+    );
   }
 
-  private loadPDF(journalId: string, storageDownloadUrl: string) {
-    try {
-      const displayUrl = publicPdfDisplayUrl(journalId, storageDownloadUrl);
-      this.pdfTabUrl = displayUrl;
-      this.pdfDisplayUrl = displayUrl;
-      this.applyPage();
-      // Spinner hides on iframe (load); safety timeout if load never fires (some PDF plugins)
-      setTimeout(() => {
-        if (this.loading) {
-          this.loading = false;
-        }
-      }, 8000);
-    } catch {
-      this.error = 'Failed to load PDF file. Please try again.';
-      this.loading = false;
+  private applySeo(journal: iJournal, jid: string) {
+    const issueTitle = `${journal.title} · Vol. ${journal.volume}, No. ${journal.number} (${journal.year})`;
+    this.title.setTitle(`${issueTitle} | IJDR`);
+    const desc =
+      journal.description?.trim() || `Read this issue of the Indian Journal of Development Research: ${issueTitle}.`;
+    const canonicalUrl = `${environment.siteUrl}/journal/${jid}`;
+    let link = this.document.head.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!link) {
+      link = this.document.createElement('link');
+      link.setAttribute('rel', 'canonical');
+      this.document.head.appendChild(link);
     }
-  }
-
-  /** Point the embedded viewer at the requested page (`#page=N` is understood by browser PDF viewers). */
-  private applyPage() {
-    if (!this.pdfDisplayUrl) {
-      return;
-    }
-    const page = parseInt(this.route.snapshot.queryParamMap.get('page') ?? '', 10);
-    const url = page > 0 ? `${this.pdfDisplayUrl}#page=${page}` : this.pdfDisplayUrl;
-    this.iframeEmbedUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    link.setAttribute('href', canonicalUrl);
+    this.meta.updateTag({ name: 'description', content: desc });
+    this.meta.updateTag({ property: 'og:type', content: 'article' });
+    this.meta.updateTag({ property: 'og:title', content: issueTitle });
+    this.meta.updateTag({ property: 'og:description', content: desc });
+    this.meta.updateTag({ property: 'og:url', content: canonicalUrl });
+    this.meta.updateTag({ property: 'og:site_name', content: 'Indian Journal of Development Research' });
+    this.meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
+    this.meta.updateTag({ name: 'twitter:title', content: issueTitle });
+    this.meta.updateTag({ name: 'twitter:description', content: desc });
   }
 
   goBack() {
-    this.router.navigate(['/journals']);
+    void this.router.navigate(['/journals']);
   }
 }

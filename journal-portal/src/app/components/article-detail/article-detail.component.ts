@@ -7,6 +7,7 @@ import { environment } from '../../../environments/environment';
 import { ArticleService } from '../../services/article.service';
 import { ArticleSeoService } from '../../services/article-seo.service';
 import { ToastService } from '../../services/toast.service';
+import { AnalyticsEventsService } from '../../services/analytics-events.service';
 import { AiService, AI_OFF, aiErrorMessage } from '../../services/ai.service';
 import { AiSettings, AiSummary, AiTranslation, iArticle } from '../../type/journals.type';
 import {
@@ -29,6 +30,7 @@ export class ArticleDetailComponent implements OnDestroy {
   private seo = inject(ArticleSeoService);
   private toast = inject(ToastService);
   private ai = inject(AiService);
+  private analytics = inject(AnalyticsEventsService);
   private sub: Subscription;
   private settingsSub?: Subscription;
 
@@ -98,6 +100,7 @@ export class ArticleDetailComponent implements OnDestroy {
       void this.loadRelated(a);
       void this.loadCachedAi(a);
       this.countView(a.id);
+      this.analytics.log('article_view', { article_id: a.id });
     }
   }
 
@@ -136,7 +139,10 @@ export class ArticleDetailComponent implements OnDestroy {
   /** Reads cached AI content straight from Firestore: viewing it never calls Gemini. */
   private async loadCachedAi(a: iArticle) {
     const s = await this.ai.cachedSummary(a.id);
-    if (this.article?.id === a.id) this.summary = s;
+    if (this.article?.id === a.id) {
+      this.summary = s;
+      if (s && this.showSummary) this.analytics.log('ai_summary_view', { article_id: a.id });
+    }
   }
 
   /** Summary box is shown only while the feature is on and the summary is not hidden by an admin. */
@@ -162,6 +168,7 @@ export class ArticleDetailComponent implements OnDestroy {
     this.summaryError = '';
     try {
       this.summary = await this.ai.summarize(this.article.id);
+      this.analytics.log('ai_summary_view', { article_id: this.article.id });
     } catch (e) {
       this.summaryError = aiErrorMessage(e);
     } finally {
@@ -256,6 +263,7 @@ export class ArticleDetailComponent implements OnDestroy {
   async copyCitation() {
     try {
       await navigator.clipboard.writeText(this.citation.text);
+      this.analytics.log('cite_copy', { format: this.citeFormat });
       this.toast.show('Citation copied.', 'success');
     } catch {
       this.toast.show('Could not copy. Select the text and copy it manually.', 'warning');

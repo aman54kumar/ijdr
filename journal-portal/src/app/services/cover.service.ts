@@ -1,12 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { Storage, ref, getBlob } from '@angular/fire/storage';
-import * as pdfjsLib from 'pdfjs-dist';
+import { PdfJsService } from './pdfjs.service';
 import {
   FirebaseJournal,
   FirebaseJournalService,
 } from './firebase-journal.service';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 
 /** Cover thumbnails are rendered at this width (px); height follows the page. */
 export const COVER_WIDTH = 400;
@@ -15,12 +13,14 @@ export const COVER_WIDTH = 400;
 export class CoverService {
   private storage = inject(Storage);
   private journals = inject(FirebaseJournalService);
+  private pdfjs = inject(PdfJsService);
 
   /**
    * Render page 1 of a PDF to a JPEG blob. A URL source is read with HTTP range
    * requests, so only the bytes page 1 needs are downloaded (issues are 8-60 MB).
    */
   async renderCover(pdf: ArrayBuffer | string): Promise<Blob> {
+    const pdfjsLib = await this.pdfjs.load();
     const task = pdfjsLib.getDocument(
       typeof pdf === 'string'
         ? { url: pdf, disableAutoFetch: true, rangeChunkSize: 262144 }
@@ -52,6 +52,7 @@ export class CoverService {
 
   /** Render one page (1-based) of a stored PDF to a JPEG data URL, reading only the bytes it needs. */
   async renderPagePreview(pdfUrl: string, pageNumber: number, width = 360): Promise<string> {
+    const pdfjsLib = await this.pdfjs.load();
     const task = pdfjsLib.getDocument({ url: pdfUrl, disableAutoFetch: true, rangeChunkSize: 262144 });
     const doc = await task.promise;
     try {

@@ -6,6 +6,7 @@ import { A11yModule } from '@angular/cdk/a11y';
 import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { SearchService } from '../../services/search.service';
 import { AiService } from '../../services/ai.service';
+import { AnalyticsEventsService } from '../../services/analytics-events.service';
 import { SearchResult } from '../../utils/search-rank.util';
 
 const KIND_LABEL: Record<SearchResult['kind'], string> = { article: 'Article', issue: 'Issue', member: 'Board' };
@@ -21,6 +22,7 @@ export class SearchOverlayComponent implements AfterViewInit, OnDestroy {
   private search = inject(SearchService);
   private router = inject(Router);
   private ai = inject(AiService);
+  private analytics = inject(AnalyticsEventsService);
   private settingsSub = this.ai.settings$().subscribe((s) => (this.semanticAvailable = s.semanticSearch && this.ai.appCheckReady));
   private input$ = new Subject<string>();
   private sub: Subscription;
@@ -95,6 +97,8 @@ export class SearchOverlayComponent implements AfterViewInit, OnDestroy {
         r = await this.search.search(q);
       }
       if (mine === this.seq) {
+        // Only the number of results is logged, never what was typed.
+        this.analytics.log('search', { results: r.length, mode: this.semantic ? 'semantic' : 'keyword' });
         this.results = r;
         this.active = r.length ? 0 : -1;
       }

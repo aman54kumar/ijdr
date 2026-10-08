@@ -17,6 +17,7 @@ import { DEFAULT_SEO, RouteSeoData } from './route-seo.data';
 import { Analytics, logEvent } from '@angular/fire/analytics';
 import { ToastService, ToastMessage } from './services/toast.service';
 import { SearchService } from './services/search.service';
+import { AppUpdateService } from './services/app-update.service';
 import { ConfirmModalService, ConfirmPrompt } from './services/confirm-modal.service';
 
 @Component({
@@ -35,6 +36,7 @@ export class AppComponent implements OnInit {
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly search = inject(SearchService);
+  private readonly appUpdate = inject(AppUpdateService);
 
   constructor(
     private router: Router,
@@ -47,6 +49,7 @@ export class AppComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.appUpdate.start();
     this.toastService.message$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((msg) => {
@@ -107,6 +110,7 @@ export class AppComponent implements OnInit {
   @HostListener('document:keydown', ['$event'])
   onSearchShortcut(ev: KeyboardEvent) {
     const t = ev.target as HTMLElement | null;
+    if (t?.closest?.('.reader')) return; // the PDF reader has its own / and Ctrl+F
     const typing = !!t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable);
     const cmdK = (ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'k';
     if ((cmdK || (ev.key === '/' && !typing && !ev.ctrlKey && !ev.metaKey && !ev.altKey)) && !this.confirmPrompt) {

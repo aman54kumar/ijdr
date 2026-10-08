@@ -1,0 +1,112 @@
+<div class="reader" #root tabindex="0" role="region" [attr.aria-label]="'PDF reader: ' + journal.title" (keydown)="onKey($event)"
+  [class.embedded]="embedded">
+  <div class="toolbar" role="toolbar" aria-label="PDF controls">
+    <button type="button" class="tb" (click)="toggleSidebar()" [attr.aria-pressed]="sidebarOpen" [disabled]="!numPages"
+      title="Thumbnails and articles" aria-label="Toggle sidebar"><i class="bi bi-layout-sidebar" aria-hidden="true"></i></button>
+
+    <div class="group">
+      <button type="button" class="tb" (click)="goToPage(currentPage - 1)" [disabled]="currentPage <= 1" title="Previous page (←)" aria-label="Previous page">
+        <i class="bi bi-chevron-up" aria-hidden="true"></i></button>
+      <form class="pager" (ngSubmit)="submitPageInput()">
+        <label class="visually-hidden" for="pg-{{ journal.id }}">Page number</label>
+        <input id="pg-{{ journal.id }}" name="pg" inputmode="numeric" [(ngModel)]="pageInput" [disabled]="!numPages" (focus)="$any($event.target).select()" />
+        <span aria-hidden="true">/ {{ numPages || '–' }}</span>
+      </form>
+      <button type="button" class="tb" (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= numPages" title="Next page (→)" aria-label="Next page">
+        <i class="bi bi-chevron-down" aria-hidden="true"></i></button>
+    </div>
+
+    <div class="group">
+      <button type="button" class="tb" (click)="zoom(-1)" [disabled]="!numPages" title="Zoom out (-)" aria-label="Zoom out"><i class="bi bi-zoom-out" aria-hidden="true"></i></button>
+      <span class="zoom" aria-live="polite">{{ (scale * 100) | number: '1.0-0' }}%</span>
+      <button type="button" class="tb" (click)="zoom(1)" [disabled]="!numPages" title="Zoom in (+)" aria-label="Zoom in"><i class="bi bi-zoom-in" aria-hidden="true"></i></button>
+      <button type="button" class="tb" (click)="applyFit('width')" [attr.aria-pressed]="fitMode === 'width'" [disabled]="!numPages" title="Fit width (0)" aria-label="Fit width">
+        <i class="bi bi-arrows-expand-vertical" style="transform: rotate(90deg)" aria-hidden="true"></i></button>
+      <button type="button" class="tb" (click)="applyFit('page')" [attr.aria-pressed]="fitMode === 'page'" [disabled]="!numPages" title="Fit page" aria-label="Fit page">
+        <i class="bi bi-arrows-fullscreen" aria-hidden="true"></i></button>
+    </div>
+
+    <div class="group ms-auto">
+      <button type="button" class="tb" (click)="searchOpen ? closeSearch() : openSearch()" [attr.aria-pressed]="searchOpen" [disabled]="!numPages"
+        title="Search in this issue (/ or Ctrl+F)" aria-label="Search in this issue"><i class="bi bi-search" aria-hidden="true"></i></button>
+      <a class="tb" [href]="downloadUrl" [attr.download]="'ijdr-' + journal.id + '.pdf'" target="_blank" rel="noopener noreferrer"
+        title="Download PDF" aria-label="Download PDF"><i class="bi bi-download" aria-hidden="true"></i></a>
+    </div>
+  </div>
+
+  @if (searchOpen) {
+    <form class="searchbar" (ngSubmit)="runSearch()" role="search">
+      <label class="visually-hidden" for="ps-{{ journal.id }}">Search in this issue</label>
+      <input #searchInput id="ps-{{ journal.id }}" name="q" type="search" [(ngModel)]="query" placeholder="Search in this issue" autocomplete="off" />
+      <button type="submit" class="tb" aria-label="Find">Find</button>
+      <button type="button" class="tb" (click)="step(-1)" [disabled]="!hits.length" aria-label="Previous match"><i class="bi bi-chevron-up" aria-hidden="true"></i></button>
+      <button type="button" class="tb" (click)="step(1)" [disabled]="!hits.length" aria-label="Next match"><i class="bi bi-chevron-down" aria-hidden="true"></i></button>
+      <span class="count" role="status" aria-live="polite">
+        @if (searching) { Searching… {{ searchProgress }}/{{ numPages }} · }
+        @if (hits.length) { {{ hitIndex + 1 }} of {{ hits.length }} }
+        @else if (!searching && query.trim().length >= 2) { No matches }
+      </span>
+      <button type="button" class="tb" (click)="closeSearch()" aria-label="Close search"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+    </form>
+  }
+
+  <div class="body">
+    @if (sidebarOpen) {
+      <aside class="sidebar" aria-label="Pages and articles">
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" [attr.aria-selected]="sidebarTab === 'pages'" (click)="setSidebarTab('pages')">Pages</button>
+          @if (articles.length) {
+            <button type="button" role="tab" [attr.aria-selected]="sidebarTab === 'articles'" (click)="setSidebarTab('articles')">Articles</button>
+          }
+        </div>
+        @if (sidebarTab === 'pages') {
+          <div class="thumbs">
+            @for (p of pageList; track p) {
+              <button type="button" class="thumb" [attr.data-thumb]="p" [class.current]="p === currentPage" (click)="goToPage(p)"
+                [attr.aria-label]="'Go to page ' + p" [attr.aria-current]="p === currentPage ? 'page' : null">
+                <canvas></canvas>
+                <span>{{ p }}</span>
+              </button>
+            }
+          </div>
+        } @else {
+          <ol class="outline">
+            @for (a of articles; track a.id) {
+              <li>
+                <button type="button" [class.current]="a.id === activeArticleId" [disabled]="!a.pageStart" (click)="goToPage(a.pageStart!)">
+                  <span class="t">{{ a.title }}</span>
+                  <span class="s">{{ a.authors.length ? a.authors[0].name : '' }}{{ a.authors.length > 1 ? ' et al.' : '' }}@if (a.pageStart) { · p. {{ a.pageStart }} }</span>
+                </button>
+                <a class="more" [routerLink]="['/article', a.id]">Details</a>
+              </li>
+            }
+          </ol>
+        }
+      </aside>
+    }
+
+    <div class="scroller" #scroller (scroll)="onScroll()">
+      @if (loading) {
+        <div class="state" role="status"><div class="spinner-border text-primary" aria-hidden="true"></div><p>Loading PDF…</p></div>
+      }
+      @if (error) {
+        <div class="state" role="alert">
+          <p>{{ error }}</p>
+          <button type="button" class="btn btn-primary btn-sm" (click)="retry()">Try again</button>
+          <a class="btn btn-outline-secondary btn-sm ms-2" [href]="downloadUrl" target="_blank" rel="noopener noreferrer">Open the PDF directly</a>
+        </div>
+      }
+      @if (resumedNote) {
+        <div class="resumed" role="status">{{ resumedNote }}</div>
+      }
+      <div class="pages" [style.width.px]="pageW">
+        @for (p of pageList; track p) {
+          <div class="pg" [attr.data-page]="p" [style.width.px]="pageW" [style.height.px]="pageH" [attr.aria-label]="'Page ' + p">
+            <canvas aria-hidden="true"></canvas>
+            <div class="textLayer"></div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>

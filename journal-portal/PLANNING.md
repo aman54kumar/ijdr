@@ -12,9 +12,9 @@ Phased plan to modernize the IJDR portal (live at https://ijdrpub.in) in functio
 | 1 | Design foundation and UI polish | Done (covers backfilled; not deployed) |
 | 2 | Content model: articles + admin entry | Done (not deployed; admin UI not exercised against live Firestore) |
 | 3 | Gemini ingest pipeline | Done (deployed; extraction confirmed working by the user, who has doubts about its usefulness) |
-| 4 | Discovery: article pages, search, citations, SEO | Built (not deployed; article page not yet seen with real data) |
-| 5 | AI reader features | Built (not deployed; needs App Check key from the user; not run against live Gemini) |
-| 6 | Reader experience: PDF viewer, PWA, performance | Not started |
+| 4 | Discovery: article pages, search, citations, SEO | Deployed |
+| 5 | AI reader features | Deployed with Phase 4 (App Check key set; AI switches are off until an admin enables them) |
+| 6 | Reader experience: PDF viewer, PWA, performance | Built (not deployed; Lighthouse, PWA install and CSP not yet checked on the live site) |
 | 7 | Admin dashboard, analytics, submissions | Not started |
 
 ## Ground rules (apply to every phase)
@@ -312,6 +312,16 @@ Also add `articleCount?: number` and `articlesStatus?: 'none'|'draft'|'published
 - Initial JS bundle measurably smaller than before (record before/after numbers in the PR/commit).
 - Viewer search, thumbnails, deep links and remembered pages work on desktop and mobile.
 - CSP in report-only produces no violations on the main flows before it is enforced.
+
+**Notes/deviations (built):**
+- **Reader** (`components/pdf-reader`): one pdf.js engine shared by `/journal/:id` and the modal (the old 947-line modal with iframe fallbacks and the iframe viewer are gone; the modal is now a ~250-line frame that lazy-loads the reader with `@defer`). Features: continuous scroll with lazy page rendering (pages within 700 px, canvases released when far away), selectable text layer, thumbnail sidebar, article outline sidebar (from the issue's published articles, with Details links), page-jump input, zoom steps, fit width / fit page, in-issue search with match counter and highlights, last page remembered per issue (`ijdr-pdf-page-{id}`, localStorage in try/catch), `?page=N` deep links (the URL follows the page with `replaceUrl`), download button (via the `/pdf/{id}` proxy so the file name stays neutral), dark-theme chrome (the page stays white). Loads the Storage URL with range requests, falls back to the proxy URL, then shows an error with "Open the PDF directly".
+- Keyboard: `/` or Ctrl/Cmd+F search, arrows = previous/next page, `+`/`-` zoom, `0` fit width, Home/End. **Deviation:** `/` normally opens site search, so the reader owns `/` only while focus is inside it (AppComponent ignores shortcuts coming from `.reader`).
+- Search scans pages one by one (text cached per page) and jumps to the page of each hit; highlighting marks every text-layer span that contains the query, so a match split across two spans is found but not highlighted, and the page is not scrolled to the match within the page.
+- **Performance** (production build, before -> after): initial JS 2.36 MB -> 1.47 MB raw and 477.7 kB -> 346.4 kB transferred; `main` 1.85 MB -> 178.6 kB (+ shared chunks). All routes are `loadComponent`; pdf.js (270 kB, 67 kB transferred) is loaded by `PdfJsService` only when a PDF is shown (the cover service uses it too); admin is a lazy chunk. Covers were already lazy with reserved aspect ratio (Phase 1). Fonts already use `display=swap` with preconnect; **not done:** font subsetting. `editorial-board.component.scss` still exceeds its style budget (warning).
+- **PWA:** `public/manifest.webmanifest` (existing 192/512 icons; the 512 icon also as maskable, so check how it crops), `@angular/service-worker` 19 with `ngsw-config.json` (app shell prefetched, assets lazy; navigation fallback excludes `/pdf/**`, `/sitemap.xml`, `/rss.xml`; PDFs are never cached), registered only in production, update prompt via the confirm dialog (`AppUpdateService`: "A new version is ready. Reload?"). `firebase.json` serves `ngsw-worker.js`, `ngsw.json`, `safety-worker.js` and the manifest with `no-cache` (the generic `*.js` rule is immutable, which would freeze updates). Note: with the service worker active, repeat visitors get the SPA shell for `/article/*` (crawlers do not run it, so the Phase 4 meta-injection function still serves them).
+- **Security headers** in `firebase.json`: `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (camera, microphone, geolocation, payment, usb off), and **`Content-Security-Policy-Report-Only`** covering self, Google Fonts, Firebase/Google APIs, reCAPTCHA, Analytics and jsdelivr (pdf.js cmaps). It has no report endpoint, so violations only show in the browser console. **Before enforcing:** browse the main flows on the live site (home, issues, reader, article, search, admin login, AI on) with DevTools open and add anything it blocks.
+- **Analytics events** (`AnalyticsEventsService`, no PII, search text is never logged): `journal_open`, `pdf_view`, `article_view`, `search` (result count and mode), `cite_copy` (format), `ai_summary_view`.
+- Tests: 65 app specs (new `pdf-reader.util`: clamp, zoom steps, fit, scroll/page maths, occurrence counting, starting page, remembered page). The reader itself was exercised in the browser pane against live issues: first page render, `?page=7` deep link, thumbnails, article outline, search (146 hits for a common word on a 50-page issue), the modal (opens, Esc closes). **Not verified:** Lighthouse (no suitable Chrome here), PWA install/offline, service-worker updates, mobile touch behaviour, the 640 px sidebar overlay, CSP violations. A hidden browser tab pauses `IntersectionObserver`, so pages render only while the tab is visible (normal browser behaviour).
 
 ---
 

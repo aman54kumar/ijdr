@@ -1,0 +1,19 @@
+{
+  "name": "Indian Journal of Development Research",
+  "short_name": "IJDR",
+  "description": "Peer-reviewed research in development studies, published by the Institute of Development Studies, Varanasi.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#0f3a66",
+  "lang": "en",
+  "categories": ["education", "books", "news"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
