@@ -20,7 +20,7 @@ export class AppCheckService {
         (self as unknown as { FIREBASE_APPCHECK_DEBUG_TOKEN?: boolean }).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
       }
       return ac.initializeAppCheck(getApp(), {
-        provider: new ac.ReCaptchaV3Provider(environment.recaptchaSiteKey),
+        provider: new ac.ReCaptchaEnterpriseProvider(environment.recaptchaSiteKey),
         isTokenAutoRefreshEnabled: true,
       });
     })();
