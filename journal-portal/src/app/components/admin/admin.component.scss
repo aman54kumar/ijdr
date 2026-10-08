@@ -23,7 +23,8 @@
 
       // !important: global .btn-outline-* rules force a dark link colour that is
       // unreadable on the dark blue header (Journals, View Site).
-      .btn {
+      // Not the light Sign out button, which keeps its own dark-on-white colours.
+      .btn:not(.btn-light) {
         border: 1px solid rgba(255, 255, 255, 0.35);
         color: #fff !important;
         transition: all 0.3s ease;
