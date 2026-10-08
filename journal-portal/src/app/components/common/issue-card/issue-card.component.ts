@@ -13,6 +13,7 @@ import { IssueCoverComponent } from '../issue-cover/issue-cover.component';
 })
 export class IssueCardComponent {
   @Input({ required: true }) issue!: iJournal;
+  @Input() eager = false;
   @Input() layout: 'grid' | 'list' = 'grid';
   @Input() tags: JournalHighlightTag[] = [];
   @Output() read = new EventEmitter<iJournal>();

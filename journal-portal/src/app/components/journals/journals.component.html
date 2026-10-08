@@ -84,15 +84,16 @@
           {{ filteredJournalsList.length === 1 ? 'issue' : 'issues' }}
         </p>
 
-        @for (year of yearKeys; track year) {
+        @for (year of yearKeys; track year; let yearFirst = $first) {
           <h2 class="year-title">
             {{ year }}
             <span class="year-count">{{ groupedJournals[year].length }}</span>
           </h2>
           <div class="issue-grid" [class.issue-grid--list]="view === 'list'">
-            @for (journal of groupedJournals[year]; track trackByJournal($index, journal)) {
+            @for (journal of groupedJournals[year]; track trackByJournal($index, journal); let first = $first) {
               <app-issue-card
                 [issue]="journal"
+                [eager]="first && yearFirst"
                 [layout]="view"
                 [tags]="journalHighlightTags(journal)"
                 (read)="openJournalPDF($event)"

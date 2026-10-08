@@ -1,6 +1,6 @@
 <article class="issue-card" [ngClass]="'issue-card--' + layout">
   <button type="button" class="issue-cover-btn" (click)="read.emit(issue)" [attr.aria-label]="'Read ' + issue.title">
-    <app-issue-cover [issue]="issue"></app-issue-cover>
+    <app-issue-cover [issue]="issue" [eager]="eager"></app-issue-cover>
   </button>
 
   <div class="issue-body">

@@ -18,6 +18,7 @@ import { iJournal } from '../../../type/journals.type';
           width="400"
           height="560"
           [attr.loading]="eager ? 'eager' : 'lazy'"
+          [attr.fetchpriority]="eager ? 'high' : null"
           decoding="async"
           (error)="failed = true"
         />
