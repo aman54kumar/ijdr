@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormsModule,
@@ -19,12 +19,18 @@ import { AuthService } from '../../../services/auth.service';
 export class AdminManagementComponent {
   createAdminForm: FormGroup;
   changePasswordForm: FormGroup;
+  changeEmailForm: FormGroup;
+  showChangeEmailForm = false;
 
   isLoading = false;
   errorMessage = '';
   successMessage = '';
   showCreateForm = false;
   showPassword = false;
+  /** Open the change-password form straight away (used by the Account menu shortcut). */
+  @Input() set openPassword(v: boolean) {
+    if (v) this.showChangePasswordForm = true;
+  }
   showChangePasswordForm = false;
   showCurrentPassword = false;
   showNewPassword = false;
@@ -39,6 +45,11 @@ export class AdminManagementComponent {
       },
       { validators: this.passwordMatchValidator }
     );
+
+    this.changeEmailForm = this.fb.group({
+      currentPassword: ['', [Validators.required]],
+      newEmail: ['', [Validators.required, Validators.email]],
+    });
 
     this.changePasswordForm = this.fb.group(
       {
@@ -198,6 +209,35 @@ export class AdminManagementComponent {
     }
   }
 
+  toggleChangeEmailForm() {
+    this.showChangeEmailForm = !this.showChangeEmailForm;
+    if (!this.showChangeEmailForm) {
+      this.changeEmailForm.reset();
+    }
+  }
+
+  async onChangeEmail() {
+    if (this.changeEmailForm.invalid) {
+      return;
+    }
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+    try {
+      const { currentPassword, newEmail } = this.changeEmailForm.value;
+      await this.authService.changeEmail(currentPassword, newEmail);
+      this.successMessage = `Verification link sent to ${newEmail}. Open it to finish the change, then sign in with the new email.`;
+      this.changeEmailForm.reset();
+      this.showChangeEmailForm = false;
+    } catch (error: any) {
+      this.errorMessage =
+        this.authService.getErrorMessage(error.code) || 'Could not start the email change.';
+      console.error('Error changing email:', error);
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
   /**
    * Handle password change
    */
@@ -241,11 +281,14 @@ export class AdminManagementComponent {
     this.successMessage = '';
 
     try {
-      const success = await this.authService.sendPasswordReset(
-        'admin@ijdrpub.in'
-      );
+      const email = this.authService.getCurrentUser()?.email;
+      if (!email) {
+        this.errorMessage = 'No signed-in account found.';
+        return;
+      }
+      const success = await this.authService.sendPasswordReset(email);
       if (success) {
-        this.successMessage = 'Password reset email sent to admin@ijdrpub.in';
+        this.successMessage = `Password reset email sent to ${email}`;
       } else {
         this.errorMessage = 'Failed to send password reset email.';
       }

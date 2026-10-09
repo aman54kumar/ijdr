@@ -91,6 +91,15 @@ export class AdminComponent implements OnInit {
 
   readonly theme = inject(ThemeService);
   userMenuOpen = false;
+  openPasswordForm = false;
+
+  openChangePassword() {
+    this.userMenuOpen = false;
+    this.openPasswordForm = false;
+    this.setView('admin-management');
+    // Re-created each time the view opens, so the input applies on init.
+    this.openPasswordForm = true;
+  }
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(ev: Event) {

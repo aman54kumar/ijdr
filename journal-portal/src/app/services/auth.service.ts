@@ -11,6 +11,7 @@ import {
   reauthenticateWithCredential,
   EmailAuthProvider,
   sendPasswordResetEmail,
+  verifyBeforeUpdateEmail,
 } from '@angular/fire/auth';
 import { Observable, BehaviorSubject } from 'rxjs';
 
@@ -168,6 +169,19 @@ export class AuthService {
       console.error('Change password error:', error);
       throw error;
     }
+  }
+
+  /**
+   * Change the sign-in email. Firebase emails a verification link to the NEW address and
+   * switches the account to it only after the link is opened (the uid, and so admin access, stays).
+   */
+  async changeEmail(currentPassword: string, newEmail: string): Promise<void> {
+    const user = this.getCurrentUser();
+    if (!user || !user.email) {
+      throw new Error('No authenticated user found');
+    }
+    await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, currentPassword));
+    await verifyBeforeUpdateEmail(user, newEmail.trim());
   }
 
   /**

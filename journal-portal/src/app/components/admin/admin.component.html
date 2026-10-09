@@ -43,6 +43,10 @@
               {{ currentUser?.email || getUserDisplayName() }}
             </div>
             <div class="user-dropdown-role">Administrator</div>
+            <button type="button" class="user-dropdown-item" role="menuitem" (click)="openChangePassword()">
+              <i class="bi bi-key"></i>
+              Change password
+            </button>
             <button type="button" class="user-dropdown-item" role="menuitem" (click)="logout()" [disabled]="loggingOut">
               <span *ngIf="loggingOut" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
               <i *ngIf="!loggingOut" class="bi bi-box-arrow-right"></i>
@@ -562,7 +566,7 @@
 
       <!-- Admin Management View -->
       <div *ngIf="currentView === 'admin-management'">
-        <app-admin-management></app-admin-management>
+        <app-admin-management [openPassword]="openPasswordForm"></app-admin-management>
       </div>
 
       <div *ngIf="currentView === 'insights'">

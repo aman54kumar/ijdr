@@ -42,10 +42,19 @@
     </button>
 
     <button
+      class="btn btn-secondary me-2"
+      (click)="toggleChangeEmailForm()"
+      [disabled]="isLoading"
+    >
+      <i class="bi bi-at me-2"></i>
+      {{ showChangeEmailForm ? "Cancel" : "Change My Email" }}
+    </button>
+
+    <button
       class="btn btn-info"
       (click)="sendPasswordReset()"
       [disabled]="isLoading"
-      title="Send password reset email to admin@ijdrpub.in"
+      title="Send a password reset email to the account you are signed in with"
     >
       <i class="bi bi-envelope me-2"></i>
       Reset via Email
@@ -309,6 +318,35 @@
               Cancel
             </button>
           </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- Change Email Form -->
+  <div *ngIf="showChangeEmailForm" class="change-password-section">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-at me-2"></i>
+          Change Sign-in Email
+        </h5>
+      </div>
+      <div class="card-body">
+        <p class="text-muted small">
+          A verification link is sent to the new address. The email changes only after you open it, and you will
+          then sign in with the new email. Admin access stays with the account.
+        </p>
+        <form [formGroup]="changeEmailForm" (ngSubmit)="onChangeEmail()">
+          <div class="form-group mb-3">
+            <label for="ce-new" class="form-label">New email address</label>
+            <input id="ce-new" type="email" class="form-control" formControlName="newEmail" autocomplete="email" />
+          </div>
+          <div class="form-group mb-3">
+            <label for="ce-pw" class="form-label">Current password (to confirm it is you)</label>
+            <input id="ce-pw" type="password" class="form-control" formControlName="currentPassword" autocomplete="current-password" />
+          </div>
+          <button type="submit" class="btn btn-primary me-2" [disabled]="isLoading || changeEmailForm.invalid">Send verification link</button>
+          <button type="button" class="btn btn-secondary" (click)="toggleChangeEmailForm()" [disabled]="isLoading">Cancel</button>
         </form>
       </div>
     </div>
