@@ -5,6 +5,7 @@
   "hosting": {
     "site": "ijdr-e41d4",
     "public": "dist/journal-portal/browser",
+    "trailingSlash": false,
     "ignore": [
       "firebase.json",
       "**/.*",
