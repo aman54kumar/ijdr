@@ -1,0 +1,14 @@
+/
+/journals
+/articles
+/about
+/editorial-board
+/advisory-board
+/publisher
+/contact
+/contribute
+/legal/privacy
+/legal/terms
+/legal/copyright
+/legal/open-access
+/legal/accessibility

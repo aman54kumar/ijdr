@@ -1,0 +1,21 @@
+# Indian Journal of Development Research (IJDR)
+
+> A peer-reviewed, open-access, bi-annual journal on development studies, public policy and sustainable growth. Published by the Institute of Development Studies, Varanasi, India. ISSN 2249-104X.
+
+IJDR publishes original research in development studies. All issues and articles are free to read and download. Submissions are double-blind peer reviewed (4-6 weeks); manuscripts are 5,000-7,000 words.
+
+## Key pages
+- [Home](https://ijdrpub.in/): latest issue and call for papers
+- [Journal issues](https://ijdrpub.in/journals): all volumes and issues with PDFs
+- [Articles](https://ijdrpub.in/articles): searchable article index with abstracts, authors and keywords
+- [About IJDR](https://ijdrpub.in/about): scope, aims and publisher
+- [Editorial board](https://ijdrpub.in/editorial-board)
+- [Advisory board](https://ijdrpub.in/advisory-board)
+- [Publisher](https://ijdrpub.in/publisher)
+- [Contributor guidelines](https://ijdrpub.in/contribute): how to submit a paper
+- [Contact](https://ijdrpub.in/contact)
+
+## Machine-readable
+- [Sitemap](https://ijdrpub.in/sitemap.xml)
+- [RSS feed](https://ijdrpub.in/rss.xml)
+- Each article page (https://ijdrpub.in/article/<id>) carries Highwire/Google Scholar citation metadata and schema.org JSON-LD.

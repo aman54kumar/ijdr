@@ -29,6 +29,7 @@ export class AppCheckService {
 
   /** Start loading once the page is idle, so the first AI or upload call is not delayed. */
   warmUp(): void {
+    if (typeof window === 'undefined') return;
     if (!this.enabled) return;
     const run = () => void this.ensure().catch(() => undefined);
     if ('requestIdleCallback' in window) {

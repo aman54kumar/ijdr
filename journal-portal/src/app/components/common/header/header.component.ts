@@ -22,7 +22,9 @@ export class HeaderComponent {
   set isNavbarCollapsed(value: boolean) {
     this.collapsed = value;
     // Lock page scroll behind the full-screen menu
-    document.body.style.overflow = value ? '' : 'hidden';
+    if (typeof document !== 'undefined') {
+      document.body.style.overflow = value ? '' : 'hidden';
+    }
   }
   scrolled = false;
   isDropdownOpen = false;

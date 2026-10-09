@@ -240,6 +240,7 @@ export class JournalsComponent implements OnInit {
 
   // Scroll to top of the page
   private scrollToTop() {
+    if (typeof window === 'undefined') return;
     window.scrollTo({
       top: 0,
       left: 0,

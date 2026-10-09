@@ -1,5 +1,5 @@
 import { Component, OnInit, Optional, DestroyRef, HostListener, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import {
   RouterOutlet,
   Router,
@@ -20,6 +20,8 @@ import { SearchService } from './services/search.service';
 import { AppUpdateService } from './services/app-update.service';
 import { ConfirmModalService, ConfirmPrompt } from './services/confirm-modal.service';
 
+const SITE_ORIGIN = 'https://ijdrpub.in';
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -37,6 +39,7 @@ export class AppComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly search = inject(SearchService);
   private readonly appUpdate = inject(AppUpdateService);
+  private readonly doc = inject(DOCUMENT);
 
   constructor(
     private router: Router,
@@ -77,10 +80,19 @@ export class AppComponent implements OnInit {
         } else {
           this.titleService.setTitle(DEFAULT_SEO.title);
         }
-        this.meta.updateTag({
-          name: 'description',
-          content: seo?.description ?? DEFAULT_SEO.description,
-        });
+        const description = seo?.description ?? DEFAULT_SEO.description;
+        this.meta.updateTag({ name: 'description', content: description });
+
+        // Per-page canonical and social tags. Routes without route SEO data (issue viewer,
+        // article detail) manage their own canonical.
+        if (seo) {
+          const path = e.urlAfterRedirects.split(/[?#]/)[0];
+          const url = SITE_ORIGIN + (path === '/' ? '/' : path.replace(/\/$/, ''));
+          this.setCanonical(url);
+          this.meta.updateTag({ property: 'og:url', content: url });
+          this.meta.updateTag({ property: 'og:title', content: this.titleService.getTitle() });
+          this.meta.updateTag({ property: 'og:description', content: description });
+        }
 
         if (this.analytics) {
           logEvent(this.analytics, 'page_view', {
@@ -89,6 +101,16 @@ export class AppComponent implements OnInit {
           });
         }
       });
+  }
+
+  private setCanonical(url: string): void {
+    let link = this.doc.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!link) {
+      link = this.doc.createElement('link');
+      link.setAttribute('rel', 'canonical');
+      this.doc.head.appendChild(link);
+    }
+    link.setAttribute('href', url);
   }
 
   dismissToast() {

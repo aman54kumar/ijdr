@@ -54,7 +54,8 @@ export class AdvisoryBoardComponent implements OnInit {
       .subscribe((ok) => (this.isAdminUser = ok));
 
     // Handle editMemberId from session storage (for direct editing from other pages)
-    const editMemberId = sessionStorage.getItem('editMemberId');
+    const editMemberId =
+      typeof sessionStorage === 'undefined' ? null : sessionStorage.getItem('editMemberId');
     if (editMemberId) {
       sessionStorage.removeItem('editMemberId');
       setTimeout(() => {
@@ -67,6 +68,7 @@ export class AdvisoryBoardComponent implements OnInit {
   }
 
   private scrollToTop() {
+    if (typeof window === 'undefined') return;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 

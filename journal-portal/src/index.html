@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
     <link rel="manifest" href="manifest.webmanifest" />
     <meta name="theme-color" content="#0f3a66" />
@@ -25,6 +26,43 @@
           d.setAttribute('data-bs-theme', t);
         } catch (e) {}
       })();
+    </script>
+
+    <!-- Structured data: journal + publisher + site -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Periodical",
+            "@id": "https://ijdrpub.in/#journal",
+            "name": "Indian Journal of Development Research",
+            "alternateName": "IJDR",
+            "url": "https://ijdrpub.in/",
+            "issn": "2249-104X",
+            "inLanguage": "en",
+            "isAccessibleForFree": true,
+            "description": "A peer-reviewed, open-access, bi-annual journal on development studies, public policy and sustainable growth.",
+            "publisher": { "@id": "https://ijdrpub.in/#publisher" },
+            "image": "https://ijdrpub.in/assets/images/ijdr-social-preview.jpg"
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://ijdrpub.in/#publisher",
+            "name": "Institute of Development Studies, Varanasi",
+            "url": "https://ijdrpub.in/publisher",
+            "logo": "https://ijdrpub.in/icon-512.png"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://ijdrpub.in/#website",
+            "url": "https://ijdrpub.in/",
+            "name": "Indian Journal of Development Research",
+            "inLanguage": "en",
+            "publisher": { "@id": "https://ijdrpub.in/#publisher" }
+          }
+        ]
+      }
     </script>
 
     <!-- SEO Meta Tags -->

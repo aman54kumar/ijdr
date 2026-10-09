@@ -20,6 +20,12 @@
             "outputPath": "dist/journal-portal",
             "index": "src/index.html",
             "browser": "src/main.ts",
+            "server": "src/main.server.ts",
+            "externalDependencies": ["canvas"],
+            "prerender": {
+              "routesFile": "prerender-routes.txt",
+              "discoverRoutes": false
+            },
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
