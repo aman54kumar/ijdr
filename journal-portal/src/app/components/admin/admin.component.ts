@@ -50,6 +50,20 @@ function optionalIssnValidator(): ValidatorFn {
   };
 }
 
+type AdminView =
+  | 'journals'
+  | 'create-journal'
+  | 'admin-management'
+  | 'board-management'
+  | 'create-board-member'
+  | 'insights'
+  | 'messages'
+  | 'announcement'
+  | 'articles'
+  | 'ai'
+  | 'submissions'
+  | 'notifications';
+
 @Component({
   selector: 'app-admin',
   standalone: true,
@@ -72,19 +86,50 @@ function optionalIssnValidator(): ValidatorFn {
   styleUrls: ['./admin.component.scss'],
 })
 export class AdminComponent implements OnInit {
-  currentView:
-    | 'journals'
-    | 'create-journal'
-    | 'admin-management'
-    | 'board-management'
-    | 'create-board-member'
-    | 'insights'
-    | 'messages'
-    | 'announcement'
-    | 'articles'
-    | 'ai'
-    | 'submissions'
-    | 'notifications' = 'journals';
+  currentView: AdminView = 'journals';
+
+  /** Grouped navigation; drives the header tabs. */
+  readonly navGroups: { label: string; items: { view: AdminView; label: string; icon: string }[] }[] = [
+    {
+      label: 'Content',
+      items: [
+        { view: 'journals', label: 'Journals', icon: 'bi-journal-text' },
+        { view: 'articles', label: 'Articles', icon: 'bi-file-earmark-text' },
+        { view: 'announcement', label: 'Announcement', icon: 'bi-megaphone' },
+        { view: 'board-management', label: 'Editorial Board', icon: 'bi-person-badge' },
+      ],
+    },
+    {
+      label: 'Inbox',
+      items: [
+        { view: 'messages', label: 'Messages', icon: 'bi-envelope' },
+        { view: 'submissions', label: 'Submissions', icon: 'bi-inbox' },
+      ],
+    },
+    {
+      label: 'Insight',
+      items: [
+        { view: 'insights', label: 'Insights', icon: 'bi-bar-chart-line' },
+        { view: 'ai', label: 'AI', icon: 'bi-stars' },
+      ],
+    },
+    {
+      label: 'Settings',
+      items: [
+        { view: 'notifications', label: 'Notifications', icon: 'bi-bell' },
+        { view: 'admin-management', label: 'Admin Management', icon: 'bi-people-fill' },
+      ],
+    },
+  ];
+
+  /** Sub-views (create/edit forms) keep their parent tab highlighted. */
+  isNavActive(view: AdminView): boolean {
+    const parent: Partial<Record<AdminView, AdminView>> = {
+      'create-journal': 'journals',
+      'create-board-member': 'board-management',
+    };
+    return (parent[this.currentView] ?? this.currentView) === view;
+  }
 
   journals: FirebaseJournal[] = [];
   selectedJournal: FirebaseJournal | null = null;
@@ -423,21 +468,7 @@ export class AdminComponent implements OnInit {
   }
 
   // View navigation
-  setView(
-    view:
-      | 'journals'
-      | 'create-journal'
-      | 'admin-management'
-      | 'board-management'
-      | 'create-board-member'
-      | 'insights'
-      | 'messages'
-      | 'announcement'
-      | 'articles'
-      | 'ai'
-      | 'submissions'
-      | 'notifications'
-  ) {
+  setView(view: AdminView) {
     this.currentView = view;
     this.selectedJournal = null;
     this.journalForm.reset();
