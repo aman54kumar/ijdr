@@ -10,7 +10,8 @@
   position: relative; overflow: hidden;
   &::after { content: ''; position: absolute; right: -4rem; top: -5rem; width: 18rem; height: 18rem; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.16), transparent 70%); pointer-events: none; }
   h2 { color: #fff !important; font-size: 1.6rem; }
-  p { color: rgba(255,255,255,.88); font-size: .9rem; }
+  p, p * { color: #fff !important; opacity: .92; font-size: .9rem; }
+  .info, .info i { color: #fff !important; }
 }
 .head-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; position: relative; z-index: 1; }
 .hbtn { display: inline-flex; align-items: center; gap: .45rem; padding: .45rem .95rem; font-size: .82rem; font-weight: 700; color: #0a2a4c !important; background: #fff; border: 1px solid #fff; border-radius: 2rem; text-decoration: none; cursor: pointer; transition: background .15s, transform .12s;
