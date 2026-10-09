@@ -126,6 +126,11 @@ export class ArticleService {
     ) as Observable<iArticle[]>;
   }
 
+  /** Every article including drafts (admin only; powers the Insights page). */
+  getAllForAdmin(): Observable<iArticle[]> {
+    return collectionData(this.col(), { idField: 'id' }) as Observable<iArticle[]>;
+  }
+
   /** Public view of an issue: published only (the rules require this filter). */
   getPublishedArticlesByIssue(issueId: string): Observable<iArticle[]> {
     return collectionData(

@@ -1,114 +1,498 @@
-<div class="insights-panel">
-  <h2 class="mb-3">Insights</h2>
-  <p class="text-muted small mb-3">
-    Popularity from Firestore counters
-    <span class="d-inline-block ms-1" tabindex="0"
-      title="Views ≈ times a page was opened in a browser session (not unique visitors). For site-wide traffic, use Google Analytics.">
-      <i class="bi bi-info-circle" aria-hidden="true"></i>
-    </span>
-  </p>
+<div class="insights">
+  <!-- ============ Header ============ -->
+  <header class="head">
+    <div>
+      <h2 class="mb-1">Insights</h2>
+      <p class="mb-0">
+        How readers use the journal, what you've published, and what needs attention.
+        <span class="info" tabindex="0" title="Views ≈ times a page was opened in a browser session (not unique visitors). Daily trends come from nightly snapshots of the view counters. For visitor numbers, countries and sources, use Google Analytics.">
+          <i class="bi bi-info-circle" aria-hidden="true"></i><span class="visually-hidden">About views</span>
+        </span>
+      </p>
+    </div>
+    <div class="head-actions">
+      <button type="button" class="hbtn" (click)="snapshot()" [disabled]="snapshotting"><i class="bi bi-camera" aria-hidden="true"></i>{{ snapshotting ? 'Saving…' : 'Snapshot now' }}</button>
+      <a class="hbtn" href="https://analytics.google.com/" target="_blank" rel="noopener noreferrer"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i>Google Analytics</a>
+    </div>
+  </header>
 
-  <div class="mb-4 d-flex flex-wrap gap-2">
-    <a class="btn btn-outline-primary btn-sm" href="https://analytics.google.com/" target="_blank" rel="noopener noreferrer"><i class="bi bi-graph-up-arrow me-1"></i>Open Google Analytics</a>
-    <a class="btn btn-outline-secondary btn-sm" href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer"><i class="bi bi-fire me-1"></i>Open Firebase Console</a>
+  <!-- ============ Sticky toolbar: sections + period ============ -->
+  <div class="bar">
+    <nav class="tabs" role="tablist" aria-label="Insights sections">
+      @for (t of tabs; track t.id) {
+        <button type="button" role="tab" class="tab" [class.on]="tab === t.id" [attr.aria-selected]="tab === t.id" (click)="tab = t.id">
+          <i class="bi" [ngClass]="t.icon" aria-hidden="true"></i><span>{{ t.label }}</span>
+          @if (t.badge) { <b class="badge-n">{{ t.badge }}</b> }
+        </button>
+      }
+    </nav>
+    <div class="seg" role="group" aria-label="Time range">
+      @for (r of ranges; track r.value) {
+        <button type="button" class="seg-btn" [class.on]="range === r.value" [attr.aria-pressed]="range === r.value" (click)="setRange(r.value)">{{ r.label }}</button>
+      }
+    </div>
   </div>
 
-  <section class="mb-4" aria-labelledby="trend-h">
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-      <h3 id="trend-h" class="h5 mb-0">Daily trends (last 30 days)</h3>
-      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="snapshot()" [disabled]="snapshotting">
-        {{ snapshotting ? 'Saving…' : 'Take a snapshot now' }}
-      </button>
-    </div>
-    @if (!statsLoaded) {
-      <p class="text-muted">Loading…</p>
-    } @else if (issueTrend.length < 1) {
-      <p class="text-muted">
-        Trends appear after two daily snapshots. A snapshot is saved automatically every night at 00:10 UTC; use the button to save one
-        now ({{ days.length }} so far).
-      </p>
-    } @else {
-      <div class="row g-3">
-        <div class="col-md-6">
-          <div class="tile">
-            <div class="d-flex justify-content-between"><span>Issue views per day</span><strong>{{ sum(issueTrend) }}</strong></div>
-            <app-sparkline [values]="values(issueTrend)" [label]="'Issue views per day, ' + sum(issueTrend) + ' in total'"></app-sparkline>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="tile">
-            <div class="d-flex justify-content-between"><span>Article views per day</span><strong>{{ sum(articleTrend) }}</strong></div>
-            <app-sparkline [values]="values(articleTrend)" [label]="'Article views per day, ' + sum(articleTrend) + ' in total'"></app-sparkline>
-          </div>
+  @if (loading) {
+    <div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading</span></div></div>
+  } @else {
+    @if (tab === 'overview') {
+<div class="pane">
+    <!-- ============ KPI strip ============ -->
+    <section class="kpis" aria-label="Key numbers">
+      <div class="kpi">
+        <i class="bi bi-eye kpi-ico" aria-hidden="true"></i>
+        <div class="kpi-num">{{ allTimeViews | number }}</div>
+        <div class="kpi-lab">Total views, all time</div>
+        @if (traffic && traffic.total.length > 2) { <app-sparkline class="kpi-spark" [values]="traffic.total" [label]="'Views per day, ' + rangeText"></app-sparkline> }
+        <div class="kpi-sub">
+          @if (traffic && traffic.week.change !== null) {
+            <span class="chg" [ngClass]="changeClass(traffic.week.change)">
+              <i class="bi" [ngClass]="traffic.week.change >= 0 ? 'bi-arrow-up-right' : 'bi-arrow-down-right'" aria-hidden="true"></i>{{ traffic.week.change > 0 ? '+' : '' }}{{ traffic.week.change }}%
+            </span> vs previous week
+          } @else { {{ traffic?.week?.current || 0 }} in the last 7 days }
         </div>
       </div>
-      @if (latest) {
-        <p class="small text-muted mt-2 mb-0">
-          As of {{ latest.date }}: {{ latest.totals.articlesPublished }} published articles ·
-          {{ latest.totals.contacts }} contact messages · {{ latest.totals.submissions }} submissions.
-        </p>
+      <div class="kpi">
+        <i class="bi bi-file-earmark-text kpi-ico" aria-hidden="true"></i>
+        <div class="kpi-num">{{ catalogue?.published || 0 }}</div>
+        <div class="kpi-lab">Published articles</div>
+        <div class="kpi-sub">{{ catalogue?.drafts || 0 }} draft{{ catalogue?.drafts === 1 ? '' : 's' }} waiting</div>
+      </div>
+      <div class="kpi">
+        <i class="bi bi-journals kpi-ico" aria-hidden="true"></i>
+        <div class="kpi-num">{{ catalogue?.issues || 0 }}</div>
+        <div class="kpi-lab">Issues</div>
+        <div class="kpi-sub">{{ catalogue?.totalPages | number }} article pages</div>
+      </div>
+      <div class="kpi">
+        <i class="bi bi-people kpi-ico" aria-hidden="true"></i>
+        <div class="kpi-num">{{ catalogue?.authorsTotal || 0 }}</div>
+        <div class="kpi-lab">Unique authors</div>
+        <div class="kpi-sub">{{ catalogue?.avgAuthors || 0 }} per article</div>
+      </div>
+      <div class="kpi" [class.alert]="(subStats?.waitingOver14 || 0) > 0">
+        <i class="bi bi-inbox kpi-ico" aria-hidden="true"></i>
+        <div class="kpi-num">{{ subStats?.open || 0 }}</div>
+        <div class="kpi-lab">Open submissions</div>
+        <div class="kpi-sub">{{ subStats?.waitingOver14 || 0 }} waiting over 14 days</div>
+      </div>
+      <div class="kpi" [class.alert]="unhandledMessages > 0">
+        <i class="bi bi-envelope kpi-ico" aria-hidden="true"></i>
+        <div class="kpi-num">{{ unhandledMessages }}</div>
+        <div class="kpi-lab">New messages</div>
+        <div class="kpi-sub">{{ msgStats?.highPriorityOpen || 0 }} high priority</div>
+      </div>
+    </section>
+    <section class="block attention" aria-labelledby="att-h">
+      <h3 id="att-h" class="sec-title"><i class="bi bi-bell" aria-hidden="true"></i> Needs your attention</h3>
+      @if (!attention.length) {
+        <div class="allgood"><i class="bi bi-check2-circle" aria-hidden="true"></i> All clear. Nothing is waiting on you.</div>
+      } @else {
+        <div class="att-grid">
+          @for (a of attention; track a.text) {
+            <button type="button" class="att" [ngClass]="a.level" (click)="tab = a.tab">
+              <i class="bi" [ngClass]="a.icon" aria-hidden="true"></i>
+              <span>{{ a.text }}</span>
+              <i class="bi bi-chevron-right go" aria-hidden="true"></i>
+            </button>
+          }
+        </div>
       }
-      <div class="row g-3 mt-1">
-        <div class="col-md-6">
-          <h4 class="h6">Top issues in this period</h4>
-          <ol class="small">
-            @for (t of topIssues; track t.id) { <li><a [routerLink]="['/journal', t.id]">{{ t.title }}</a> · {{ t.views }}</li> } @empty { <li class="text-muted list-unstyled">No views yet.</li> }
-          </ol>
+    </section>
+    <section class="block" aria-labelledby="t-h-graph-up">
+      <h3 id="t-h-graph-up" class="sec-title"><i class="bi bi-graph-up" aria-hidden="true"></i> Readership, {{ rangeText }}</h3>
+      @if (!statsLoaded) {
+        <p class="muted">Loading…</p>
+      } @else if (!hasTrend) {
+        <div class="empty-note">
+          <i class="bi bi-hourglass" aria-hidden="true"></i>
+          <div>
+            Trends appear after two daily snapshots. One is saved automatically every night at 00:10 UTC; use <strong>Snapshot now</strong> to save one
+            immediately ({{ days.length }} so far).
+          </div>
         </div>
-        <div class="col-md-6">
-          <h4 class="h6">Top articles in this period</h4>
-          <ol class="small">
-            @for (t of topArticles; track t.id) { <li><a [routerLink]="['/article', t.id]">{{ t.title }}</a> · {{ t.views }}</li> } @empty { <li class="text-muted list-unstyled">No views yet.</li> }
-          </ol>
+      } @else {
+        <div class="grid two-one">
+          <div class="card-i">
+            <div class="card-head">
+              <span>Views per day</span>
+              <strong>{{ traffic!.totalViews | number }} total</strong>
+            </div>
+            <app-area-chart [dates]="traffic!.dates" [series]="trafficSeries" [label]="'Daily article and issue views, ' + rangeText + ', ' + traffic!.totalViews + ' in total'"></app-area-chart>
+          </div>
+          <div class="card-i stack">
+            <div class="mini"><span class="mini-lab">Average per day</span><strong>{{ traffic!.avgPerDay }}</strong></div>
+            <div class="mini"><span class="mini-lab">Best day</span><strong>{{ traffic!.best?.value || 0 }}</strong><small>{{ traffic!.best ? fmt(traffic!.best!.date) : '' }}</small></div>
+            <div class="mini"><span class="mini-lab">Current streak</span><strong>{{ traffic!.streak }} day{{ traffic!.streak === 1 ? '' : 's' }}</strong><small>with at least one view</small></div>
+            <div class="mini"><span class="mini-lab">Reading depth</span><strong>{{ traffic!.depth ?? '—' }}</strong><small>articles per issue opened</small></div>
+          </div>
+        </div>
+
+      }
+    </section>
+    <!-- ============ Fun facts ============ -->
+    @if (facts.length) {
+      <section class="facts" aria-labelledby="facts-h">
+        <h3 id="facts-h" class="sec-title"><i class="bi bi-lightbulb" aria-hidden="true"></i> Did you know?</h3>
+        <div class="facts-row">
+          @for (f of facts.slice(0, factsShown); track f.title) {
+            <article class="fact">
+              <i class="bi" [ngClass]="f.icon" aria-hidden="true"></i>
+              <div>
+                <strong>{{ f.title }}</strong>
+                <p>{{ f.text }}</p>
+              </div>
+            </article>
+          }
+        </div>
+        @if (facts.length > 8) {
+          <button type="button" class="btn btn-link btn-sm px-0 mt-1" (click)="factsShown = factsShown > 8 ? 8 : facts.length">{{ factsShown > 8 ? 'Show fewer' : 'Show all ' + facts.length }}</button>
+        }
+      </section>
+    }
+</div>
+    }
+    @if (tab === 'readers') {
+<div class="pane">
+    <section class="block" aria-labelledby="t-h-people">
+      <h3 id="t-h-people" class="sec-title"><i class="bi bi-people" aria-hidden="true"></i> Readers &amp; momentum, {{ rangeText }}</h3>
+      @if (!statsLoaded) {
+        <p class="muted">Loading…</p>
+      } @else if (!hasTrend) {
+        <div class="empty-note">
+          <i class="bi bi-hourglass" aria-hidden="true"></i>
+          <div>
+            Trends appear after two daily snapshots. One is saved automatically every night at 00:10 UTC; use <strong>Snapshot now</strong> to save one
+            immediately ({{ days.length }} so far).
+          </div>
+        </div>
+      } @else {
+        <div class="grid two">
+          <div class="card-i">
+            <div class="card-head"><span>Busiest days of the week</span><small class="muted">average views</small></div>
+            <app-columns [items]="traffic!.weekdays" label="Average views by weekday"></app-columns>
+          </div>
+          <div class="card-i">
+            <div class="card-head"><span>What readers open</span></div>
+            <app-donut
+              [segments]="[{ label: 'Article pages', value: articleViewsTotal }, { label: 'Issue pages', value: issueViewsTotal }]"
+              [centre]="traffic!.totalViews"
+              centreLabel="views"
+              label="Share of article vs issue views"
+            ></app-donut>
+          </div>
+        </div>
+
+        <h4 class="sub-title">Momentum <small class="muted">second half of the period vs the first</small></h4>
+        <div class="grid three">
+          <div class="card-i">
+            <div class="card-head"><span><i class="bi bi-arrow-up-right-circle text-ok" aria-hidden="true"></i> Rising articles</span></div>
+            <app-hbars [items]="moverBars(risingArticles, 'article')" color="var(--success-600)" label="Rising articles" empty="No article is clearly climbing yet."></app-hbars>
+          </div>
+          <div class="card-i">
+            <div class="card-head"><span><i class="bi bi-arrow-down-right-circle text-warn" aria-hidden="true"></i> Cooling off</span></div>
+            <app-hbars [items]="moverBars(coolingArticles, 'article')" color="var(--warning-600)" label="Cooling articles" empty="Nothing is dropping off."></app-hbars>
+          </div>
+          <div class="card-i">
+            <div class="card-head"><span><i class="bi bi-journal-arrow-up text-ok" aria-hidden="true"></i> Rising issues</span></div>
+            <app-hbars [items]="moverBars(risingIssues, 'journal')" color="var(--success-600)" label="Rising issues" empty="No issue is clearly climbing yet."></app-hbars>
+          </div>
+        </div>
+      }
+    </section>
+    <!-- ============ Issues ============ -->
+    <section class="block" aria-labelledby="all-h">
+      <h3 id="all-h" class="sec-title"><i class="bi bi-journals" aria-hidden="true"></i> Issues compared</h3>
+      <div class="card-i">
+        <div class="table-responsive">
+          <table class="tbl">
+            <thead><tr><th>Issue</th><th>Year</th><th class="num">Articles</th><th class="num">Views</th><th class="num">Per article</th><th class="share-col">Share of issue views</th></tr></thead>
+            <tbody>
+              @for (j of issues; track j.id) {
+                <tr>
+                  <td><a [routerLink]="['/journal', j.id]" target="_blank" rel="noopener">{{ j.title }}</a></td>
+                  <td>{{ j.year }}</td>
+                  <td class="num">{{ j.articles }}</td>
+                  <td class="num">{{ j.views | number }}</td>
+                  <td class="num">{{ j.perArticle ?? '—' }}</td>
+                  <td class="share-col"><div class="track"><div class="fill" [style.width.%]="j.share"></div></div><small class="muted">{{ j.share }}%</small></td>
+                </tr>
+              }
+            </tbody>
+          </table>
         </div>
       </div>
+    </section>
+</div>
     }
-  </section>
+    @if (tab === 'content') {
+<div class="pane">
+    <!-- ============ Content performance ============ -->
+    <section class="block" aria-labelledby="perf-h">
+      <h3 id="perf-h" class="sec-title"><i class="bi bi-bar-chart" aria-hidden="true"></i> Content performance</h3>
+      <div class="grid two">
+        <div class="card-i">
+          <div class="card-head"><span>Most-read articles, all time</span><small class="muted">{{ catalogue?.avgViews }} avg views per article</small></div>
+          <app-hbars [items]="mostRead" unit="views" label="Most read articles" empty="No article views recorded yet."></app-hbars>
+        </div>
+        <div class="card-i">
+          <div class="card-head"><span>What readers care about</span><small class="muted">views by subject</small></div>
+          @if (topSubjects.length) {
+            <div class="table-responsive">
+              <table class="tbl">
+                <thead><tr><th>Subject</th><th class="num">Articles</th><th class="num">Views</th><th class="num">Per article</th></tr></thead>
+                <tbody>
+                  @for (s of topSubjects; track s.subject) {
+                    <tr><td>{{ s.subject }}</td><td class="num">{{ s.articles }}</td><td class="num">{{ s.views | number }}</td><td class="num"><strong>{{ s.perArticle }}</strong></td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <p class="hint">A high "per article" figure on a small subject is an under-served topic worth commissioning more of.</p>
+          } @else {
+            <p class="muted mb-0">Set a subject on your articles to see which topics attract readers.</p>
+          }
+        </div>
+      </div>
 
-  <section class="mb-4" aria-labelledby="all-h">
-    <h3 id="all-h" class="h5">All-time views by issue</h3>
-    <div *ngIf="loading" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>
-    <div *ngIf="!loading" class="table-responsive">
-      <table class="table table-sm table-striped align-middle">
-        <thead>
-          <tr><th>Issue</th><th>Year</th><th class="text-end">Views</th><th class="text-end">Updated</th></tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let j of journals">
-            <td><a [routerLink]="['/journal', j.id]" target="_blank" rel="noopener">{{ j.title }}</a></td>
-            <td>{{ j.year }}</td>
-            <td class="text-end">{{ j.viewCount || 0 | number }}</td>
-            <td class="text-end text-muted small">
-              <span *ngIf="j.updatedAt?.toDate">{{ j.updatedAt!.toDate() | date: 'mediumDate' }}</span>
-              <span *ngIf="!j.updatedAt?.toDate">—</span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
+      <div class="grid two">
+        <div class="card-i">
+          <div class="card-head"><span>Top keywords</span><small class="muted">by number of articles</small></div>
+          <app-hbars [items]="catalogue?.keywords?.slice(0, 8) || []" color="var(--accent-500)" label="Top keywords" empty="No keywords on published articles yet."></app-hbars>
+        </div>
+        <div class="card-i">
+          <div class="card-head"><span>Keywords readers open</span><small class="muted">by total views</small></div>
+          <app-hbars [items]="catalogue?.keywordsByViews?.slice(0, 8) || []" unit="views" color="var(--academic-navy-300)" label="Keywords by views" empty="No keyword views yet."></app-hbars>
+        </div>
+      </div>
+    </section>
+    <!-- ============ Archive anatomy ============ -->
+    <section class="block" aria-labelledby="arch-h">
+      <h3 id="arch-h" class="sec-title"><i class="bi bi-archive" aria-hidden="true"></i> The archive</h3>
+      <div class="grid three">
+        <div class="card-i">
+          <div class="card-head"><span>Articles per year</span></div>
+          <app-columns [items]="catalogue?.perYear || []" label="Published articles per year"></app-columns>
+        </div>
+        <div class="card-i">
+          <div class="card-head"><span>Languages</span></div>
+          <app-donut [segments]="catalogue?.languages || []" [centre]="catalogue?.published || 0" centreLabel="articles" label="Articles by language"></app-donut>
+        </div>
+        <div class="card-i stack">
+          <div class="card-head"><span>Anatomy of an article</span></div>
+          <div class="pair"><span>Average length</span><strong>{{ catalogue?.avgPages || '—' }} pages</strong></div>
+          <div class="pair"><span>Average abstract</span><strong>{{ catalogue?.avgAbstractWords || '—' }} words</strong></div>
+          <div class="pair"><span>Team papers</span><strong>{{ catalogue?.multiAuthorPct }}%</strong></div>
+          <div class="pair"><span>Authors with ORCID</span><strong>{{ catalogue?.orcidPct }}%</strong></div>
+          <div class="pair"><span>Longest</span><strong>{{ catalogue?.longest?.pages || '—' }} pages</strong></div>
+          <div class="pair"><span>Shortest</span><strong>{{ catalogue?.shortest?.pages || '—' }} pages</strong></div>
+        </div>
+      </div>
 
-  <section aria-labelledby="audit-h">
-    <h3 id="audit-h" class="h5">Admin activity</h3>
-    <p class="text-muted small">Recent publish, unpublish and delete actions, and submission status changes. Entries cannot be edited or removed.</p>
-    @if (!audit.length) {
-      <p class="text-muted">Nothing recorded yet.</p>
-    } @else {
-      <div class="table-responsive">
-        <table class="table table-sm align-middle">
-          <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Item</th></tr></thead>
-          <tbody>
-            @for (a of audit; track a.id) {
-              <tr>
-                <td class="small text-nowrap">{{ a.at?.toDate?.() | date: 'medium' }}</td>
-                <td class="small">{{ a.actorEmail || a.actorUid }}</td>
-                <td class="small">{{ actionLabel(a) }}@if (a.detail) { <span class="text-muted"> ({{ a.detail }})</span> }</td>
-                <td class="small">{{ a.title || a.targetId }}</td>
-              </tr>
+      <div class="grid three">
+        <div class="card-i">
+          <div class="card-head"><span>Most published authors</span></div>
+          <app-hbars [items]="catalogue?.topAuthors || []" unit="articles" color="var(--accent-500)" label="Most published authors" empty="No authors yet."></app-hbars>
+        </div>
+        <div class="card-i">
+          <div class="card-head"><span>Most-read authors</span></div>
+          <app-hbars [items]="catalogue?.topAuthorsByViews || []" unit="views" label="Most read authors" empty="No author views yet."></app-hbars>
+        </div>
+        <div class="card-i">
+          <div class="card-head"><span>Top institutions</span></div>
+          <app-hbars [items]="catalogue?.topAffiliations || []" unit="authors" color="var(--academic-navy-300)" label="Top institutions" empty="No affiliations recorded."></app-hbars>
+        </div>
+      </div>
+    </section>
+</div>
+    }
+    @if (tab === 'health') {
+<div class="pane">
+    <!-- ============ Content health ============ -->
+    <section class="block" aria-labelledby="health-h">
+      <h3 id="health-h" class="sec-title"><i class="bi bi-heart-pulse" aria-hidden="true"></i> Content health</h3>
+      <div class="grid one-two">
+        <div class="card-i center">
+          <app-score-ring [value]="health?.score || 0" label="Metadata completeness"></app-score-ring>
+          <div class="score-lab">Metadata completeness</div>
+          <p class="hint">Weighted by how much each field helps readers find, cite and index an article.</p>
+          <ul class="todo">
+            <li [class.done]="!(health?.issuesWithoutArticles)"><i class="bi" [ngClass]="health?.issuesWithoutArticles ? 'bi-circle' : 'bi-check-circle-fill'" aria-hidden="true"></i>{{ health?.issuesWithoutArticles || 'No' }} issue{{ health?.issuesWithoutArticles === 1 ? '' : 's' }} without articles</li>
+            <li [class.done]="!(health?.issuesDraftOnly)"><i class="bi" [ngClass]="health?.issuesDraftOnly ? 'bi-circle' : 'bi-check-circle-fill'" aria-hidden="true"></i>{{ health?.issuesDraftOnly || 'No' }} issue{{ health?.issuesDraftOnly === 1 ? '' : 's' }} with drafts only</li>
+            <li [class.done]="!(health?.issuesWithoutCover)"><i class="bi" [ngClass]="health?.issuesWithoutCover ? 'bi-circle' : 'bi-check-circle-fill'" aria-hidden="true"></i>{{ health?.issuesWithoutCover || 'No' }} issue{{ health?.issuesWithoutCover === 1 ? '' : 's' }} without a cover</li>
+            <li [class.done]="!pendingAiReview"><i class="bi" [ngClass]="pendingAiReview ? 'bi-circle' : 'bi-check-circle-fill'" aria-hidden="true"></i>{{ pendingAiReview || 'No' }} low-confidence AI draft{{ pendingAiReview === 1 ? '' : 's' }} to review</li>
+          </ul>
+        </div>
+        <div class="card-i">
+          <div class="card-head"><span>Field coverage on published articles</span></div>
+          <ul class="checks">
+            @for (c of health?.checks || []; track c.key) {
+              <li>
+                <div class="row-between"><span>{{ c.label }}</span><span class="num">{{ c.ok }} / {{ c.total }}</span></div>
+                <div class="track"><div class="fill" [style.width.%]="c.total ? (c.ok / c.total) * 100 : 0" [class.low]="c.total && c.ok / c.total < 0.6"></div></div>
+                @if (c.total && c.ok < c.total) { <div class="sub">{{ c.hint }}</div> }
+              </li>
             }
-          </tbody>
-        </table>
+          </ul>
+        </div>
       </div>
+
+      <div class="grid two">
+        <div class="card-i">
+          <div class="card-head"><span>Never opened</span><small class="muted">{{ catalogue?.neverOpened?.length || 0 }} published, zero views</small></div>
+          @if (neverOpenedList.length) {
+            <ul class="plain">
+              @for (a of neverOpenedList; track a.id) {
+                <li><a [routerLink]="['/article', a.id]" target="_blank" rel="noopener">{{ a.title }}</a><small class="muted"> · {{ a.issueYear }}</small></li>
+              }
+            </ul>
+            <p class="hint">Consider sharing these, linking them from related articles, or checking their abstracts and keywords.</p>
+          } @else {
+            <p class="muted mb-0"><i class="bi bi-emoji-smile me-1" aria-hidden="true"></i>Every published article has been opened at least once.</p>
+          }
+        </div>
+        <div class="card-i">
+          <div class="card-head"><span>AI-assisted catalogue</span></div>
+          <div class="grid two tight">
+            <app-donut
+              [segments]="[{ label: 'AI draft', value: catalogue?.ai?.fromAi || 0 }, { label: 'Entered by hand', value: catalogue?.ai?.manual || 0 }]"
+              [centre]="catalogue?.published || 0" centreLabel="articles" label="Articles by source"
+            ></app-donut>
+            <div class="stack">
+              <div class="pair"><span>Reviewed by a human</span><strong>{{ catalogue?.ai?.humanEdited || 0 }} / {{ catalogue?.ai?.fromAi || 0 }}</strong></div>
+              <div class="pair"><span>Avg AI confidence</span><strong>{{ catalogue?.ai?.avgConfidence ?? '—' }}{{ catalogue?.ai?.avgConfidence != null ? '%' : '' }}</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+</div>
     }
-  </section>
+    @if (tab === 'inbox') {
+<div class="pane">
+    <!-- ============ Submissions + messages ============ -->
+    <section class="block" aria-labelledby="inbox-h">
+      <h3 id="inbox-h" class="sec-title"><i class="bi bi-inbox" aria-hidden="true"></i> Submissions &amp; messages</h3>
+      <div class="grid two">
+        <div class="card-i">
+          <div class="card-head"><span>Manuscript pipeline</span><small class="muted">{{ subStats?.last30 || 0 }} in the last 30 days</small></div>
+          @if (!subStats?.total) {
+            <p class="muted mb-0">No manuscripts submitted yet.</p>
+          } @else {
+            <app-donut [segments]="submissionDonut" [centre]="subStats!.total" centreLabel="manuscripts" label="Submissions by status"></app-donut>
+            <div class="grid three tight mt-3">
+              <div class="mini"><span class="mini-lab">Acceptance rate</span><strong>{{ subStats!.acceptRate !== null ? subStats!.acceptRate + '%' : '—' }}</strong></div>
+              <div class="mini"><span class="mini-lab">Median decision</span><strong>{{ subStats!.medianDecisionDays !== null ? subStats!.medianDecisionDays + ' d' : '—' }}</strong></div>
+              <div class="mini" [class.warn]="subStats!.waitingOver14 > 0"><span class="mini-lab">Waiting &gt; 14 days</span><strong>{{ subStats!.waitingOver14 }}</strong></div>
+            </div>
+            @if (subStats!.oldestOpen) {
+              <p class="hint mt-2 mb-0"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Oldest open: “{{ subStats!.oldestOpen!.title }}”, {{ subStats!.oldestOpen!.days }} days.</p>
+            }
+          }
+        </div>
+        <div class="card-i">
+          <div class="card-head"><span>Submissions per month</span></div>
+          <app-columns [items]="subStats?.perMonth || []" label="Manuscript submissions per month"></app-columns>
+          @if (subStats?.keywords?.length) {
+            <div class="chips mt-3">
+              <span class="muted small me-1">Topics authors send:</span>
+              @for (k of subStats!.keywords; track k.label) { <span class="chip">{{ k.label }}<b>{{ k.value }}</b></span> }
+            </div>
+          }
+        </div>
+      </div>
+      <div class="grid two">
+        <div class="card-i">
+          <div class="card-head"><span>Contact messages</span><small class="muted">{{ msgStats?.last30 || 0 }} in the last 30 days</small></div>
+          @if (!msgStats?.total) {
+            <p class="muted mb-0">No messages yet.</p>
+          } @else {
+            <div class="grid two tight">
+              <app-donut [segments]="[{ label: 'New', value: msgStats!.fresh }, { label: 'Handled', value: msgStats!.handled }]" [centre]="msgStats!.handledPct + '%'" centreLabel="handled" label="Messages handled vs new"></app-donut>
+              <div>
+                <div class="small muted mb-1">By topic (AI triage)</div>
+                <app-hbars [items]="msgStats!.categories" label="Message topics" empty="Triage not run yet."></app-hbars>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="card-i">
+          <div class="card-head"><span>Messages per month</span></div>
+          <app-columns [items]="msgStats?.perMonth || []" label="Contact messages per month"></app-columns>
+        </div>
+      </div>
+    </section>
+</div>
+    }
+    @if (tab === 'system') {
+<div class="pane">
+    <!-- ============ AI usage ============ -->
+    <section class="block" aria-labelledby="ai-h">
+      <h3 id="ai-h" class="sec-title"><i class="bi bi-stars" aria-hidden="true"></i> AI features, {{ rangeText }}</h3>
+      <div class="card-i">
+        @if (!ai || !ai.dates.length) {
+          <p class="muted mb-0">Usage appears here once daily snapshots exist.</p>
+        } @else if (!ai.total) {
+          <p class="muted mb-0">No AI features used in this period.</p>
+        } @else {
+          <ul class="checks">
+            @for (r of ai.rows; track r.key) {
+              <li>
+                <div class="row-between"><span>{{ r.label }}</span><span class="num">{{ r.total | number }} <small class="muted">· peak {{ r.peak }}/day</small></span></div>
+                <div class="track"><div class="fill" [class.low]="r.usedPct > 80" [style.width.%]="r.usedPct"></div></div>
+              </li>
+            }
+          </ul>
+          <p class="hint mb-0">Bars show use against the combined daily allowance for the period. If a bar is nearly full, readers are hitting the daily limits.</p>
+        }
+      </div>
+    </section>
+    <!-- ============ Admin activity ============ -->
+    <section class="block" aria-labelledby="audit-h">
+      <h3 id="audit-h" class="sec-title"><i class="bi bi-clipboard-check" aria-hidden="true"></i> Admin activity</h3>
+      <div class="grid one-two">
+        <div class="card-i">
+          <div class="card-head"><span>What admins do</span></div>
+          <app-hbars [items]="actionBars()" label="Admin actions" empty="Nothing recorded yet."></app-hbars>
+          @if (activity?.actors?.length) {
+            <div class="card-head mt-3"><span>Most active</span></div>
+            <app-hbars [items]="activity!.actors" color="var(--accent-500)" label="Most active admins"></app-hbars>
+          }
+        </div>
+        <div class="card-i">
+          <div class="card-head"><span>Recent actions</span><small class="muted">entries cannot be edited or removed</small></div>
+          @if (!audit.length) {
+            <p class="muted mb-0">Nothing recorded yet.</p>
+          } @else {
+            <div class="table-responsive">
+              <table class="tbl">
+                <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Item</th></tr></thead>
+                <tbody>
+                  @for (a of audit.slice(0, auditShown); track a.id) {
+                    <tr>
+                      <td class="nowrap">{{ a.at?.toDate?.() | date: 'medium' }}</td>
+                      <td>{{ a.actorEmail || a.actorUid }}</td>
+                      <td>{{ actionLabel(a) }}@if (a.detail) { <span class="muted"> ({{ a.detail }})</span> }</td>
+                      <td>{{ a.title || a.targetId }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            @if (auditShown < audit.length) {
+              <button type="button" class="btn btn-link btn-sm px-0" (click)="showMoreAudit()">Show more</button>
+            }
+          }
+        </div>
+      </div>
+    </section>
+</div>
+    }
+    <p class="foot muted">
+      Need visitor counts, countries or traffic sources? Open
+      <a href="https://analytics.google.com/" target="_blank" rel="noopener noreferrer">Google Analytics</a> or the
+      <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">Firebase Console</a>.
+    </p>
+  }
 </div>
