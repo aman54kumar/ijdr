@@ -421,6 +421,11 @@ export class AdminArticlesComponent implements OnInit, OnDestroy {
     return this.extracting || this.job?.state === 'running';
   }
 
+  /** Known models, plus a saved id that is not in the list so it still shows. */
+  optionsFor(current: string): string[] {
+    return current && !this.modelChoices.includes(current) ? [current, ...this.modelChoices] : this.modelChoices;
+  }
+
   get modelsChanged(): boolean {
     return this.model.trim() !== this.saved.model || this.publicModel.trim() !== this.saved.publicModel;
   }

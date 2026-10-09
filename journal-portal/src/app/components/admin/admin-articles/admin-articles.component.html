@@ -36,22 +36,23 @@
       <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
         <div>
           <label class="form-label small mb-1" for="ai-model">Admin model (issue extraction, message triage)</label>
-          <input id="ai-model" class="form-control form-control-sm" list="ai-model-list" [(ngModel)]="model"
-            [ngModelOptions]="{ standalone: true }" placeholder="Server default" autocomplete="off" />
+          <select id="ai-model" class="form-select form-select-sm" [(ngModel)]="model" [ngModelOptions]="{ standalone: true }">
+            <option value="">Server default</option>
+            @for (m of optionsFor(model); track m) { <option [value]="m">{{ m }}</option> }
+          </select>
         </div>
         <div>
           <label class="form-label small mb-1" for="ai-public-model">Reader-facing model (summaries, translation, Ask, search)</label>
-          <input id="ai-public-model" class="form-control form-control-sm" list="ai-model-list" [(ngModel)]="publicModel"
-            [ngModelOptions]="{ standalone: true }" placeholder="Same as admin model" autocomplete="off" />
+          <select id="ai-public-model" class="form-select form-select-sm" [(ngModel)]="publicModel" [ngModelOptions]="{ standalone: true }">
+            <option value="">Same as admin model</option>
+            @for (m of optionsFor(publicModel); track m) { <option [value]="m">{{ m }}</option> }
+          </select>
         </div>
-        <datalist id="ai-model-list">
-          @for (m of modelChoices; track m) { <option [value]="m"></option> }
-        </datalist>
         <button type="button" class="btn btn-outline-secondary btn-sm" (click)="saveModels()"
           [disabled]="savingModel || !modelsChanged">
           Save models
         </button>
-        <span class="text-muted small w-100">Quotas are per model, so use different ones to keep reader traffic from using up extraction quota. Blank = default.</span>
+        <span class="text-muted small w-100">Quotas are per model, so use different ones to keep reader traffic from using up extraction quota.</span>
       </div>
 
       @if (job) {
