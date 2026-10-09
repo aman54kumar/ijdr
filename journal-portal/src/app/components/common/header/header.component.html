@@ -1,194 +1,123 @@
-<header class="modern-header" [class.scrolled]="scrolled">
-  <nav class="navbar navbar-expand-lg" aria-label="Main navigation">
-    <div class="container">
+<header class="modern-header" [class.scrolled]="scrolled" [class.menu-open]="!isNavbarCollapsed">
+  <nav class="navbar" aria-label="Main navigation">
+    <div class="container header-row">
       <!-- Brand -->
-      <a class="navbar-brand" routerLink="/" aria-label="IJDR home">
-        <span class="brand-container">
-          <span class="logo-badge">
-            <img
-              src="assets/images/logos/ijdr-mark.png"
-              alt=""
-              width="41"
-              height="40"
-            />
-          </span>
-          <span class="brand-text">
-            <span class="brand-title font-display">IJDR</span>
-            <span class="brand-subtitle">Indian Journal of Development Research</span>
-          </span>
+      <a class="navbar-brand" routerLink="/" aria-label="IJDR home" (click)="closeNavbar()">
+        <span class="logo-badge">
+          <img src="assets/images/logos/ijdr-mark.png" alt="" width="41" height="40" />
         </span>
+        <span class="brand-title font-display">IJDR</span>
       </a>
 
-      <!-- Mobile menu button -->
-      <button
-        class="navbar-toggler modern-toggler"
-        type="button"
-        (click)="isNavbarCollapsed = !isNavbarCollapsed"
-        aria-controls="navbarNav"
-        [attr.aria-expanded]="!isNavbarCollapsed"
-        aria-label="Toggle navigation"
-      >
-        <span class="toggler-line" [class.active]="!isNavbarCollapsed"></span>
-        <span class="toggler-line" [class.active]="!isNavbarCollapsed"></span>
-        <span class="toggler-line" [class.active]="!isNavbarCollapsed"></span>
-      </button>
+      <!-- Desktop navigation -->
+      <ul class="desktop-nav">
+        <li>
+          <a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Home</a>
+        </li>
+        <li>
+          <a class="nav-link" routerLink="/journals" routerLinkActive="active">Journals</a>
+        </li>
+        <li>
+          <a class="nav-link" routerLink="/articles" routerLinkActive="active">Articles</a>
+        </li>
+        <li
+          class="dropdown"
+          [class.show]="isDropdownOpen"
+          (mouseenter)="isDropdownOpen = true"
+          (mouseleave)="isDropdownOpen = false"
+        >
+          <a
+            class="nav-link dropdown-toggle"
+            href="#"
+            role="button"
+            aria-haspopup="true"
+            (click)="$event.preventDefault(); toggleDropdown()"
+            [attr.aria-expanded]="isDropdownOpen"
+          >About</a>
+          <ul class="dropdown-menu modern-dropdown" [class.show]="isDropdownOpen">
+            @for (item of aboutLinks; track item.path) {
+              <li>
+                <a class="dropdown-item" [routerLink]="item.path" (click)="closeNavbar()">{{ item.label }}</a>
+              </li>
+            }
+          </ul>
+        </li>
+        <li>
+          <a class="nav-link" routerLink="/contact" routerLinkActive="active">Contact</a>
+        </li>
+      </ul>
 
-      <!-- Navigation -->
-      <div
-        [ngClass]="{ show: !isNavbarCollapsed }"
-        class="navbar-collapse collapse"
-        id="navbarNav"
-      >
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item">
-            <a
-              class="nav-link"
-              routerLink="/"
-              routerLinkActive="active"
-              [routerLinkActiveOptions]="{ exact: true }"
-              (click)="closeNavbar()"
-            >
-              <i class="bi bi-house-door"></i>
-              <span>Home</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a
-              class="nav-link"
-              routerLink="/journals"
-              routerLinkActive="active"
-              (click)="closeNavbar()"
-            >
-              <i class="bi bi-journal-bookmark"></i>
-              <span>Journals</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a
-              class="nav-link"
-              routerLink="/articles"
-              routerLinkActive="active"
-              (click)="closeNavbar()"
-            >
-              <i class="bi bi-file-earmark-text"></i>
-              <span>Articles</span>
-            </a>
-          </li>
-          <li
-            class="nav-item dropdown"
-            [class.show]="isDropdownOpen"
-            (mouseenter)="onDesktop() && (isDropdownOpen = true)"
-            (mouseleave)="onDesktop() && (isDropdownOpen = false)"
-          >
-            <a
-              class="nav-link dropdown-toggle"
-              href="#"
-              role="button"
-              aria-haspopup="true"
-              (click)="$event.preventDefault(); toggleDropdown()"
-              [attr.aria-expanded]="isDropdownOpen"
-            >
-              <i class="bi bi-info-circle"></i>
-              <span>About</span>
-            </a>
-            <ul
-              class="dropdown-menu modern-dropdown"
-              [class.show]="isDropdownOpen"
-            >
-              <li>
-                <a
-                  class="dropdown-item"
-                  routerLink="/about"
-                  (click)="closeNavbar()"
-                >
-                  <i class="bi bi-building"></i>
-                  About IJDR
-                </a>
-              </li>
-              <li>
-                <a
-                  class="dropdown-item"
-                  routerLink="/editorial-board"
-                  (click)="closeNavbar()"
-                >
-                  <i class="bi bi-people"></i>
-                  Editorial Board
-                </a>
-              </li>
-              <li>
-                <a
-                  class="dropdown-item"
-                  routerLink="/advisory-board"
-                  (click)="closeNavbar()"
-                >
-                  <i class="bi bi-shield-check"></i>
-                  Advisory Board
-                </a>
-              </li>
-              <li><hr class="dropdown-divider" /></li>
-              <li>
-                <a
-                  class="dropdown-item"
-                  routerLink="/publisher"
-                  (click)="closeNavbar()"
-                >
-                  <i class="bi bi-briefcase"></i>
-                  Publisher
-                </a>
-              </li>
-            </ul>
-          </li>
-          <li class="nav-item">
-            <a
-              class="nav-link"
-              routerLink="/contribute"
-              (click)="closeNavbar()"
-            >
-              <i class="bi bi-file-earmark-plus"></i>
-              <span>Contribute</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a
-              class="nav-link"
-              routerLink="/contact"
-              routerLinkActive="active"
-              (click)="closeNavbar()"
-            >
-              <i class="bi bi-envelope"></i>
-              <span>Contact</span>
-            </a>
-          </li>
-        </ul>
-        <div class="header-actions">
-          <button
-            type="button"
-            class="icon-btn"
-            aria-label="Search (press / or Ctrl+K)"
-            title="Search (/ or Ctrl+K)"
-            aria-haspopup="dialog"
-            (click)="search.open(); closeNavbar()"
-          >
-            <i class="bi bi-search" aria-hidden="true"></i>
-          </button>
-          <button
-            type="button"
-            class="icon-btn"
-            (click)="theme.toggle()"
-            [attr.aria-label]="
-              theme.theme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
-            "
-            [attr.aria-pressed]="theme.theme() === 'dark'"
-            [title]="theme.theme() === 'dark' ? 'Light theme' : 'Dark theme'"
-          >
-            <i
-              class="bi"
-              [ngClass]="theme.theme() === 'dark' ? 'bi-sun' : 'bi-moon-stars'"
-              aria-hidden="true"
-            ></i>
-          </button>
-        </div>
+      <!-- Actions (always visible) -->
+      <div class="header-actions">
+        <button
+          type="button"
+          class="icon-btn"
+          aria-label="Search (press / or Ctrl+K)"
+          title="Search (/ or Ctrl+K)"
+          aria-haspopup="dialog"
+          (click)="search.open(); closeNavbar()"
+        >
+          <i class="bi bi-search" aria-hidden="true"></i>
+        </button>
+        <button
+          type="button"
+          class="icon-btn"
+          (click)="theme.toggle()"
+          [attr.aria-label]="theme.theme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
+          [attr.aria-pressed]="theme.theme() === 'dark'"
+          [title]="theme.theme() === 'dark' ? 'Light theme' : 'Dark theme'"
+        >
+          <i class="bi" [ngClass]="theme.theme() === 'dark' ? 'bi-sun' : 'bi-moon-stars'" aria-hidden="true"></i>
+        </button>
+        <a class="header-cta" routerLink="/contribute" fragment="submit">Submit a paper</a>
+        <button
+          class="menu-toggle"
+          type="button"
+          (click)="isNavbarCollapsed = !isNavbarCollapsed"
+          aria-controls="mobileMenu"
+          [attr.aria-expanded]="!isNavbarCollapsed"
+          aria-label="Toggle navigation"
+        >
+          <span class="toggler-line"></span>
+          <span class="toggler-line"></span>
+          <span class="toggler-line"></span>
+        </button>
       </div>
     </div>
   </nav>
+
+  <!-- Mobile full-screen menu -->
+  <div class="mobile-menu" id="mobileMenu" [class.open]="!isNavbarCollapsed" [attr.aria-hidden]="isNavbarCollapsed">
+    <ul class="mobile-links">
+      <li><a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeNavbar()">Home</a></li>
+      <li><a routerLink="/journals" routerLinkActive="active" (click)="closeNavbar()">Journals</a></li>
+      <li><a routerLink="/articles" routerLinkActive="active" (click)="closeNavbar()">Articles</a></li>
+      <li>
+        <button
+          type="button"
+          class="mobile-about"
+          [attr.aria-expanded]="isMobileAboutOpen"
+          (click)="isMobileAboutOpen = !isMobileAboutOpen"
+        >
+          About
+          <i class="bi bi-chevron-down" [class.rotated]="isMobileAboutOpen" aria-hidden="true"></i>
+        </button>
+        @if (isMobileAboutOpen) {
+          <ul class="mobile-sub">
+            @for (item of aboutLinks; track item.path) {
+              <li><a [routerLink]="item.path" (click)="closeNavbar()">{{ item.label }}</a></li>
+            }
+          </ul>
+        }
+      </li>
+      <li><a routerLink="/contact" routerLinkActive="active" (click)="closeNavbar()">Contact</a></li>
+    </ul>
+    <div class="mobile-footer">
+      <a class="btn-accent btn-lg" routerLink="/contribute" fragment="submit" (click)="closeNavbar()">
+        <i class="bi bi-file-earmark-plus" aria-hidden="true"></i>
+        Submit a paper
+      </a>
+      <p>Indian Journal of Development Research · ISSN 2249-104X</p>
+    </div>
+  </div>
 </header>

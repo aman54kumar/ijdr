@@ -127,6 +127,20 @@
     margin-bottom: var(--space-6);
   }
 
+  .hero-institute {
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    margin-top: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border-left: 3px solid var(--accent-light);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    color: #fff;
+    font-weight: 600;
+    font-size: var(--text-base);
+  }
+
   .hero-buttons {
     display: flex;
     flex-wrap: wrap;

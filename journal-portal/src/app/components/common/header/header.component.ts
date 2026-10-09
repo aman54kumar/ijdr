@@ -13,13 +13,39 @@ import { RouterLink, RouterModule } from '@angular/router';
 export class HeaderComponent {
   readonly theme = inject(ThemeService);
   readonly search = inject(SearchService);
-  isNavbarCollapsed = true;
+  private collapsed = true;
+
+  get isNavbarCollapsed(): boolean {
+    return this.collapsed;
+  }
+
+  set isNavbarCollapsed(value: boolean) {
+    this.collapsed = value;
+    // Lock page scroll behind the full-screen menu
+    document.body.style.overflow = value ? '' : 'hidden';
+  }
   scrolled = false;
   isDropdownOpen = false;
+  isMobileAboutOpen = false;
+
+  readonly aboutLinks = [
+    { path: '/about', label: 'About IJDR' },
+    { path: '/editorial-board', label: 'Editorial Board' },
+    { path: '/advisory-board', label: 'Advisory Board' },
+    { path: '/publisher', label: 'Publisher' },
+  ];
 
   @HostListener('window:scroll')
   onScroll() {
     this.scrolled = window.scrollY > 8;
+  }
+
+  // Back to the desktop layout: make sure the overlay (and scroll lock) is gone
+  @HostListener('window:resize')
+  onResize() {
+    if (window.innerWidth >= 992 && !this.isNavbarCollapsed) {
+      this.closeNavbar();
+    }
   }
 
   @HostListener('document:keydown.escape')
@@ -31,6 +57,7 @@ export class HeaderComponent {
   closeNavbar() {
     this.isNavbarCollapsed = true;
     this.isDropdownOpen = false;
+    this.isMobileAboutOpen = false;
   }
 
   // Toggle dropdown (mobile-friendly)
@@ -38,16 +65,11 @@ export class HeaderComponent {
     this.isDropdownOpen = !this.isDropdownOpen;
   }
 
-  // Check if on desktop (for hover behavior)
-  onDesktop(): boolean {
-    return window.innerWidth >= 992;
-  }
-
   // Close mobile menu when clicking outside
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: Event) {
     const target = event.target as HTMLElement;
-    const navbar = target.closest('.navbar');
+    const navbar = target.closest('.modern-header');
 
     // If click is outside navbar, close mobile menu
     if (!navbar && !this.isNavbarCollapsed) {
