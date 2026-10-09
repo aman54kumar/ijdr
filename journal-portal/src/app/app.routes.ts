@@ -45,7 +45,7 @@ export const routes: Routes = [
     data: seo({
       title: 'Editorial board | IJDR',
       description:
-        'Editorial board members of the Indian Journal of Development Research.',
+        'Meet the editorial board of the Indian Journal of Development Research: the editors and scholars who guide peer review and publication at IJDR.',
     }),
   },
   {
@@ -54,7 +54,7 @@ export const routes: Routes = [
     data: seo({
       title: 'Advisory board | IJDR',
       description:
-        'Advisory board of the Indian Journal of Development Research.',
+        'Meet the advisory board of the Indian Journal of Development Research: senior scholars who advise on the journal\'s scope, quality and direction.',
     }),
   },
   {
@@ -63,7 +63,7 @@ export const routes: Routes = [
     data: seo({
       title: 'Publisher | IJDR',
       description:
-        'Publisher information for the Indian Journal of Development Research.',
+        'The Indian Journal of Development Research is published by the Institute of Development Studies, Varanasi. Publisher details and contact information.',
     }),
   },
   {
@@ -106,7 +106,7 @@ export const routes: Routes = [
     loadComponent: () => import('./components/legal/privacy-policy/privacy-policy.component').then((m) => m.PrivacyPolicyComponent),
     data: seo({
       title: 'Privacy policy | IJDR',
-      description: 'Privacy policy for the Indian Journal of Development Research website.',
+      description: 'How the Indian Journal of Development Research website collects, uses and protects personal data, including analytics, cookies and your rights.',
     }),
   },
   {
@@ -114,7 +114,7 @@ export const routes: Routes = [
     loadComponent: () => import('./components/legal/terms-of-service/terms-of-service.component').then((m) => m.TermsOfServiceComponent),
     data: seo({
       title: 'Terms of service | IJDR',
-      description: 'Terms of service for using the Indian Journal of Development Research website.',
+      description: 'Terms of service for using the Indian Journal of Development Research website, including acceptable use, content licensing and liability.',
     }),
   },
   {
@@ -122,7 +122,7 @@ export const routes: Routes = [
     loadComponent: () => import('./components/legal/copyright/copyright.component').then((m) => m.CopyrightComponent),
     data: seo({
       title: 'Copyright | IJDR',
-      description: 'Copyright information for the Indian Journal of Development Research.',
+      description: 'Copyright and reuse information for the Indian Journal of Development Research: author rights, permitted use of articles and how to request permission.',
     }),
   },
   {
@@ -130,7 +130,7 @@ export const routes: Routes = [
     loadComponent: () => import('./components/legal/open-access/open-access.component').then((m) => m.OpenAccessComponent),
     data: seo({
       title: 'Open access | IJDR',
-      description: 'Open access policy of the Indian Journal of Development Research.',
+      description: 'IJDR is a free, open-access journal. Read how readers may access, download and share articles from the Indian Journal of Development Research.',
     }),
   },
   {
@@ -138,7 +138,7 @@ export const routes: Routes = [
     loadComponent: () => import('./components/legal/accessibility/accessibility.component').then((m) => m.AccessibilityComponent),
     data: seo({
       title: 'Accessibility | IJDR',
-      description: 'Accessibility statement for the Indian Journal of Development Research website.',
+      description: 'Accessibility statement for the Indian Journal of Development Research website: our WCAG 2.1 AA commitment, known limitations and how to report issues.',
     }),
   },
   {
