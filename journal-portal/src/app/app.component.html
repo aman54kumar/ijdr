@@ -1,11 +1,15 @@
 <a class="skip-link" href="#main-content" (click)="focusMain($event)">Skip to main content</a>
 <div class="app-container">
-  <app-announcement-banner></app-announcement-banner>
-  <app-header class="app-header"></app-header>
+  @if (!inAdmin) {
+    <app-announcement-banner></app-announcement-banner>
+    <app-header class="app-header"></app-header>
+  }
   <main class="main-content" id="main-content" tabindex="-1">
     <router-outlet></router-outlet>
   </main>
-  <app-footer class="app-footer"></app-footer>
+  @if (!inAdmin) {
+    <app-footer class="app-footer"></app-footer>
+  }
 </div>
 
 <app-pdf-modal></app-pdf-modal>

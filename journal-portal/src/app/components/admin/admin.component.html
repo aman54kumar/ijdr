@@ -1,63 +1,79 @@
 <div class="admin-panel">
-  <div class="container-fluid">
-    <!-- Header -->
-    <header class="admin-header">
-      <div class="admin-topbar">
-        <div class="admin-brand">
-          <span class="admin-brand-icon" aria-hidden="true"><i class="bi bi-speedometer2"></i></span>
-          <div>
-            <h1 class="admin-title">IJDR Admin Panel</h1>
-            <div class="admin-subtitle">Indian Journal of Development Research</div>
-          </div>
-        </div>
-
-        <div class="admin-actions">
-          <a routerLink="/" class="admin-action-link">
-            <i class="bi bi-box-arrow-up-right"></i>
-            <span>View site</span>
-          </a>
-          <span
-            *ngIf="currentUser?.email || currentUser?.displayName"
-            class="admin-user-email d-none d-md-inline-flex"
-            [title]="currentUser?.email || currentUser?.displayName || ''"
-          >
-            <i class="bi bi-person-circle"></i>
-            <span class="text-truncate">{{ currentUser?.email || getUserDisplayName() }}</span>
-          </span>
-          <button
-            type="button"
-            class="btn btn-light btn-sm text-dark"
-            (click)="logout()"
-            [disabled]="loggingOut"
-            aria-label="Sign out of admin"
-          >
-            <span *ngIf="loggingOut" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-            <i *ngIf="!loggingOut" class="bi bi-box-arrow-right me-1"></i>
-            {{ loggingOut ? 'Signing out…' : 'Sign out' }}
-          </button>
+  <!-- Header -->
+  <header class="admin-header">
+    <div class="admin-topbar">
+      <div class="admin-brand">
+        <span class="admin-brand-icon" aria-hidden="true"><img src="assets/images/logos/ijdr-mark.png" alt="" width="41" height="40" /></span>
+        <div>
+          <h1 class="admin-title">IJDR Admin Panel</h1>
+          <div class="admin-subtitle">Indian Journal of Development Research</div>
         </div>
       </div>
 
-      <nav class="admin-nav" aria-label="Admin sections">
-        <div class="nav-group" *ngFor="let g of navGroups">
-          <span class="nav-group-label">{{ g.label }}</span>
-          <div class="nav-items">
-            <button
-              type="button"
-              class="nav-item"
-              *ngFor="let item of g.items"
-              [class.active]="isNavActive(item.view)"
-              [attr.aria-current]="isNavActive(item.view) ? 'page' : null"
-              (click)="setView(item.view)"
-            >
-              <i class="bi" [ngClass]="item.icon"></i>
-              <span>{{ item.label }}</span>
+      <div class="admin-actions">
+        <a routerLink="/" class="admin-action-link">
+          <i class="bi bi-box-arrow-up-right"></i>
+          <span>View site</span>
+        </a>
+        <button
+          type="button"
+          class="admin-icon-btn"
+          (click)="theme.toggle()"
+          [attr.aria-label]="theme.theme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
+          [attr.aria-pressed]="theme.theme() === 'dark'"
+          [title]="theme.theme() === 'dark' ? 'Light theme' : 'Dark theme'"
+        >
+          <i class="bi" [ngClass]="theme.theme() === 'dark' ? 'bi-sun' : 'bi-moon-stars'" aria-hidden="true"></i>
+        </button>
+        <div class="user-menu">
+          <button
+            type="button"
+            class="user-btn"
+            aria-haspopup="menu"
+            [attr.aria-expanded]="userMenuOpen"
+            (click)="userMenuOpen = !userMenuOpen"
+          >
+            <i class="bi bi-person"></i>
+            <span>Account</span>
+            <i class="bi bi-chevron-down caret" [class.flip]="userMenuOpen"></i>
+          </button>
+          <div *ngIf="userMenuOpen" class="user-dropdown" role="menu">
+            <div class="user-dropdown-label">Signed in as</div>
+            <div class="user-dropdown-email" [title]="currentUser?.email || ''">
+              {{ currentUser?.email || getUserDisplayName() }}
+            </div>
+            <div class="user-dropdown-role">Administrator</div>
+            <button type="button" class="user-dropdown-item" role="menuitem" (click)="logout()" [disabled]="loggingOut">
+              <span *ngIf="loggingOut" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              <i *ngIf="!loggingOut" class="bi bi-box-arrow-right"></i>
+              {{ loggingOut ? 'Signing out…' : 'Sign out' }}
             </button>
           </div>
         </div>
-      </nav>
-    </header>
+      </div>
+    </div>
 
+    <nav class="admin-nav" aria-label="Admin sections">
+      <div class="nav-group" *ngFor="let g of navGroups">
+        <span class="nav-group-label">{{ g.label }}</span>
+        <div class="nav-items">
+          <button
+            type="button"
+            class="nav-item"
+            *ngFor="let item of g.items"
+            [class.active]="isNavActive(item.view)"
+            [attr.aria-current]="isNavActive(item.view) ? 'page' : null"
+            (click)="setView(item.view)"
+          >
+            <i class="bi" [ngClass]="item.icon"></i>
+            <span>{{ item.label }}</span>
+          </button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <div class="container-fluid">
     <!-- Main Content -->
     <div class="admin-content p-4">
       <!-- Journals View -->

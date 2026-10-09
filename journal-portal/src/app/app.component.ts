@@ -51,8 +51,12 @@ export class AppComponent implements OnInit {
     @Optional() private analytics: Analytics | null
   ) {}
 
+  /** The admin panel and login page have their own layout, so the public site chrome is hidden there. */
+  inAdmin = false;
+
   ngOnInit(): void {
     this.appUpdate.start();
+    this.inAdmin = this.isAdminUrl(this.router.url);
     this.toastService.message$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((msg) => {
@@ -73,6 +77,7 @@ export class AppComponent implements OnInit {
     this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
       .subscribe((e) => {
+        this.inAdmin = this.isAdminUrl(e.urlAfterRedirects);
         const leaf = this.deepestChild(this.activatedRoute);
         const seo = leaf.snapshot.data['seo'] as RouteSeoData | undefined;
         if (seo?.title) {
@@ -101,6 +106,10 @@ export class AppComponent implements OnInit {
           });
         }
       });
+  }
+
+  private isAdminUrl(url: string): boolean {
+    return /^\/(admin|login)(\/|$)/.test(url.split(/[?#]/)[0]);
   }
 
   private setCanonical(url: string): void {

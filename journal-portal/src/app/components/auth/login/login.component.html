@@ -1,38 +1,37 @@
-<div class="login-container">
-  <div class="login-wrapper">
-    <!-- Background Pattern -->
-    <div class="bg-pattern"></div>
+<div class="login-page">
+  <!-- Brand panel -->
+  <aside class="login-brand">
+    <div class="brand-inner">
+      <span class="brand-logo"><img src="assets/images/logos/ijdr-mark.png" alt="" width="41" height="40" /></span>
+      <h1 class="brand-title">IJDR Admin Portal</h1>
+      <p class="brand-sub">Indian Journal of Development Research</p>
+      <ul class="brand-points">
+        <li><i class="bi bi-journal-text"></i> Publish issues and manage articles</li>
+        <li><i class="bi bi-stars"></i> AI-assisted extraction and summaries</li>
+        <li><i class="bi bi-inbox"></i> Review submissions and messages</li>
+      </ul>
+    </div>
+    <a routerLink="/" class="brand-back"><i class="bi bi-arrow-left"></i> Back to site</a>
+  </aside>
 
-    <!-- Login Card -->
+  <!-- Form panel -->
+  <main class="login-main">
     <div class="login-card">
-      <!-- Header -->
-      <div class="login-header">
-        <div class="logo-section">
-          <i class="bi bi-shield-lock text-primary"></i>
-          <h2 class="login-title">IJDR Admin Portal</h2>
-          <p class="login-subtitle">Secure access to journal management</p>
-        </div>
-      </div>
+      <h2 class="login-title">Sign in</h2>
+      <p class="login-subtitle">Use your administrator account to continue.</p>
 
-      <!-- Success Message -->
       <div *ngIf="successMessage" class="alert alert-success" role="alert">
-        <i class="bi bi-check-circle me-2"></i>
-        {{ successMessage }}
+        <i class="bi bi-check-circle me-2"></i>{{ successMessage }}
       </div>
-
-      <!-- Error Message -->
       <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
-        <i class="bi bi-exclamation-triangle me-2"></i>
-        {{ errorMessage }}
+        <i class="bi bi-exclamation-triangle me-2"></i>{{ errorMessage }}
       </div>
 
-      <!-- Login Form -->
-      <div class="login-form">
-        <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
-          <div class="form-group mb-3">
-            <label for="email" class="form-label">
-              <i class="bi bi-envelope me-2"></i>Email Address
-            </label>
+      <form [formGroup]="loginForm" (ngSubmit)="onLogin()" novalidate>
+        <div class="field">
+          <label for="email" class="form-label">Email address</label>
+          <div class="input-wrap">
+            <i class="bi bi-envelope lead-icon" aria-hidden="true"></i>
             <input
               type="email"
               id="email"
@@ -42,79 +41,47 @@
               placeholder="admin&#64;ijdrpub.in"
               autocomplete="username"
             />
-            <div class="invalid-feedback">
-              {{ getFieldError(loginForm, "email") }}
-            </div>
           </div>
+          <div class="field-error" *ngIf="hasFieldError(loginForm, 'email')">{{ getFieldError(loginForm, 'email') }}</div>
+        </div>
 
-          <div class="form-group mb-4">
-            <label for="password" class="form-label">
-              <i class="bi bi-lock me-2"></i>Password
-            </label>
-            <div class="password-input-group">
-              <input
-                [type]="showPassword ? 'text' : 'password'"
-                id="password"
-                class="form-control"
-                [class.is-invalid]="hasFieldError(loginForm, 'password')"
-                formControlName="password"
-                placeholder="Enter your password"
-                autocomplete="current-password"
-              />
-              <button
-                type="button"
-                class="password-toggle"
-                (click)="togglePasswordVisibility()"
-                tabindex="-1"
-              >
-                <i [class]="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
-              </button>
-            </div>
-            <div class="invalid-feedback">
-              {{ getFieldError(loginForm, "password") }}
-            </div>
-          </div>
-
-          <div class="form-actions">
+        <div class="field">
+          <label for="password" class="form-label">Password</label>
+          <div class="input-wrap">
+            <i class="bi bi-lock lead-icon" aria-hidden="true"></i>
+            <input
+              [type]="showPassword ? 'text' : 'password'"
+              id="password"
+              class="form-control"
+              [class.is-invalid]="hasFieldError(loginForm, 'password')"
+              formControlName="password"
+              placeholder="Enter your password"
+              autocomplete="current-password"
+            />
             <button
-              type="submit"
-              class="btn btn-primary btn-login"
-              [disabled]="isLoading || loginForm.invalid"
+              type="button"
+              class="password-toggle"
+              (click)="togglePasswordVisibility()"
+              [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
             >
-              <span
-                *ngIf="isLoading"
-                class="spinner-border spinner-border-sm me-2"
-                role="status"
-              >
-                <span class="visually-hidden">Loading...</span>
-              </span>
-              <i *ngIf="!isLoading" class="bi bi-box-arrow-in-right me-2"></i>
-              {{ isLoading ? "Signing In..." : "Sign In" }}
+              <i [class]="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
             </button>
           </div>
-        </form>
-
-        <!-- Access Info -->
-        <div class="access-info">
-          <hr class="divider" />
-          <div class="alert alert-info" role="alert">
-            <i class="bi bi-info-circle me-2"></i>
-            <strong>Need Access?</strong><br />
-            Contact the system administrator to set up your admin account.
-            <br /><small class="text-muted"
-              >Only authorized administrators can access this panel.</small
-            >
-          </div>
+          <div class="field-error" *ngIf="hasFieldError(loginForm, 'password')">{{ getFieldError(loginForm, 'password') }}</div>
         </div>
-      </div>
 
-      <!-- Footer -->
-      <div class="login-footer">
-        <p class="text-muted text-center small">
-          <i class="bi bi-shield-check me-1"></i>
-          Secured by Firebase Authentication
-        </p>
-      </div>
+        <button type="submit" class="btn btn-primary btn-login" [disabled]="isLoading || loginForm.invalid">
+          <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          <i *ngIf="!isLoading" class="bi bi-box-arrow-in-right me-2"></i>
+          {{ isLoading ? 'Signing in…' : 'Sign in' }}
+        </button>
+      </form>
+
+      <p class="access-note">
+        <i class="bi bi-info-circle me-1"></i>
+        Need access? Ask the system administrator to set up your account. Only authorised administrators can use this panel.
+      </p>
+      <p class="secured"><i class="bi bi-shield-check me-1"></i>Secured by Firebase Authentication</p>
     </div>
-  </div>
+  </main>
 </div>

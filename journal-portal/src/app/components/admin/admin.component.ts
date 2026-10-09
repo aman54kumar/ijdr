@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
 import {
@@ -24,6 +24,7 @@ import {
 import { CoverService } from '../../services/cover.service';
 import { PdfModalService } from '../../services/pdf-modal.service';
 import { AuthService } from '../../services/auth.service';
+import { ThemeService } from '../../services/theme.service';
 import { User } from '@angular/fire/auth';
 import { AdminManagementComponent } from './admin-management/admin-management.component';
 import { AdminInsightsComponent } from './admin-insights/admin-insights.component';
@@ -87,6 +88,21 @@ type AdminView =
 })
 export class AdminComponent implements OnInit {
   currentView: AdminView = 'journals';
+
+  readonly theme = inject(ThemeService);
+  userMenuOpen = false;
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(ev: Event) {
+    if (this.userMenuOpen && !(ev.target as HTMLElement | null)?.closest('.user-menu')) {
+      this.userMenuOpen = false;
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape() {
+    this.userMenuOpen = false;
+  }
 
   /** Grouped navigation; drives the header tabs. */
   readonly navGroups: { label: string; items: { view: AdminView; label: string; icon: string }[] }[] = [

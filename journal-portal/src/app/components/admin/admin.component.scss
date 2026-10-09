@@ -26,11 +26,16 @@
     .admin-brand-icon {
       display: grid;
       place-items: center;
-      width: 2.5rem;
-      height: 2.5rem;
+      width: 2.75rem;
+      height: 2.75rem;
       border-radius: 0.75rem;
-      background: rgba(255, 255, 255, 0.16);
-      font-size: 1.2rem;
+      background: #fff;
+
+      img {
+        width: 2rem;
+        height: auto;
+        display: block;
+      }
     }
 
     .admin-title {
@@ -71,12 +76,104 @@
       }
     }
 
-    .admin-user-email {
+    .admin-icon-btn {
+      display: grid;
+      place-items: center;
+      width: 2rem;
+      height: 2rem;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 50%;
+
+      &:hover,
+      &:focus-visible {
+        background: rgba(255, 255, 255, 0.22);
+      }
+    }
+
+    .user-menu {
+      position: relative;
+    }
+
+    .user-btn {
+      display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
-      max-width: 240px;
-      font-size: 0.82rem;
-      color: rgba(255, 255, 255, 0.78);
+      gap: 0.45rem;
+      font-size: 0.875rem;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 999px;
+      padding: 0.3rem 0.8rem;
+
+      &:hover,
+      &:focus-visible {
+        background: rgba(255, 255, 255, 0.22);
+      }
+
+      .caret {
+        font-size: 0.7rem;
+        transition: transform 0.15s ease;
+
+        &.flip {
+          transform: rotate(180deg);
+        }
+      }
+    }
+
+    .user-dropdown {
+      position: absolute;
+      z-index: 1050;
+      right: 0;
+      top: calc(100% + 0.5rem);
+      min-width: 16rem;
+      max-width: calc(100vw - 2rem);
+      padding: 0.85rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+      border-radius: 0.75rem;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+    }
+
+    .user-dropdown-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .user-dropdown-email {
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+
+    .user-dropdown-role {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.7rem;
+      padding-bottom: 0.7rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .user-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      padding: 0.4rem 0.5rem;
+      border-radius: 0.5rem;
+      font-size: 0.9rem;
+
+      &:hover,
+      &:focus-visible {
+        background: rgba(127, 127, 127, 0.16);
+      }
     }
 
     .admin-nav {
