@@ -9,7 +9,7 @@ import { ConfirmModalService } from '../../../services/confirm-modal.service';
 import { ToastService } from '../../../services/toast.service';
 import { CoverService } from '../../../services/cover.service';
 import { AiService, aiErrorMessage } from '../../../services/ai.service';
-import { IngestService, ingestErrorMessage } from '../../../services/ingest.service';
+import { GEMINI_MODEL_CHOICES, IngestService, ingestErrorMessage } from '../../../services/ingest.service';
 import { iArticle, iJournal, IngestJob } from '../../../type/journals.type';
 
 /** Optional page numbers: blank -> undefined. */
@@ -37,6 +37,13 @@ export class AdminArticlesComponent implements OnInit, OnDestroy {
   private subs = new Subscription();
   private articlesSub?: Subscription;
   private jobSub?: Subscription;
+
+  // AI model selection (stored in adminSettings/ai, read by the functions)
+  readonly modelChoices = GEMINI_MODEL_CHOICES;
+  model = '';
+  publicModel = '';
+  saved = { model: '', publicModel: '' };
+  savingModel = false;
 
   // AI extraction + review
   job?: IngestJob;
@@ -84,6 +91,14 @@ export class AdminArticlesComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.ingest
+      .getModels()
+      .then((m) => {
+        this.saved = m;
+        this.model = m.model;
+        this.publicModel = m.publicModel;
+      })
+      .catch(() => undefined);
     this.subs.add(
       this.journalService.getJournals().subscribe((issues) => {
         this.issues = issues;
@@ -370,6 +385,30 @@ export class AdminArticlesComponent implements OnInit, OnDestroy {
 
   get jobRunning(): boolean {
     return this.extracting || this.job?.state === 'running';
+  }
+
+  get modelsChanged(): boolean {
+    return this.model.trim() !== this.saved.model || this.publicModel.trim() !== this.saved.publicModel;
+  }
+
+  async saveModels() {
+    const next = { model: this.model.trim(), publicModel: this.publicModel.trim() };
+    if ([next.model, next.publicModel].some((m) => m && !/^[A-Za-z0-9._-]{1,80}$/.test(m))) {
+      this.toast.show('That does not look like a valid model id.', 'warning');
+      return;
+    }
+    this.savingModel = true;
+    try {
+      await this.ingest.setModels(next);
+      this.saved = next;
+      this.model = next.model;
+      this.publicModel = next.publicModel;
+      this.toast.show('AI models saved.', 'success');
+    } catch {
+      this.toast.show('Could not save the AI models.', 'danger');
+    } finally {
+      this.savingModel = false;
+    }
   }
 
   async extractWithAi() {

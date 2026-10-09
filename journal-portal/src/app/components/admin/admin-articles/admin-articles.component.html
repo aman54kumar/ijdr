@@ -43,6 +43,27 @@
         </div>
       </div>
 
+      <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
+        <div>
+          <label class="form-label small mb-1" for="ai-model">Admin model (issue extraction, message triage)</label>
+          <input id="ai-model" class="form-control form-control-sm" list="ai-model-list" [(ngModel)]="model"
+            [ngModelOptions]="{ standalone: true }" placeholder="Server default" autocomplete="off" />
+        </div>
+        <div>
+          <label class="form-label small mb-1" for="ai-public-model">Reader-facing model (summaries, translation, Ask, search)</label>
+          <input id="ai-public-model" class="form-control form-control-sm" list="ai-model-list" [(ngModel)]="publicModel"
+            [ngModelOptions]="{ standalone: true }" placeholder="Same as admin model" autocomplete="off" />
+        </div>
+        <datalist id="ai-model-list">
+          @for (m of modelChoices; track m) { <option [value]="m"></option> }
+        </datalist>
+        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="saveModels()"
+          [disabled]="savingModel || !modelsChanged">
+          Save models
+        </button>
+        <span class="text-muted small w-100">Quotas are per model, so use different ones to keep reader traffic from using up extraction quota. Blank = default.</span>
+      </div>
+
       @if (job) {
         <div class="alert mb-3" role="status"
           [class.alert-info]="job.state === 'running'" [class.alert-danger]="job.state === 'error'" [class.alert-success]="job.state === 'done'">

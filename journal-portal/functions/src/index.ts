@@ -311,6 +311,32 @@ function neutralPdfDownloadFilename(journalId: string): string {
 
 const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
 
+type ModelUse = 'admin' | 'public';
+
+const MODEL_ID = /^[A-Za-z0-9._-]{1,80}$/;
+let modelCache: { at: number; data: Record<string, unknown> } | undefined;
+
+/**
+ * Models picked in the admin panel (`adminSettings/ai`): `model` for admin tools (extraction, triage),
+ * `publicModel` for reader-facing features (summaries, translation, Ask, search). Public falls back to
+ * the admin model, then GEMINI_MODEL, then the built-in default.
+ */
+async function configuredModel(use: ModelUse): Promise<string | undefined> {
+  try {
+    if (!modelCache || Date.now() - modelCache.at > 20_000) {
+      const data = (await admin.firestore().doc('adminSettings/ai').get()).data() ?? {};
+      modelCache = { at: Date.now(), data };
+    }
+    const d = modelCache.data;
+    const pick = (v: unknown) => (typeof v === 'string' && MODEL_ID.test(v) ? v : undefined);
+    const chosen = use === 'public' ? pick(d['publicModel']) ?? pick(d['model']) : pick(d['model']);
+    if (chosen) return chosen;
+  } catch (e) {
+    console.warn('Could not read adminSettings/ai', e);
+  }
+  return process.env['GEMINI_MODEL'];
+}
+
 /**
  * Admin-only: extract draft articles from an issue's PDF with Gemini.
  * Progress and errors are written to `ingestJobs/{issueId}`.
@@ -336,7 +362,7 @@ export const ingestIssue = onCall(
         bucket: admin.storage().bucket(),
         apiKey: GEMINI_API_KEY.value(),
         issueId,
-        model: process.env['GEMINI_MODEL'],
+        model: await configuredModel('admin'),
       });
     } catch (e) {
       if (e instanceof IngestError) {
@@ -408,12 +434,12 @@ export const articlePage = functions.https.onRequest(async (req, res) => {
 
 const isAdminCall = (r: CallableRequest) => r.auth?.token?.['admin'] === true;
 
-function aiCtx(): Ctx {
+async function aiCtx(use: ModelUse = 'public'): Promise<Ctx> {
   return {
     db: admin.firestore(),
     bucket: admin.storage().bucket(),
     apiKey: GEMINI_API_KEY.value(),
-    model: process.env['GEMINI_MODEL'],
+    model: await configuredModel(use),
     embeddingModel: process.env['GEMINI_EMBEDDING_MODEL'],
   };
 }
@@ -432,7 +458,7 @@ async function guarded<T>(
   run: (ctx: Ctx, visitor: string, admin: boolean) => Promise<T>
 ): Promise<T> {
   try {
-    const ctx = aiCtx();
+    const ctx = await aiCtx();
     const isAdmin = isAdminCall(r);
     if (!isAdmin && !(await readAiSettings(ctx.db))[feature]) {
       throw new HttpsError('failed-precondition', 'This feature is currently turned off.');
@@ -510,7 +536,7 @@ export const adminGenerateAi = onCall(
   async (r) => {
     if (!isAdminCall(r)) throw new HttpsError('permission-denied', 'Admins only.');
     try {
-      const ctx = aiCtx();
+      const ctx = await aiCtx();
       const kind = (r.data as { kind?: unknown })?.kind;
       const a = await loadArticle(ctx.db, articleIdOf(r), true);
       if (kind === 'summary') {
@@ -536,7 +562,7 @@ export const embedArticles = onCall(
     if (!isAdminCall(r)) throw new HttpsError('permission-denied', 'Admins only.');
     try {
       const issueId = (r.data as { issueId?: unknown })?.issueId;
-      return await embedAndRelate(aiCtx(), typeof issueId === 'string' && issueId ? issueId : undefined);
+      return await embedAndRelate(await aiCtx(), typeof issueId === 'string' && issueId ? issueId : undefined);
     } catch (e) {
       throw toHttps(e);
     }
@@ -606,7 +632,7 @@ export const triageContact = onCall(
   async (r) => {
     if (!isAdminCall(r)) throw new HttpsError('permission-denied', 'Admins only.');
     try {
-      const ctx = aiCtx();
+      const ctx = await aiCtx('admin');
       if (!(await readAiSettings(ctx.db)).contactTriage) {
         throw new HttpsError('failed-precondition', 'Message triage is switched off (Admin > AI).');
       }

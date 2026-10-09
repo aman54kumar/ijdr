@@ -59,6 +59,8 @@ function today(): string {
 function isRetryable(e: unknown): boolean {
   const msg = String((e as any)?.message ?? e);
   const status = (e as any)?.status ?? (e as any)?.code;
+  // A spent quota will not recover within the backoff window; retrying only burns more requests.
+  if (/exceeded your current quota|generate_content_free_tier|PerDay/i.test(msg)) return false;
   return (
     status === 429 || status === 503 || status === 500 ||
     /\b(429|503|UNAVAILABLE|RESOURCE_EXHAUSTED|overloaded)\b/i.test(msg)
@@ -69,6 +71,10 @@ export function explainGeminiError(e: unknown): IngestError {
   const msg = String((e as any)?.message ?? e);
   if (/RESOURCE_EXHAUSTED|\b429\b/.test(msg)) {
     return new IngestError('resource-exhausted', 'Gemini quota or rate limit reached. Wait a while (or until tomorrow for the daily limit) and try again.');
+  }
+  if (/Incomplete JSON segment/i.test(msg)) {
+    // The SDK could not parse an error body sent mid-stream, which in practice means quota or overload.
+    return new IngestError('resource-exhausted', 'Gemini rejected the request mid-stream (usually the daily quota for this model, or overload). Pick another model in the AI model field, or try again later.');
   }
   if (/fetch failed|TIMEOUT|timed out|ECONNRESET/i.test(msg)) {
     return new IngestError('internal', 'The connection to Gemini timed out. Try again; if it repeats, the issue may be too large for one request.');
@@ -85,7 +91,7 @@ export function explainGeminiError(e: unknown): IngestError {
   if (/INVALID_ARGUMENT|\b400\b/.test(msg)) {
     return new IngestError('failed-precondition', 'Gemini could not read this PDF (invalid or too large for the model).');
   }
-  return new IngestError('internal', 'Gemini request failed. See the function logs for details.');
+  return new IngestError('internal', `Gemini request failed: ${msg.replace(/\s+/g, ' ').slice(0, 200)}`);
 }
 
 export async function withBackoff<T>(fn: () => Promise<T>, log: (m: string) => void): Promise<T> {

@@ -333,6 +333,12 @@ p {
   }
 }
 
+.form-select {
+  // Keep room for the dropdown arrow so long option text does not run under it.
+  padding-right: 2.5rem;
+  text-overflow: ellipsis;
+}
+
 .form-control,
 .form-select {
   border-radius: var(--radius-md);
