@@ -371,19 +371,15 @@ export class AdminComponent implements OnInit {
     }
   }
 
-  /** Keep the issue fields copied onto articles in step with the edited issue. */
+  /**
+   * Keep the issue fields copied onto articles in step with the issue. Always runs (even when the
+   * issue fields look unchanged) so saving an issue also repairs articles left stale by edits made
+   * directly in Firestore.
+   */
   private async syncArticleIssueFields(
     journal: FirebaseJournal,
     edited: Pick<FirebaseJournal, 'title' | 'volume' | 'number' | 'year'>
   ) {
-    const changed =
-      edited.title !== journal.title ||
-      edited.volume !== journal.volume ||
-      edited.number !== journal.number ||
-      edited.year !== journal.year;
-    if (!changed || !journal.articleCount) {
-      return;
-    }
     try {
       await this.articleService.syncIssueFields({ ...journal, ...edited } as iJournal);
     } catch (e) {
