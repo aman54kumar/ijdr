@@ -1,0 +1,71 @@
+<div class="ip">
+  <button
+    type="button"
+    class="ip-trigger form-select"
+    role="combobox"
+    aria-haspopup="listbox"
+    aria-controls="ip-list"
+    [attr.aria-expanded]="open()"
+    (click)="toggle()"
+    (keydown)="onTriggerKey($event)"
+  >
+    @if (selected(); as s) {
+      <span class="ip-trigger-text">{{ label(s) }}</span>
+      <span class="ip-badge" [attr.data-status]="status(s)">{{ statusLabel(s) }}</span>
+    } @else {
+      <span class="text-muted">Select an issue</span>
+    }
+  </button>
+
+  @if (open()) {
+    <div class="ip-panel" (keydown)="onKey($event)">
+      <div class="ip-search-wrap">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input
+          class="ip-search"
+          type="search"
+          placeholder="Search title, volume, number or year"
+          aria-label="Search issues"
+          aria-controls="ip-list"
+          autocomplete="off"
+          [ngModel]="query()"
+          (ngModelChange)="setQuery($event)"
+        />
+      </div>
+      <div class="ip-filters" role="group" aria-label="Filter issues">
+        @for (f of filters; track f.id) {
+          <button type="button" class="ip-chip" [class.on]="filter() === f.id" [attr.aria-pressed]="filter() === f.id" (click)="filter.set(f.id); active.set(0)">
+            {{ f.label }}
+            @if (f.id === 'needs' && needsCount()) { <span class="ip-count">{{ needsCount() }}</span> }
+            @if (f.id === 'drafts' && draftsCount()) { <span class="ip-count">{{ draftsCount() }}</span> }
+          </button>
+        }
+      </div>
+      <div class="ip-list" id="ip-list" role="listbox" aria-label="Issues">
+        @for (g of groups(); track g.year) {
+          <div class="ip-group" role="presentation">{{ g.year }}</div>
+          @for (i of g.items; track i.id) {
+            <div
+              class="ip-option"
+              role="option"
+              [class.is-active]="indexOf(i) === active()"
+              [class.is-selected]="i.id === selectedId()"
+              [attr.aria-selected]="i.id === selectedId()"
+              (mouseenter)="active.set(indexOf(i))"
+              (click)="choose(i)"
+            >
+              <span class="ip-title">
+                {{ i.title }}
+                <span class="ip-sub">Vol {{ i.volume }}, No {{ i.number }}@if (i.edition) { · {{ i.edition }} }</span>
+              </span>
+              <span class="ip-badge" [attr.data-status]="status(i)">{{ statusLabel(i) }}</span>
+            </div>
+          }
+        } @empty {
+          <div class="ip-empty">No issues match.</div>
+        }
+      </div>
+      <div class="ip-foot">{{ flat().length }} of {{ issues().length }} issues · ↑↓ to move, Enter to select</div>
+    </div>
+  }
+</div>

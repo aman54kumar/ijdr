@@ -2,7 +2,9 @@ import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormArray, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { IssuePickerComponent } from '../issue-picker/issue-picker.component';
 import { ArticleInput, ArticleService } from '../../../services/article.service';
 import { FirebaseJournal, FirebaseJournalService } from '../../../services/firebase-journal.service';
 import { ConfirmModalService } from '../../../services/confirm-modal.service';
@@ -11,6 +13,8 @@ import { CoverService } from '../../../services/cover.service';
 import { AiService, aiErrorMessage } from '../../../services/ai.service';
 import { GEMINI_MODEL_CHOICES, IngestService, ingestErrorMessage } from '../../../services/ingest.service';
 import { iArticle, iJournal, IngestJob } from '../../../type/journals.type';
+
+const LAST_ISSUE_KEY = 'ijdr.admin.articles.issue';
 
 /** Optional page numbers: blank -> undefined. */
 function toPage(v: unknown): number | undefined {
@@ -21,7 +25,7 @@ function toPage(v: unknown): number | undefined {
 @Component({
   selector: 'app-admin-articles',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, DragDropModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, DragDropModule, IssuePickerComponent],
   templateUrl: './admin-articles.component.html',
   styleUrl: './admin-articles.component.scss',
 })
@@ -34,6 +38,8 @@ export class AdminArticlesComponent implements OnInit, OnDestroy {
   private ingest = inject(IngestService);
   private ai = inject(AiService);
   private covers = inject(CoverService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private subs = new Subscription();
   private articlesSub?: Subscription;
   private jobSub?: Subscription;
@@ -103,7 +109,7 @@ export class AdminArticlesComponent implements OnInit, OnDestroy {
       this.journalService.getJournals().subscribe((issues) => {
         this.issues = issues;
         if (!this.issueId && issues.length) {
-          this.selectIssue(issues[0].id!);
+          this.selectIssue(this.initialIssueId(issues), false);
         }
       })
     );
@@ -124,7 +130,35 @@ export class AdminArticlesComponent implements OnInit, OnDestroy {
     });
   }
 
-  selectIssue(id: string) {
+  /** Deep link (?issue=) wins, then the last issue worked on, then the newest. */
+  private initialIssueId(issues: FirebaseJournal[]): string {
+    const has = (id: string | null | undefined): id is string => !!id && issues.some((i) => i.id === id);
+    const fromUrl = this.route.snapshot.queryParamMap.get('issue');
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem(LAST_ISSUE_KEY);
+    } catch {
+      /* storage unavailable */
+    }
+    return has(fromUrl) ? fromUrl : has(saved) ? saved : issues[0].id!;
+  }
+
+  private rememberIssue(id: string) {
+    try {
+      localStorage.setItem(LAST_ISSUE_KEY, id);
+    } catch {
+      /* storage unavailable */
+    }
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { issue: id },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  selectIssue(id: string, remember = true) {
+    if (remember) this.rememberIssue(id);
     this.issueId = id;
     this.closeEditor();
     this.articlesSub?.unsubscribe();

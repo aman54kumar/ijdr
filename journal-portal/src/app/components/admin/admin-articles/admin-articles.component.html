@@ -6,18 +6,8 @@
         <p class="text-muted mb-0">Add the articles of an issue, order them, and publish them one by one.</p>
       </div>
       <div>
-        <label class="form-label mb-1" for="art-issue">Issue</label>
-        <select
-          id="art-issue"
-          class="form-select"
-          [ngModel]="issueId"
-          [ngModelOptions]="{ standalone: true }"
-          (ngModelChange)="selectIssue($event)"
-        >
-          @for (i of issues; track i.id) {
-            <option [value]="i.id">{{ i.title }} (Vol {{ i.volume }}, No {{ i.number }})</option>
-          }
-        </select>
+        <span class="form-label d-block mb-1">Issue</span>
+        <app-issue-picker [issues]="issues" [selectedId]="issueId" (picked)="selectIssue($event)" />
       </div>
     </div>
 
