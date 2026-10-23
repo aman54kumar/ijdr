@@ -588,7 +588,8 @@ exports.opsSummary = (0, https_1.onRequest)({ secrets: [OPS_PORTAL_TOKEN], memor
         res.status(405).send('Method Not Allowed');
         return;
     }
-    if (!(0, summary_1.tokenMatches)(req.get('authorization'), OPS_PORTAL_TOKEN.value(), node_crypto_1.timingSafeEqual)) {
+    // trim: a secret piped into `secrets:set` keeps its trailing newline
+    if (!(0, summary_1.tokenMatches)(req.get('authorization'), OPS_PORTAL_TOKEN.value().trim(), node_crypto_1.timingSafeEqual)) {
         res.status(401).json({ error: 'unauthorized' });
         return;
     }

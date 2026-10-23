@@ -643,7 +643,8 @@ export const opsSummary = onRequest(
       res.status(405).send('Method Not Allowed');
       return;
     }
-    if (!tokenMatches(req.get('authorization'), OPS_PORTAL_TOKEN.value(), timingSafeEqual)) {
+    // trim: a secret piped into `secrets:set` keeps its trailing newline
+    if (!tokenMatches(req.get('authorization'), OPS_PORTAL_TOKEN.value().trim(), timingSafeEqual)) {
       res.status(401).json({ error: 'unauthorized' });
       return;
     }
