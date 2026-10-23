@@ -36,7 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.submitManuscript = exports.onContactCreated = exports.triageContact = exports.rollupStatsNow = exports.scheduledStatsRollup = exports.sendTestNotification = exports.embedArticles = exports.adminGenerateAi = exports.semanticSearch = exports.askPaper = exports.translateArticle = exports.summarizeArticle = exports.articlePage = exports.ingestIssue = exports.rssFeed = exports.sitemap = exports.getPdf = void 0;
+exports.submitManuscript = exports.onContactCreated = exports.triageContact = exports.opsSummary = exports.rollupStatsNow = exports.scheduledStatsRollup = exports.sendTestNotification = exports.embedArticles = exports.adminGenerateAi = exports.semanticSearch = exports.askPaper = exports.translateArticle = exports.summarizeArticle = exports.articlePage = exports.ingestIssue = exports.rssFeed = exports.sitemap = exports.getPdf = void 0;
 const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
@@ -48,7 +48,9 @@ const run_1 = require("./ingest/run");
 const article_seo_1 = require("./article-seo");
 const service_1 = require("./ai/service");
 const pure_1 = require("./ai/pure");
+const node_crypto_1 = require("node:crypto");
 const stats_1 = require("./ops/stats");
+const summary_1 = require("./ops/summary");
 const submission_1 = require("./ops/submission");
 const email_1 = require("./ops/email");
 const service_2 = require("./ai/service");
@@ -288,6 +290,30 @@ function neutralPdfDownloadFilename(journalId) {
 // Gemini ingest (Phase 3)
 // ---------------------------------------------------------------------------
 const GEMINI_API_KEY = (0, params_1.defineSecret)('GEMINI_API_KEY');
+const MODEL_ID = /^[A-Za-z0-9._-]{1,80}$/;
+let modelCache;
+/**
+ * Models picked in the admin panel (`adminSettings/ai`): `model` for admin tools (extraction, triage),
+ * `publicModel` for reader-facing features (summaries, translation, Ask, search). Public falls back to
+ * the admin model, then GEMINI_MODEL, then the built-in default.
+ */
+async function configuredModel(use) {
+    try {
+        if (!modelCache || Date.now() - modelCache.at > 20_000) {
+            const data = (await admin.firestore().doc('adminSettings/ai').get()).data() ?? {};
+            modelCache = { at: Date.now(), data };
+        }
+        const d = modelCache.data;
+        const pick = (v) => (typeof v === 'string' && MODEL_ID.test(v) ? v : undefined);
+        const chosen = use === 'public' ? pick(d['publicModel']) ?? pick(d['model']) : pick(d['model']);
+        if (chosen)
+            return chosen;
+    }
+    catch (e) {
+        console.warn('Could not read adminSettings/ai', e);
+    }
+    return process.env['GEMINI_MODEL'];
+}
 /**
  * Admin-only: extract draft articles from an issue's PDF with Gemini.
  * Progress and errors are written to `ingestJobs/{issueId}`.
@@ -311,7 +337,7 @@ exports.ingestIssue = (0, https_1.onCall)({
             bucket: admin.storage().bucket(),
             apiKey: GEMINI_API_KEY.value(),
             issueId,
-            model: process.env['GEMINI_MODEL'],
+            model: await configuredModel('admin'),
         });
     }
     catch (e) {
@@ -376,12 +402,12 @@ exports.articlePage = functions.https.onRequest(async (req, res) => {
 // Reader-facing AI (Phase 5)
 // ---------------------------------------------------------------------------
 const isAdminCall = (r) => r.auth?.token?.['admin'] === true;
-function aiCtx() {
+async function aiCtx(use = 'public') {
     return {
         db: admin.firestore(),
         bucket: admin.storage().bucket(),
         apiKey: GEMINI_API_KEY.value(),
-        model: process.env['GEMINI_MODEL'],
+        model: await configuredModel(use),
         embeddingModel: process.env['GEMINI_EMBEDDING_MODEL'],
     };
 }
@@ -396,7 +422,7 @@ function toHttps(e) {
 /** Public-callable wrapper: kill switch, then the handler. Admins bypass the switch (to pre-generate content). */
 async function guarded(r, feature, run) {
     try {
-        const ctx = aiCtx();
+        const ctx = await aiCtx();
         const isAdmin = isAdminCall(r);
         if (!isAdmin && !(await (0, service_1.readAiSettings)(ctx.db))[feature]) {
             throw new https_1.HttpsError('failed-precondition', 'This feature is currently turned off.');
@@ -464,7 +490,7 @@ exports.adminGenerateAi = (0, https_1.onCall)({ secrets: [GEMINI_API_KEY], timeo
     if (!isAdminCall(r))
         throw new https_1.HttpsError('permission-denied', 'Admins only.');
     try {
-        const ctx = aiCtx();
+        const ctx = await aiCtx();
         const kind = r.data?.kind;
         const a = await (0, service_1.loadArticle)(ctx.db, articleIdOf(r), true);
         if (kind === 'summary') {
@@ -490,7 +516,7 @@ exports.embedArticles = (0, https_1.onCall)({ secrets: [GEMINI_API_KEY], timeout
         throw new https_1.HttpsError('permission-denied', 'Admins only.');
     try {
         const issueId = r.data?.issueId;
-        return await (0, service_1.embedAndRelate)(aiCtx(), typeof issueId === 'string' && issueId ? issueId : undefined);
+        return await (0, service_1.embedAndRelate)(await aiCtx(), typeof issueId === 'string' && issueId ? issueId : undefined);
     }
     catch (e) {
         throw toHttps(e);
@@ -550,12 +576,57 @@ exports.rollupStatsNow = (0, https_1.onCall)({ memory: '256MiB' }, async (r) => 
     const s = await snapshotStats((0, pure_2.dayKey)());
     return { date: s.date };
 });
+const OPS_PORTAL_TOKEN = (0, params_1.defineSecret)('OPS_PORTAL_TOKEN');
+/**
+ * Read-only aggregate summary for the external ops portal (server-to-server, bearer token from Secret Manager).
+ * Returns counts and public titles only; no personal data. Create the token with:
+ *   openssl rand -hex 32 | firebase functions:secrets:set OPS_PORTAL_TOKEN
+ */
+exports.opsSummary = (0, https_1.onRequest)({ secrets: [OPS_PORTAL_TOKEN], memory: '256MiB', maxInstances: 2, cors: false }, async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    if (req.method !== 'GET') {
+        res.status(405).send('Method Not Allowed');
+        return;
+    }
+    if (!(0, summary_1.tokenMatches)(req.get('authorization'), OPS_PORTAL_TOKEN.value(), node_crypto_1.timingSafeEqual)) {
+        res.status(401).json({ error: 'unauthorized' });
+        return;
+    }
+    try {
+        const db = admin.firestore();
+        const ms = (v) => (v instanceof admin.firestore.Timestamp ? v.toMillis() : undefined);
+        const [days, journals, articles, subs, contacts, jobs, ai] = await Promise.all([
+            db.collection('statsDaily').orderBy('date', 'desc').limit(46).get(),
+            db.collection('journals').select('title', 'viewCount').get(),
+            db.collection('articles').select('title', 'viewCount', 'status').get(),
+            db.collection('submissions').select('status', 'createdAt').get(),
+            db.collection('contactSubmissions').select('read', 'createdAt').get(),
+            db.collection('ingestJobs').select('state').get(),
+            db.doc(`aiStats/${(0, pure_2.dayKey)()}`).get(),
+        ]);
+        res.json((0, summary_1.buildOpsSummary)({
+            now: Date.now(),
+            days: days.docs.map((d) => d.data()),
+            journals: journals.docs.map((d) => ({ id: d.id, title: String(d.get('title') ?? ''), viewCount: d.get('viewCount') })),
+            articles: articles.docs.map((d) => ({ id: d.id, title: String(d.get('title') ?? ''), viewCount: d.get('viewCount'), status: d.get('status') })),
+            submissions: subs.docs.map((d) => ({ status: d.get('status'), createdAtMs: ms(d.get('createdAt')) })),
+            contacts: contacts.docs.map((d) => ({ read: d.get('read') === true, createdAtMs: ms(d.get('createdAt')) })),
+            ingestJobs: jobs.docs.map((d) => ({ state: d.get('state') })),
+            ai: (ai.data() ?? {}),
+            aiLimits: Object.fromEntries(Object.entries(service_1.LIMITS).map(([k, v]) => [k, v.daily])),
+        }));
+    }
+    catch (e) {
+        console.error('opsSummary failed', e);
+        res.status(500).json({ error: 'failed' });
+    }
+});
 /** Admin: classify a contact message and draft a reply (stored on the message; never sent). */
 exports.triageContact = (0, https_1.onCall)({ secrets: [GEMINI_API_KEY], timeoutSeconds: 90, memory: '512MiB', maxInstances: 2 }, async (r) => {
     if (!isAdminCall(r))
         throw new https_1.HttpsError('permission-denied', 'Admins only.');
     try {
-        const ctx = aiCtx();
+        const ctx = await aiCtx('admin');
         if (!(await (0, service_1.readAiSettings)(ctx.db)).contactTriage) {
             throw new https_1.HttpsError('failed-precondition', 'Message triage is switched off (Admin > AI).');
         }

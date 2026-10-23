@@ -8,12 +8,14 @@ import { defineSecret, defineString } from 'firebase-functions/params';
 import { runIngest, IngestError } from './ingest/run';
 import { buildArticleSeo, iArticle } from './article-seo';
 import {
-  Ctx, answerQuestion, consume, embedAndRelate, generateSummary, generateTranslation, loadArticle,
+  Ctx, LIMITS, answerQuestion, consume, embedAndRelate, generateSummary, generateTranslation, loadArticle,
   readAiSettings, semanticSearch as runSemanticSearch,
 } from './ai/service';
 import { AiFeature, cleanQuestion, visitorKey } from './ai/pure';
 import type { CallableRequest } from 'firebase-functions/v2/https';
-import { buildDailyStats, yesterday } from './ops/stats';
+import { timingSafeEqual } from 'node:crypto';
+import { DailyStats, buildDailyStats, yesterday } from './ops/stats';
+import { buildOpsSummary, tokenMatches } from './ops/summary';
 import { safeDisplayName, validateFile, validateSubmissionFields } from './ops/submission';
 import { buildContactEmail, buildSubmissionEmail, buildTestEmail, resolveNotifySettings, sendEmail } from './ops/email';
 import { triageMessage } from './ai/service';
@@ -625,6 +627,57 @@ export const rollupStatsNow = onCall({ memory: '256MiB' }, async (r) => {
   const s = await snapshotStats(dayKey());
   return { date: s.date };
 });
+
+const OPS_PORTAL_TOKEN = defineSecret('OPS_PORTAL_TOKEN');
+
+/**
+ * Read-only aggregate summary for the external ops portal (server-to-server, bearer token from Secret Manager).
+ * Returns counts and public titles only; no personal data. Create the token with:
+ *   openssl rand -hex 32 | firebase functions:secrets:set OPS_PORTAL_TOKEN
+ */
+export const opsSummary = onRequest(
+  { secrets: [OPS_PORTAL_TOKEN], memory: '256MiB', maxInstances: 2, cors: false },
+  async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    if (req.method !== 'GET') {
+      res.status(405).send('Method Not Allowed');
+      return;
+    }
+    if (!tokenMatches(req.get('authorization'), OPS_PORTAL_TOKEN.value(), timingSafeEqual)) {
+      res.status(401).json({ error: 'unauthorized' });
+      return;
+    }
+    try {
+      const db = admin.firestore();
+      const ms = (v: unknown) => (v instanceof admin.firestore.Timestamp ? v.toMillis() : undefined);
+      const [days, journals, articles, subs, contacts, jobs, ai] = await Promise.all([
+        db.collection('statsDaily').orderBy('date', 'desc').limit(46).get(),
+        db.collection('journals').select('title', 'viewCount').get(),
+        db.collection('articles').select('title', 'viewCount', 'status').get(),
+        db.collection('submissions').select('status', 'createdAt').get(),
+        db.collection('contactSubmissions').select('read', 'createdAt').get(),
+        db.collection('ingestJobs').select('state').get(),
+        db.doc(`aiStats/${dayKey()}`).get(),
+      ]);
+      res.json(
+        buildOpsSummary({
+          now: Date.now(),
+          days: days.docs.map((d) => d.data() as DailyStats),
+          journals: journals.docs.map((d) => ({ id: d.id, title: String(d.get('title') ?? ''), viewCount: d.get('viewCount') })),
+          articles: articles.docs.map((d) => ({ id: d.id, title: String(d.get('title') ?? ''), viewCount: d.get('viewCount'), status: d.get('status') })),
+          submissions: subs.docs.map((d) => ({ status: d.get('status'), createdAtMs: ms(d.get('createdAt')) })),
+          contacts: contacts.docs.map((d) => ({ read: d.get('read') === true, createdAtMs: ms(d.get('createdAt')) })),
+          ingestJobs: jobs.docs.map((d) => ({ state: d.get('state') })),
+          ai: (ai.data() ?? {}) as Record<string, unknown>,
+          aiLimits: Object.fromEntries(Object.entries(LIMITS).map(([k, v]) => [k, v.daily])),
+        })
+      );
+    } catch (e) {
+      console.error('opsSummary failed', e);
+      res.status(500).json({ error: 'failed' });
+    }
+  }
+);
 
 /** Admin: classify a contact message and draft a reply (stored on the message; never sent). */
 export const triageContact = onCall(

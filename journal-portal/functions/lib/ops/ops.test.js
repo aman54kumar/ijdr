@@ -5,7 +5,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const node_test_1 = __importDefault(require("node:test"));
 const strict_1 = __importDefault(require("node:assert/strict"));
+const node_crypto_1 = require("node:crypto");
 const stats_1 = require("./stats");
+const summary_1 = require("./summary");
 const submission_1 = require("./submission");
 const email_1 = require("./email");
 (0, node_test_1.default)('daily stats and deltas', () => {
@@ -88,5 +90,66 @@ const good = {
     // an admin who saved an empty list has switched notifications off, not fallen back to the default
     strict_1.default.deepEqual((0, email_1.resolveNotifySettings)({ emails: [] }, 'me@x.co').emails, []);
     strict_1.default.deepEqual((0, email_1.resolveNotifySettings)({ emails: 'x' }, 'me@x.co').emails, ['me@x.co']);
+});
+const DAY_MS = 24 * 3600 * 1000;
+const snap = (date, issueViews, a1, a2 = 0) => (0, stats_1.buildDailyStats)({
+    date,
+    journals: [{ id: 'j1', title: 'Issue 1', viewCount: issueViews }],
+    articles: [{ id: 'a1', title: 'Alpha', viewCount: a1, status: 'published' }, { id: 'a2', title: 'Beta', viewCount: a2, status: 'published' }],
+    contacts: 0, submissions: 0, ai: {},
+});
+(0, node_test_1.default)('ops summary: traffic series, top lists, queues and AI usage; no personal data', () => {
+    const now = Date.parse('2026-10-20T12:00:00Z');
+    // 16 daily snapshots: issue views +2/day, article a1 +3/day for the first 8 days then +9/day.
+    const days = Array.from({ length: 16 }, (_, i) => {
+        const date = new Date(Date.parse('2026-10-05T00:00:00Z') + i * DAY_MS).toISOString().slice(0, 10);
+        const a1 = i <= 7 ? i * 3 : 21 + (i - 7) * 9;
+        return snap(date, i * 2, a1);
+    });
+    const s = (0, summary_1.buildOpsSummary)({
+        now,
+        days,
+        journals: [{ id: 'j1', title: 'Issue 1', viewCount: 30 }],
+        articles: [{ id: 'a1', title: 'Alpha', viewCount: 84, status: 'published' }, { id: 'a2', title: 'Beta', viewCount: 0, status: 'published' }, { id: 'a3', title: 'Draft', status: 'draft' }],
+        submissions: [{ status: 'received', createdAtMs: now - 5 * DAY_MS }, { status: 'accepted', createdAtMs: now - 40 * DAY_MS }, { createdAtMs: now - 1 * DAY_MS }],
+        contacts: [{ read: false, createdAtMs: now - 3 * DAY_MS }, { read: true, createdAtMs: now - 30 * DAY_MS }],
+        ingestJobs: [{ state: 'running' }, { state: 'error' }, { state: 'done' }],
+        ai: { chat: 50, updatedAt: 'x' },
+        aiLimits: { chat: 200, summaries: 40 },
+    });
+    strict_1.default.deepEqual(s.catalogue, { issues: 1, published: 2, drafts: 1, neverOpened: 1, issueViews: 30, articleViews: 84 });
+    strict_1.default.equal(s.traffic.series.length, 15);
+    strict_1.default.equal(s.traffic.lastRollup, '2026-10-20');
+    strict_1.default.equal(s.traffic.rollupAgeDays, 0);
+    strict_1.default.equal(s.traffic.series[0].issues, 2);
+    strict_1.default.equal(s.traffic.last7, 7 * (2 + 9));
+    strict_1.default.equal(s.traffic.prev7, 2 * 7 + 6 * 3 + 9); // a1: +3 for six days, then +9
+    strict_1.default.ok((s.traffic.changePct ?? 0) > 0);
+    strict_1.default.deepEqual(s.top.articles7d.map((a) => a.id), ['a1']);
+    strict_1.default.equal(s.top.articlesAll[0].title, 'Alpha');
+    strict_1.default.deepEqual(s.submissions.byStatus, { received: 2, accepted: 1 });
+    strict_1.default.equal(s.submissions.waiting, 2);
+    strict_1.default.equal(s.submissions.oldestWaitingDays, 5);
+    strict_1.default.equal(s.submissions.new7d, 2);
+    strict_1.default.deepEqual(s.inbox, { total: 2, unread: 1, oldestUnreadDays: 3, new7d: 1 });
+    strict_1.default.deepEqual(s.ingest, { running: 1, failed: 1 });
+    strict_1.default.deepEqual(s.ai, { chat: { used: 50, limit: 200 }, summaries: { used: 0, limit: 40 } });
+    strict_1.default.ok(!/@/.test(JSON.stringify(s)));
+});
+(0, node_test_1.default)('ops summary copes with an empty project', () => {
+    const s = (0, summary_1.buildOpsSummary)({ now: Date.now(), days: [], journals: [], articles: [], submissions: [], contacts: [], ingestJobs: [], ai: {}, aiLimits: {} });
+    strict_1.default.equal(s.traffic.lastRollup, null);
+    strict_1.default.equal(s.traffic.changePct, null);
+    strict_1.default.equal(s.submissions.oldestWaitingDays, null);
+    strict_1.default.deepEqual(s.top.articles7d, []);
+});
+(0, node_test_1.default)('ops token check is strict', () => {
+    const token = 'x'.repeat(40);
+    strict_1.default.ok((0, summary_1.tokenMatches)(`Bearer ${token}`, token, node_crypto_1.timingSafeEqual));
+    strict_1.default.ok(!(0, summary_1.tokenMatches)(`Bearer ${token}y`, token, node_crypto_1.timingSafeEqual));
+    strict_1.default.ok(!(0, summary_1.tokenMatches)(token, token, node_crypto_1.timingSafeEqual));
+    strict_1.default.ok(!(0, summary_1.tokenMatches)(undefined, token, node_crypto_1.timingSafeEqual));
+    strict_1.default.ok(!(0, summary_1.tokenMatches)('Bearer short', 'short', node_crypto_1.timingSafeEqual)); // an unset or weak secret never matches
+    strict_1.default.ok(!(0, summary_1.tokenMatches)('Bearer ', '', node_crypto_1.timingSafeEqual));
 });
 //# sourceMappingURL=ops.test.js.map
