@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { timingSafeEqual } from 'node:crypto';
 import { buildDailyStats, viewDeltas, yesterday } from './stats';
+import { buildOpsSummary, tokenMatches } from './summary';
 import { safeDisplayName, validateFile, validateSubmissionFields } from './submission';
 import { buildContactEmail, buildSubmissionEmail, oneLine, parseEmailList, resolveNotifySettings, sendEmail } from './email';
 
@@ -89,4 +91,70 @@ test('notification settings: saved list wins, env default is the fallback', () =
   // an admin who saved an empty list has switched notifications off, not fallen back to the default
   assert.deepEqual(resolveNotifySettings({ emails: [] }, 'me@x.co').emails, []);
   assert.deepEqual(resolveNotifySettings({ emails: 'x' }, 'me@x.co').emails, ['me@x.co']);
+});
+
+const DAY_MS = 24 * 3600 * 1000;
+const snap = (date: string, issueViews: number, a1: number, a2 = 0) =>
+  buildDailyStats({
+    date,
+    journals: [{ id: 'j1', title: 'Issue 1', viewCount: issueViews }],
+    articles: [{ id: 'a1', title: 'Alpha', viewCount: a1, status: 'published' }, { id: 'a2', title: 'Beta', viewCount: a2, status: 'published' }],
+    contacts: 0, submissions: 0, ai: {},
+  });
+
+test('ops summary: traffic series, top lists, queues and AI usage; no personal data', () => {
+  const now = Date.parse('2026-10-20T12:00:00Z');
+  // 16 daily snapshots: issue views +2/day, article a1 +3/day for the first 8 days then +9/day.
+  const days = Array.from({ length: 16 }, (_, i) => {
+    const date = new Date(Date.parse('2026-10-05T00:00:00Z') + i * DAY_MS).toISOString().slice(0, 10);
+    const a1 = i <= 7 ? i * 3 : 21 + (i - 7) * 9;
+    return snap(date, i * 2, a1);
+  });
+  const s = buildOpsSummary({
+    now,
+    days,
+    journals: [{ id: 'j1', title: 'Issue 1', viewCount: 30 }],
+    articles: [{ id: 'a1', title: 'Alpha', viewCount: 84, status: 'published' }, { id: 'a2', title: 'Beta', viewCount: 0, status: 'published' }, { id: 'a3', title: 'Draft', status: 'draft' }],
+    submissions: [{ status: 'received', createdAtMs: now - 5 * DAY_MS }, { status: 'accepted', createdAtMs: now - 40 * DAY_MS }, { createdAtMs: now - 1 * DAY_MS }],
+    contacts: [{ read: false, createdAtMs: now - 3 * DAY_MS }, { read: true, createdAtMs: now - 30 * DAY_MS }],
+    ingestJobs: [{ state: 'running' }, { state: 'error' }, { state: 'done' }],
+    ai: { chat: 50, updatedAt: 'x' },
+    aiLimits: { chat: 200, summaries: 40 },
+  });
+  assert.deepEqual(s.catalogue, { issues: 1, published: 2, drafts: 1, neverOpened: 1, issueViews: 30, articleViews: 84 });
+  assert.equal(s.traffic.series.length, 15);
+  assert.equal(s.traffic.lastRollup, '2026-10-20');
+  assert.equal(s.traffic.rollupAgeDays, 0);
+  assert.equal(s.traffic.series[0].issues, 2);
+  assert.equal(s.traffic.last7, 7 * (2 + 9));
+  assert.equal(s.traffic.prev7, 2 * 7 + 6 * 3 + 9); // a1: +3 for six days, then +9
+  assert.ok((s.traffic.changePct ?? 0) > 0);
+  assert.deepEqual(s.top.articles7d.map((a) => a.id), ['a1']);
+  assert.equal(s.top.articlesAll[0].title, 'Alpha');
+  assert.deepEqual(s.submissions.byStatus, { received: 2, accepted: 1 });
+  assert.equal(s.submissions.waiting, 2);
+  assert.equal(s.submissions.oldestWaitingDays, 5);
+  assert.equal(s.submissions.new7d, 2);
+  assert.deepEqual(s.inbox, { total: 2, unread: 1, oldestUnreadDays: 3, new7d: 1 });
+  assert.deepEqual(s.ingest, { running: 1, failed: 1 });
+  assert.deepEqual(s.ai, { chat: { used: 50, limit: 200 }, summaries: { used: 0, limit: 40 } });
+  assert.ok(!/@/.test(JSON.stringify(s)));
+});
+
+test('ops summary copes with an empty project', () => {
+  const s = buildOpsSummary({ now: Date.now(), days: [], journals: [], articles: [], submissions: [], contacts: [], ingestJobs: [], ai: {}, aiLimits: {} });
+  assert.equal(s.traffic.lastRollup, null);
+  assert.equal(s.traffic.changePct, null);
+  assert.equal(s.submissions.oldestWaitingDays, null);
+  assert.deepEqual(s.top.articles7d, []);
+});
+
+test('ops token check is strict', () => {
+  const token = 'x'.repeat(40);
+  assert.ok(tokenMatches(`Bearer ${token}`, token, timingSafeEqual));
+  assert.ok(!tokenMatches(`Bearer ${token}y`, token, timingSafeEqual));
+  assert.ok(!tokenMatches(token, token, timingSafeEqual));
+  assert.ok(!tokenMatches(undefined, token, timingSafeEqual));
+  assert.ok(!tokenMatches('Bearer short', 'short', timingSafeEqual)); // an unset or weak secret never matches
+  assert.ok(!tokenMatches('Bearer ', '', timingSafeEqual));
 });

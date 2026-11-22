@@ -184,6 +184,12 @@ Functions declare it with `defineSecret('GEMINI_API_KEY')` and `secrets: [GEMINI
 2. In `journal-portal/functions/.env` (gitignored) add `NOTIFY_EMAIL_TO=you@example.org` and, once you have verified a sending domain in Resend, `NOTIFY_EMAIL_FROM=IJDR <noreply@your-domain>`. Until then the default sender `onboarding@resend.dev` only delivers to the email address of your own Resend account.
 3. Notifications are best effort: a Resend failure never blocks a submission or a contact message.
 
+**Ops portal feed (`opsSummary`).** The separate ops portal (`vibe/ops_portal`, `ijdr` source type) reads one read-only HTTPS function that returns counts and public titles only (traffic series, top articles, manuscript and inbox queues, AI usage); no names, emails or message text. It is protected by a bearer token.
+
+1. Create the token as a secret (**it must exist before the functions deploy**, otherwise the whole deploy fails): `openssl rand -hex 32 | firebase functions:secrets:set OPS_PORTAL_TOKEN`. Keep a copy for the portal; do not paste it into chat or a file in git.
+2. `firebase deploy --only functions:opsSummary`. The URL is printed (`https://opssummary-<hash>-uc.a.run.app`, or from Firebase Console -> Functions).
+3. On the portal host set `IJDR_OPS_URL` to that URL and `IJDR_OPS_TOKEN` to the token in `env/portal.env`. To rotate, set the secret again, redeploy `opsSummary`, update the portal env and restart it.
+
 **If a key leaks:** rotate it in Google Cloud Console (IAM -> Service Accounts -> Keys, or Secret Manager), then update the secret and redeploy functions.
 
 ---
